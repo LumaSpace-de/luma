@@ -37,5 +37,5 @@ export function MainNav({ items }: MainNavProps) {
         </nav>
       ) : null}
     </div>
-  )
+  );
 }
