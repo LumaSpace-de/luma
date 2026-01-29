@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  background-color: #0f172a; /* Tailwind gray-900 */
+  background-color: #0f172a; 
 }
 
 @layer base {
