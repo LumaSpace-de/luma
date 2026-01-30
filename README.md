@@ -1,25 +1,36 @@
-# next-template
+# Luma
 
-> **Warning**
-> This template is deprecated. You can now create a new Next.js project using the shadcn CLI: `npx shadcn init`.
+**Mehr als endlose To-do-Listen.**
 
-A Next.js 13 template for building apps with Radix UI and Tailwind CSS.
+LumaSpace wurde für Menschen gebaut, die mehr wollen als das Abhaken von Aufgaben.  
+Es verbindet die Struktur eines Workspace-Tools mit der Klarheit eines intelligenten Kalenders.
 
-## Usage
+Du organisierst Projekte und Aufgaben flexibel, planst deinen Tag in realistischen Zeitblöcken und behältst jederzeit den Überblick über Fokus-Zeit, Fortschritt und Prioritäten.
 
-```bash
-npx create-next-app -e https://github.com/shadcn/next-template
-```
+Kein ständiges Umplanen.  
+Kein schlechtes Gewissen.  
+Nur ein System, das sich deinem Alltag anpasst.
 
-## Features
+---
 
-- Next.js 13 App Directory
-- Radix UI Primitives
-- Tailwind CSS
-- Icons from [Lucide](https://lucide.dev)
-- Dark mode with `next-themes`
-- Tailwind CSS class sorting, merging and linting.
+## ✨ Was Luma anders macht
 
-## License
+### 📋 **Struktur ohne Starrheit**
+- Organisiere Projekte, Tasks und Notizen in einem flexiblen Workspace
+- Erhalte Übersicht ohne Komplexität
+- Anpassbar für jedes Workflow-Muster
 
-Licensed under the [MIT license](https://github.com/shadcn/ui/blob/main/LICENSE.md).
+### 🗓️ **Intelligente Zeitplanung**
+- Plane deinen Tag in realistischen Zeitblöcken
+- Automatische Berücksichtigung von Energielevel und Kontext
+- Visualisiere deine Kapazität auf einen Blick
+
+### 🎯 **Fokus auf das Wesentliche**
+- KI-gestützte Priorisierung
+- Eliminiere das ständige Umplanen
+- Behalte den Überblick ohne Überforderung
+
+### 🔄 **Adaptives System**
+- Lernen aus deinen Arbeitsmustern
+- Anpassung an deinen Rhythmus
+- Proaktive statt reaktive Planung
