@@ -1,8 +1,8 @@
 import Link from "next/link"
 
 import { siteConfig } from "@/config/site"
-import { buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 
 export default function IndexPage() {
-   return <buttonVariants variant="outline">Outline</buttonVariants>
+   return <Button variant="outline">Outline</Button>
 }
