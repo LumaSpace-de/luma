@@ -6,14 +6,8 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  BadgeCheckIcon,
-  BellIcon,
-  CreditCardIcon,
-  LogOutIcon,
-} from "lucide-react"
+  DropdownMenuTrigger, } from "@/components/ui/dropdown-menu"
+import { BadgeCheckIcon, BellIcon, CreditCardIcon, LogOutIcon, } from "lucide-react"
 
 export function DropdownMenuAvatar() {
   return (
