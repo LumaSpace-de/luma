@@ -12,14 +12,6 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" className="dark">
-      <Avatar>
-          <AvatarImage
-            src="https://github.com/shadcn.png"
-            alt="@shadcn"
-            className="grayscale"
-            />
-          <AvatarFallback>CN</AvatarFallback>
-      </Avatar>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
