@@ -11,8 +11,12 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <head />
-      <body className="min-h-screen bg-dark antialiased">
+      <body
+        className={cn(
+          "min-h-screen bg-background font-sans antialiased",
+          fontSans.variable
+        )}
+      >
         <div className="flex min-h-screen flex-col">
           <main className="flex-1">{children}</main>
         </div>
