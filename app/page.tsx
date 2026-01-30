@@ -6,5 +6,3 @@ import { buttonVariants } from "@/components/ui/button"
 export default function IndexPage() {
    return <buttonVariants variant="outline">Outline</buttonVariants>
 }
-
-}
