@@ -8,22 +8,23 @@ export default function LoginPage() {
       className="fixed inset-0"
       dotSize={2}
       gap={20}
-      baseColor="#3f3f46" // gray-700
-      glowColor="#22d3ee" // cyan-400
+      baseColor="#3f3f46"
+      glowColor="#22d3ee"
       proximity={150}
       glowIntensity={0.8}
       waveSpeed={0.3}
     >
-    <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <a href="#" className="flex items-center gap-2 self-center font-medium">
-          <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-            <GalleryVerticalEnd className="size-4" />
-          </div>
-         LumaSpace
-        </a>
-        <LoginForm />
+      <div className="relative z-10 flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
+        <div className="flex w-full max-w-sm flex-col gap-6">
+          <a href="#" className="flex items-center gap-2 self-center font-medium text-white">
+            <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
+              <GalleryVerticalEnd className="size-5" />
+            </div>
+            <span className="text-xl font-semibold">LumaSpace</span>
+          </a>
+          <LoginForm />
+        </div>
       </div>
-    </div>
+    </DotPattern>
   )
 }
