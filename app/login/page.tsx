@@ -1,8 +1,19 @@
 import { GalleryVerticalEnd } from "lucide-react"
 import { LoginForm } from "@/components/login-form"
+import { DotPattern } from "@/components/dot-pattern"
 
 export default function LoginPage() {
   return (
+    <DotPattern
+      className="fixed inset-0"
+      dotSize={2}
+      gap={20}
+      baseColor="#3f3f46" // gray-700
+      glowColor="#22d3ee" // cyan-400
+      proximity={150}
+      glowIntensity={0.8}
+      waveSpeed={0.3}
+    >
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
         <a href="#" className="flex items-center gap-2 self-center font-medium">
