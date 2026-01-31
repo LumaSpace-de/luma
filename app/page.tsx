@@ -16,6 +16,9 @@ export default function IndexPage() {
         <AvatarFallback>CN</AvatarFallback>
       </Avatar>
       <Button variant="outline">Outline</Button>
+      <Link href="/login">
+        <Button>Login</Button>
+      </Link>
     </div>
   )
 }
