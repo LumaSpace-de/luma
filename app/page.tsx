@@ -1,40 +1,17 @@
-import "@/styles/globals.css"
+app/page.tsx
+import Link from "next/link"
 
-import { fontSans } from "@/lib/fonts"
-import { cn } from "@/lib/utils"
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { siteConfig } from "@/config/site"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function IndexPage() {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable
-        )}
-      >
-        <SidebarProvider>
-          {/* SHADCN ROOT */}
-          <div className="flex min-h-screen w-full">
-            <AppSidebar />
-
-            <div className="flex flex-1 flex-col">
-              <header className="flex h-14 items-center gap-2 border-b px-4">
-                <SidebarTrigger />
-              </header>
-
-              <main className="flex-1 overflow-auto p-4">
-                {children}
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
-      </body>
-    </html>
+    <div>
+      <Button variant="outline">Outline</Button>
+      <Link href="/login">
+        <Button variant="outline">Login</Button>
+      </Link>
+    </div>
   )
 }
