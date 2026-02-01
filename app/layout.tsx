@@ -20,9 +20,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
           fontSans.variable
         )}
       >
-        <div className="flex min-h-screen flex-col">
-          <main className="flex-1">{children}</main>
-        </div>
+        <SidebarProvider>
+          <AppSidebar />
+          <div className="flex min-h-screen flex-col">
+            <main className="flex-1">
+              <SidebarTrigger />
+              {children}
+            </main>
+          </div>
+        </SidebarProvider>
       </body>
     </html>
   )
