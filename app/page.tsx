@@ -9,7 +9,7 @@ export default function IndexPage() {
     <div>
       <Button variant="outline">Outline</Button>
       <Link href="/login">
-        <Button>Login</Button>
+        <Button variant="outline">Login</Button>
       </Link>
     </div>
   )
