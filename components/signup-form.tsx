@@ -56,7 +56,6 @@ className="w-5 h-5">
                   fill="currentColor"
                 />
               </svg>
-              Continue with Apple
             </Button>
             <Button variant="outline" type="button">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
@@ -66,7 +65,6 @@ className="w-5 h-5">
                   fill="currentColor"
                 />
               </svg>
-              Continue with Google
             </Button>
           </Field>
         </FieldGroup>
