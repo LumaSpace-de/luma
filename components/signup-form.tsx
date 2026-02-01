@@ -29,7 +29,7 @@ export function SignupForm({
               </div>
               <span className="sr-only">Acme Inc.</span>
             </a>
-            <h1 className="text-xl font-bold">Welcome to Acme Inc.</h1>
+            <h1 className="text-xl font-bold">Welcome to LumaSpace.</h1>
             <FieldDescription>
               Already have an account? <a href="#">Sign in</a>
             </FieldDescription>
