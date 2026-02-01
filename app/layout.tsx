@@ -1,17 +1,15 @@
 import "@/styles/globals.css"
 
-import { siteConfig } from "@/config/site"
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 
-interface RootLayoutProps {
+export default function RootLayout({
+  children,
+}: {
   children: React.ReactNode
-}
-
-export default function RootLayout({ children }: RootLayoutProps) {
+}) {
   return (
     <html lang="en" className="dark">
       <body
@@ -21,12 +19,19 @@ export default function RootLayout({ children }: RootLayoutProps) {
         )}
       >
         <SidebarProvider>
-          <AppSidebar />
-          <div className="flex min-h-screen flex-col">
-            <main className="flex-1">
-              <SidebarTrigger />
-              {children}
-            </main>
+          {/* SHADCN ROOT */}
+          <div className="flex min-h-screen w-full">
+            <AppSidebar />
+
+            <div className="flex flex-1 flex-col">
+              <header className="flex h-14 items-center gap-2 border-b px-4">
+                <SidebarTrigger />
+              </header>
+
+              <main className="flex-1 overflow-auto p-4">
+                {children}
+              </main>
+            </div>
           </div>
         </SidebarProvider>
       </body>
