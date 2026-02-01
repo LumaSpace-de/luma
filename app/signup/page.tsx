@@ -26,6 +26,6 @@ export default function SignupPage() {
         <SignupForm />
       </div>
     </div>
-  </DotPattern>
+   </DotPattern>
   )
 }
