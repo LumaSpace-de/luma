@@ -6,11 +6,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function IndexPage() {
   return (
-    <div>
-      <Button variant="outline">Outline</Button>
-      <Link href="/login">
-        <Button variant="outline">Login</Button>
-      </Link>
-    </div>
+    <div className="absolute right-4 top-4 z-50 flex gap-2">
+        <Button variant="outline" size="sm">
+          Outline
+        </Button>
+        <Link href="/login">
+          <Button size="sm">
+            Login
+          </Button>
+        </Link>
+      </div>
   )
 }
