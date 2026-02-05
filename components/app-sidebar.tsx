@@ -221,13 +221,13 @@ export function AppSidebar() {
       <SidebarFooter className="border-t p-4">
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+            <AvatarImage src="https://github.com/whoisbezofx.png" alt="@shadcn" />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
           {open && (
             <>
               <div className="flex flex-1 flex-col">
-                <span className="text-sm font-medium">John Doe</span>
+                <span className="text-sm font-medium">Prodbybezo</span>
                 <span className="text-xs text-muted-foreground">
                   john@acme.com
                 </span>
