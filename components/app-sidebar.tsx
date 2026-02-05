@@ -56,7 +56,7 @@ export function AppSidebar() {
   ]
 
   const workspaces = [
-    { name: "Acme Inc", plan: "Pro" },
+    { name: "LumaSpace", plan: "Pro" },
     { name: "Stark Industries", plan: "Free" },
     { name: "Wayne Enterprises", plan: "Enterprise" },
   ]
@@ -229,7 +229,7 @@ export function AppSidebar() {
               <div className="flex flex-1 flex-col">
                 <span className="text-sm font-medium">Prodbybezo</span>
                 <span className="text-xs text-muted-foreground">
-                  john@acme.com
+                  bezzo19@gmx.de
                 </span>
               </div>
               <div className="flex items-center gap-1">
