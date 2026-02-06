@@ -20,7 +20,6 @@ export default function LoginPage() {
             <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
               <GalleryVerticalEnd className="size-5" />
             </div>
-            <span className="text-xl font-semibold">LumaSpace</span>
           </a>
           <LoginForm />
         </div>
