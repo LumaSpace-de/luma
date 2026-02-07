@@ -24,16 +24,6 @@ export function LoginForm({
               href="#"
               className="flex flex-col items-center gap-2 font-medium"
             >
-              <div className="flex size-8 items-center justify-center rounded-md">
-                <IconPlaceholder
-                  lucide="GalleryVerticalEndIcon"
-                  tabler="IconLayoutRows"
-                  hugeicons="LayoutBottomIcon"
-                  phosphor="RowsIcon"
-                  remixicon="RiGalleryLine"
-                  className="size-6"
-                />
-              </div>
               <span className="sr-only">Acme Inc.</span>
             </a>
             <h1 className="text-xl font-bold">Welcome to Acme Inc.</h1>
