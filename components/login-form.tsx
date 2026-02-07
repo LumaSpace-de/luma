@@ -1,16 +1,15 @@
 "use client"
 
-import { cn } from "@/registry/bases/radix/lib/utils"
-import { Button } from "@/registry/bases/radix/ui/button"
+import { cn } from "@/components/lib/utils"
+import { Button } from "@/components/ui/button"
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@/registry/bases/radix/ui/field"
-import { Input } from "@/registry/bases/radix/ui/input"
-import { IconPlaceholder } from "@/app/(create)/components/icon-placeholder"
+} from "@/components/ui/field"
+import { Input } from "@components/ui/input"
 
 export function LoginForm({
   className,
