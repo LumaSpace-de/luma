@@ -46,10 +46,10 @@ export function AppSidebar() {
 
   const navigationItems = [
     { icon: <Home className="h-4 w-4" />, label: "Dashboard", badge: 3 },
-    { icon: <Calendar className="h-4 w-4" />, label: "Calendar" badge: "09. Feb 2026"},
-    { icon: <BarChart className="h-4 w-4" />, label: "Analytics" badge: "New"},
+    { icon: <Calendar className="h-4 w-4" />, label: "Calendar", badge: "09. Feb 2026"},
+    { icon: <BarChart className="h-4 w-4" />, label: "Analytics", badge: "New"},
     { icon: <Mail className="h-4 w-4" />, label: "Inbox", badge: 0 },
-    { icon: <Folder className="h-4 w-4" />, label: "Documents" badge: "New"},
+    { icon: <Folder className="h-4 w-4" />, label: "Documents", badge: "New"},
   ]
 
   const workspaces = [
