@@ -1,17 +1,19 @@
 import Link from "next/link"
 
-import { siteConfig } from "@/config/site"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function IndexPage() {
   return (
-    <div className="absolute right-4 top-4 z-50 flex gap-2">
-        <Link href="/login">
-          <Button size="sm">
-            Login
-          </Button>
-        </Link>
-      </div>
+    <div className="flex flex-1 flex-col items-center justify-center gap-4 py-10">
+      <h1 className="text-2xl font-bold text-foreground">
+        Welcome to LumaSpace
+      </h1>
+      <p className="text-muted-foreground">
+        Your workspace dashboard
+      </p>
+      <Link href="/login">
+        <Button>Login</Button>
+      </Link>
+    </div>
   )
 }
