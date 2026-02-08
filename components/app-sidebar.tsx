@@ -58,12 +58,6 @@ export function AppSidebar() {
     { name: "Wayne Enterprises", plan: "Enterprise" },
   ]
 
-  const recentProjects = [
-    { name: "Website Redesign", team: "Design", progress: 75 },
-    { name: "Mobile App", team: "Development", progress: 40 },
-    { name: "Marketing Campaign", team: "Marketing", progress: 90 },
-  ]
-
   return (
     <Sidebar>
       <SidebarHeader className="border-b p-4">
@@ -178,42 +172,6 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <Separator />
-
-        {/* Recent Projects */}
-        {open && (
-          <SidebarGroup className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold text-muted-foreground">
-                RECENT PROJECTS
-              </h3>
-              <Button variant="ghost" size="icon" className="h-6 w-6">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {recentProjects.map((project, index) => (
-                <div key={index} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{project.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {project.progress}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full bg-primary"
-                      style={{ width: `${project.progress}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {project.team} Team
-                  </span>
-                </div>
-              ))}
-            </div>
-          </SidebarGroup>
-        )}
-      </SidebarContent>
 
       <SidebarFooter className="border-t p-4">
         <div className="flex items-center gap-2">
