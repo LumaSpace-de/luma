@@ -84,7 +84,7 @@ export function AppSidebar() {
                     {open && (
                       <>
                         <div className="flex flex-col items-start">
-                          <span className="text-sm font-medium">Acme Inc</span>
+                          <span className="text-sm font-medium">LumaSpace</span>
                           <span className="text-xs text-muted-foreground">
                             Pro Plan
                           </span>
