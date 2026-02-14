@@ -151,7 +151,7 @@ export function AppSidebar() {
                   {open && (
                     <>
                       <span className="flex-1 text-left">{item.label}</span>
-                      {item.badge && (
+                      {item.badge !== undefiniert && (
                         <Badge
                           variant={
                             typeof item.badge === "number"
