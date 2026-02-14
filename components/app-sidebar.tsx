@@ -87,7 +87,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-popper-anchor-width]"
+                className="w-56"
                 align="start"
               >
                 {workspaces.map((workspace, index) => (
