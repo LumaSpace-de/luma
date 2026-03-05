@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/Image"
 
-// Components //
+/* Components */
 
 import { Button } from "@/components/ui/button"
 
@@ -12,7 +12,7 @@ export default function IndexPage() {
       {/* Logo */}
       <div className="flex items-center gap-2">
         <Image
-          src="/logo.png"
+          src="./public/logo_icon.png"
           alt="Logo"
           width={32}
           height={32}
