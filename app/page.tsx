@@ -18,10 +18,13 @@ export default function IndexPage() {
         />
         <span className="font-bold">LumaSpace</span>
       </div>
-      <div className="absolute right-4 top-4 z-50 flex gap-2">
-          <Link href="/login">
-            <Button size="sm">Login</Button>
-        </Link>
-      </div>
+
+      <Link href="/login">
+        <Button size="sm">
+          Login
+        </Button>
+      </Link>
+
+    </div>
   )
 }
