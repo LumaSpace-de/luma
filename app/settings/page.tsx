@@ -3,7 +3,9 @@
 import { useSession } from "next-auth/react"
 import { useEffect, useRef, useState } from "react"
 
-import { Camera } from "lucide-react"
+import { Camera, PanelLeft } from "lucide-react"
+
+import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +14,7 @@ import { Separator } from "@/components/ui/separator"
 
 export default function SettingsPage() {
   const { data: session } = useSession()
+  const { toggle } = useInlineSidebar()
 
   // Avatar
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -148,6 +151,15 @@ export default function SettingsPage() {
   }
 
   return (
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
+          <PanelLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-lg font-semibold tracking-tight">Einstellungen</h1>
+      </div>
+
     <div className="flex-1 overflow-auto p-6">
       <div className="mx-auto max-w-lg space-y-8">
         <div>
@@ -356,6 +368,7 @@ export default function SettingsPage() {
           </form>
         </section>
       </div>
+    </div>
     </div>
   )
 }

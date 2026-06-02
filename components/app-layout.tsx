@@ -1,10 +1,8 @@
 "use client"
 
-import { Menu, X } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { AppSidebarContent } from "@/components/app-sidebar-content"
-import { Button } from "@/components/ui/button"
 import { InlineSidebarContext } from "@/hooks/use-inline-sidebar"
 import { cn } from "@/lib/utils"
 
@@ -56,19 +54,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Main */}
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Mobile top bar */}
-          {isMobile && (
-            <div className="flex h-12 shrink-0 items-center border-b px-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setOpen((o) => !o)}
-              >
-                {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            </div>
-          )}
           {children}
         </main>
       </div>
