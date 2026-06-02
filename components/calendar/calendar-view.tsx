@@ -12,6 +12,7 @@ import { EventDialog } from "./event-dialog"
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [columns, setColumns] = useState<1 | 2 | 3 | 4 | 5 | 6>(6)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
@@ -45,14 +46,17 @@ export function CalendarView() {
     <div className="flex h-full flex-col overflow-hidden">
       <CalendarHeader
         currentDate={currentDate}
+        columns={columns}
         onPrev={() => setCurrentDate(subMonths(currentDate, 1))}
         onNext={() => setCurrentDate(addMonths(currentDate, 1))}
         onToday={() => setCurrentDate(new Date())}
         onAdd={handleAdd}
+        onColumnsChange={(n) => setColumns(n as 1 | 2 | 3 | 4 | 5 | 6)}
       />
 
       <CalendarGrid
         currentDate={currentDate}
+        columns={columns}
         events={events}
         selectedDate={selectedDate}
         onDayClick={handleDayClick}

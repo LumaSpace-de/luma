@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  addDays,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
@@ -14,10 +15,11 @@ import { CalendarEvent } from "@/types/calendar"
 
 import { CalendarDay } from "./calendar-day"
 
-const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+const ALL_WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 
 interface CalendarGridProps {
   currentDate: Date
+  columns: number
   events: CalendarEvent[]
   selectedDate: Date | null
   onDayClick: (date: Date) => void
@@ -26,6 +28,7 @@ interface CalendarGridProps {
 
 export function CalendarGrid({
   currentDate,
+  columns,
   events,
   selectedDate,
   onDayClick,
@@ -35,13 +38,29 @@ export function CalendarGrid({
   const monthEnd = endOfMonth(currentDate)
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 })
   const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
-  const days = eachDayOfInterval({ start: gridStart, end: gridEnd })
+
+  // Build days: for each week in the month range, take only the first `columns` days
+  const days: Date[] = []
+  let weekStart = gridStart
+  while (weekStart <= gridEnd) {
+    const weekDays = eachDayOfInterval({
+      start: weekStart,
+      end: addDays(weekStart, columns - 1),
+    })
+    days.push(...weekDays)
+    weekStart = addDays(weekStart, 7)
+  }
+
+  const headers = ALL_WEEKDAYS.slice(0, columns)
 
   return (
-    <div className="flex flex-1 flex-col px-4 pb-4">
+    <div className="flex flex-1 flex-col overflow-hidden px-4 pb-4">
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 border-b border-border">
-        {WEEKDAYS.map((day) => (
+      <div
+        className="grid border-b border-border"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
+        {headers.map((day) => (
           <div
             key={day}
             className="py-2 text-center text-xs font-medium text-muted-foreground"
@@ -52,7 +71,10 @@ export function CalendarGrid({
       </div>
 
       {/* Day cells */}
-      <div className="grid flex-1 grid-cols-7 divide-x divide-y divide-border border-b border-l border-border">
+      <div
+        className="grid flex-1 divide-x divide-y divide-border border-b border-l border-border overflow-auto"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
         {days.map((day) => (
           <CalendarDay
             key={day.toISOString()}
