@@ -2,9 +2,15 @@
 
 import { format } from "date-fns"
 import { de } from "date-fns/locale"
-import { ChevronLeft, ChevronRight, Clock, LayoutGrid, PanelLeft, Plus } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, Clock, LayoutGrid, PanelLeft, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 import { cn } from "@/lib/utils"
 
@@ -82,25 +88,27 @@ export function CalendarHeader({
             </button>
           </div>
 
-          {/* Rows / days picker 1–7 — only in timeline mode */}
+          {/* Days dropdown — only in timeline mode */}
           {viewMode === "timeline" && (
-          <div className="flex items-center rounded-md border bg-background p-0.5">
-            {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
-              <button
-                key={n}
-                onClick={() => onRowsChange(n)}
-                className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded text-xs font-medium transition-colors",
-                  rows === n
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-                title={`${n} Tag${n === 1 ? "" : "e"}`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
+                  {rows} Tag{rows === 1 ? "" : "e"}
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-32">
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                  <DropdownMenuItem
+                    key={n}
+                    onClick={() => onRowsChange(n)}
+                    className={cn("text-xs", rows === n && "font-semibold text-primary")}
+                  >
+                    {n} Tag{n === 1 ? "" : "e"}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 
