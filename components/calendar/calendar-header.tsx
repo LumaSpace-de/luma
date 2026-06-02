@@ -114,23 +114,25 @@ export function CalendarHeader({
 
         {/* Column picker — only in month view */}
         {viewMode === "month" && (
-          <div className="hidden items-center rounded-md border bg-background p-0.5 sm:flex">
-            {([1, 2, 3, 4, 5, 6] as const).map((n) => (
-              <button
-                key={n}
-                onClick={() => onColumnsChange(n)}
-                className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded text-xs font-medium transition-colors",
-                  columns === n
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-                title={`${n} Spalte${n === 1 ? "" : "n"}`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
+                {columns} Spalte{columns === 1 ? "" : "n"}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <DropdownMenuItem
+                  key={n}
+                  onClick={() => onColumnsChange(n)}
+                  className={cn("text-xs", columns === n && "font-semibold text-primary")}
+                >
+                  {n} Spalte{n === 1 ? "" : "n"}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         {/* Mobile prev/next */}
