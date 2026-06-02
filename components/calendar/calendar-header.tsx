@@ -13,18 +13,20 @@ export type ViewMode = "month" | "timeline"
 interface CalendarHeaderProps {
   currentDate: Date
   columns: number
+  rows: number
   viewMode: ViewMode
   onPrev: () => void
   onNext: () => void
   onToday: () => void
   onAdd: () => void
   onColumnsChange: (n: number) => void
+  onRowsChange: (n: number) => void
   onViewModeChange: (m: ViewMode) => void
 }
 
 export function CalendarHeader({
-  currentDate, columns, viewMode,
-  onPrev, onNext, onToday, onAdd, onColumnsChange, onViewModeChange,
+  currentDate, columns, rows, viewMode,
+  onPrev, onNext, onToday, onAdd, onColumnsChange, onRowsChange, onViewModeChange,
 }: CalendarHeaderProps) {
   const { toggle } = useInlineSidebar()
 
@@ -51,32 +53,53 @@ export function CalendarHeader({
 
       {/* Right */}
       <div className="flex items-center gap-2">
-        {/* View toggle */}
-        <div className="flex items-center rounded-md border bg-background p-0.5">
-          <button
-            onClick={() => onViewModeChange("month")}
-            className={cn(
-              "flex h-6 w-6 items-center justify-center rounded transition-colors",
-              viewMode === "month"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            )}
-            title="Monatsansicht"
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => onViewModeChange("timeline")}
-            className={cn(
-              "flex h-6 w-6 items-center justify-center rounded transition-colors",
-              viewMode === "timeline"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            )}
-            title="Zeitstrahl"
-          >
-            <Clock className="h-3.5 w-3.5" />
-          </button>
+        {/* View toggle + rows picker */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center rounded-md border bg-background p-0.5">
+            <button
+              onClick={() => onViewModeChange("month")}
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded transition-colors",
+                viewMode === "month"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              )}
+              title="Monatsansicht"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onViewModeChange("timeline")}
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded transition-colors",
+                viewMode === "timeline"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              )}
+              title="Zeitstrahl"
+            >
+              <Clock className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* Rows / days picker 1–7 */}
+          <div className="flex items-center rounded-md border bg-background p-0.5">
+            {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
+              <button
+                key={n}
+                onClick={() => onRowsChange(n)}
+                className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded text-xs font-medium transition-colors",
+                  rows === n
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+                title={viewMode === "timeline" ? `${n} Tag${n === 1 ? "" : "e"}` : `${n} Zeile${n === 1 ? "" : "n"}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Column picker — only in month view */}

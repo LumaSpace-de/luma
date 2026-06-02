@@ -1,6 +1,6 @@
 "use client"
 
-import { format, isSameDay } from "date-fns"
+import { addDays, format, isSameDay } from "date-fns"
 import { de } from "date-fns/locale"
 import { MapPin } from "lucide-react"
 import { useEffect, useRef } from "react"
@@ -16,8 +16,8 @@ const COLOR_BG: Record<string, string> = {
   purple: "bg-purple-600/20 border-purple-500 text-purple-300",
 }
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i) // 0 – 23
-const HOUR_HEIGHT = 64 // px per hour
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
+const HOUR_HEIGHT = 64
 
 function timeToMinutes(t: string) {
   const [h, m] = t.split(":").map(Number)
@@ -26,17 +26,18 @@ function timeToMinutes(t: string) {
 
 interface TimelineViewProps {
   currentDate: Date
+  daysCount: number
   events: CalendarEvent[]
   onEventClick: (event: CalendarEvent) => void
   onHourClick: (date: Date) => void
 }
 
-export function TimelineView({ currentDate, events, onEventClick, onHourClick }: TimelineViewProps) {
+export function TimelineView({ currentDate, daysCount, events, onEventClick, onHourClick }: TimelineViewProps) {
   const nowRef = useRef<HTMLDivElement>(null)
-  const dayEvents = events.filter((e) => isSameDay(new Date(e.date), currentDate))
   const now = new Date()
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
-  const isToday = isSameDay(currentDate, now)
+
+  const days = Array.from({ length: daysCount }, (_, i) => addDays(currentDate, i))
 
   useEffect(() => {
     nowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
@@ -44,98 +45,146 @@ export function TimelineView({ currentDate, events, onEventClick, onHourClick }:
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Day header */}
-      <div className="shrink-0 border-b px-4 py-2">
-        <p className="text-sm font-medium">
-          {format(currentDate, "EEEE, d. MMMM yyyy", { locale: de })}
-        </p>
+      {/* Day headers */}
+      <div
+        className="shrink-0 border-b"
+        style={{ display: "grid", gridTemplateColumns: `4rem repeat(${daysCount}, minmax(0,1fr))` }}
+      >
+        <div /> {/* spacer for hour labels */}
+        {days.map((day) => {
+          const isToday = isSameDay(day, now)
+          return (
+            <div
+              key={day.toISOString()}
+              className={cn(
+                "border-l py-2 text-center text-xs font-medium",
+                isToday ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <span className={cn(
+                "inline-block rounded-full px-1.5 py-0.5",
+                isToday && "bg-primary text-primary-foreground"
+              )}>
+                {format(day, "EEE d", { locale: de })}
+              </span>
+            </div>
+          )
+        })}
       </div>
 
+      {/* Scrollable body */}
       <div className="flex-1 overflow-auto">
-        <div className="relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
-
-          {/* Hour rows */}
-          {HOURS.map((h) => (
-            <div
-              key={h}
-              className="absolute left-0 right-0 flex cursor-pointer border-b border-border/30 hover:bg-accent/10"
-              style={{ top: `${h * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
-              onClick={() => {
-                const d = new Date(currentDate)
-                d.setHours(h, 0, 0, 0)
-                onHourClick(d)
-              }}
-            >
-              {/* Hour label */}
-              <div className="w-16 shrink-0 pr-3 pt-1 text-right text-xs text-muted-foreground/60 select-none">
-                {String(h).padStart(2, "0")}:00
+        <div
+          className="relative"
+          style={{
+            display: "grid",
+            gridTemplateColumns: `4rem repeat(${daysCount}, minmax(0,1fr))`,
+            height: `${HOURS.length * HOUR_HEIGHT}px`,
+          }}
+        >
+          {/* Hour labels column */}
+          <div className="relative">
+            {HOURS.map((h) => (
+              <div
+                key={h}
+                className="absolute left-0 right-0 border-b border-border/30"
+                style={{ top: `${h * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
+              >
+                <span className="absolute right-2 top-1 text-[10px] text-muted-foreground/60 select-none">
+                  {String(h).padStart(2, "0")}:00
+                </span>
               </div>
-              {/* Half-hour line */}
-              <div className="flex-1 border-t border-dashed border-border/20 mt-8" />
-            </div>
-          ))}
+            ))}
+          </div>
 
-          {/* Current time indicator */}
-          {isToday && (
-            <div
-              ref={nowRef}
-              className="pointer-events-none absolute left-0 right-0 z-20 flex items-center"
-              style={{ top: `${(nowMinutes / 60) * HOUR_HEIGHT}px` }}
-            >
-              <div className="w-16 shrink-0 pr-2 flex justify-end">
-                <div className="h-2 w-2 rounded-full bg-red-500" />
-              </div>
-              <div className="flex-1 border-t-2 border-red-500" />
-            </div>
-          )}
-
-          {/* Events */}
-          {dayEvents.map((event) => {
-            if (!event.time) return null
-            const startMin = timeToMinutes(event.time)
-            const endMin = event.endTime ? timeToMinutes(event.endTime) : startMin + 60
-            const top = (startMin / 60) * HOUR_HEIGHT
-            const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 24)
+          {/* Day columns */}
+          {days.map((day) => {
+            const isToday = isSameDay(day, now)
+            const dayEvents = events.filter((e) => isSameDay(new Date(e.date), day))
+            const timedEvents = dayEvents.filter((e) => e.time)
+            const allDayEvents = dayEvents.filter((e) => !e.time)
 
             return (
-              <button
-                key={event.id}
-                onClick={() => onEventClick(event)}
-                className={cn(
-                  "absolute left-16 right-2 z-10 rounded-md border-l-2 px-2 py-1 text-left text-xs transition-opacity hover:opacity-80",
-                  COLOR_BG[event.color] ?? COLOR_BG.blue
+              <div key={day.toISOString()} className="relative border-l border-border/50">
+                {/* Hour slots (clickable) */}
+                {HOURS.map((h) => (
+                  <div
+                    key={h}
+                    className="absolute left-0 right-0 cursor-pointer border-b border-border/20 hover:bg-accent/10"
+                    style={{ top: `${h * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
+                    onClick={() => {
+                      const d = new Date(day)
+                      d.setHours(h, 0, 0, 0)
+                      onHourClick(d)
+                    }}
+                  >
+                    {/* Half-hour dashed line */}
+                    <div className="absolute bottom-0 left-0 right-0 top-1/2 border-t border-dashed border-border/20" />
+                  </div>
+                ))}
+
+                {/* Current time indicator */}
+                {isToday && (
+                  <div
+                    ref={nowRef}
+                    className="pointer-events-none absolute left-0 right-0 z-20 flex items-center"
+                    style={{ top: `${(nowMinutes / 60) * HOUR_HEIGHT}px` }}
+                  >
+                    <div className="h-2 w-2 rounded-full bg-red-500" />
+                    <div className="flex-1 border-t-2 border-red-500" />
+                  </div>
                 )}
-                style={{ top: `${top + 2}px`, height: `${height - 4}px` }}
-              >
-                <p className="truncate font-semibold leading-tight">{event.title}</p>
-                <p className="text-[10px] opacity-70">
-                  {event.time}{event.endTime ? ` – ${event.endTime}` : ""}
-                </p>
-                {event.location && (
-                  <p className="mt-0.5 flex items-center gap-0.5 text-[10px] opacity-60 truncate">
-                    <MapPin className="h-2.5 w-2.5 shrink-0" />
-                    {event.location}
-                  </p>
-                )}
-              </button>
+
+                {/* All-day events strip */}
+                {allDayEvents.map((event, i) => (
+                  <button
+                    key={event.id}
+                    onClick={() => onEventClick(event)}
+                    className={cn(
+                      "absolute left-0.5 right-0.5 z-10 truncate rounded border-l-2 px-1 py-0.5 text-left text-[10px] font-medium",
+                      COLOR_BG[event.color] ?? COLOR_BG.blue
+                    )}
+                    style={{ top: `${2 + i * 18}px`, height: "16px" }}
+                  >
+                    {event.title}
+                  </button>
+                ))}
+
+                {/* Timed events */}
+                {timedEvents.map((event) => {
+                  const startMin = timeToMinutes(event.time!)
+                  const endMin = event.endTime ? timeToMinutes(event.endTime) : startMin + 60
+                  const top = (startMin / 60) * HOUR_HEIGHT
+                  const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 20)
+
+                  return (
+                    <button
+                      key={event.id}
+                      onClick={() => onEventClick(event)}
+                      className={cn(
+                        "absolute left-0.5 right-0.5 z-10 overflow-hidden rounded border-l-2 px-1.5 py-1 text-left text-xs transition-opacity hover:opacity-80",
+                        COLOR_BG[event.color] ?? COLOR_BG.blue
+                      )}
+                      style={{ top: `${top + 1}px`, height: `${height - 2}px` }}
+                    >
+                      <p className="truncate font-semibold leading-tight">{event.title}</p>
+                      {height >= 36 && (
+                        <p className="text-[10px] opacity-70">
+                          {event.time}{event.endTime ? `–${event.endTime}` : ""}
+                        </p>
+                      )}
+                      {height >= 52 && event.location && (
+                        <p className="flex items-center gap-0.5 text-[10px] opacity-60 truncate">
+                          <MapPin className="h-2.5 w-2.5 shrink-0" />
+                          {event.location}
+                        </p>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             )
           })}
-
-          {/* All-day / no-time events */}
-          {dayEvents.filter((e) => !e.time).map((event) => (
-            <button
-              key={event.id}
-              onClick={() => onEventClick(event)}
-              className={cn(
-                "absolute left-16 right-2 z-10 flex items-center gap-1 rounded-md border-l-2 px-2 py-0.5 text-left text-xs",
-                COLOR_BG[event.color] ?? COLOR_BG.blue
-              )}
-              style={{ top: "4px", height: "20px" }}
-            >
-              <span className="truncate font-medium">{event.title}</span>
-              <span className="ml-auto shrink-0 text-[10px] opacity-60">Ganztägig</span>
-            </button>
-          ))}
         </div>
       </div>
     </div>

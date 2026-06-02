@@ -14,6 +14,7 @@ import { TimelineView } from "./timeline-view"
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [columns, setColumns] = useState<1 | 2 | 3 | 4 | 5 | 6>(6)
+  const [rows, setRows] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>("month")
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -65,12 +66,14 @@ export function CalendarView() {
       <CalendarHeader
         currentDate={currentDate}
         columns={columns}
+        rows={rows}
         viewMode={viewMode}
         onPrev={handlePrev}
         onNext={handleNext}
         onToday={() => setCurrentDate(new Date())}
         onAdd={handleAdd}
         onColumnsChange={(n) => setColumns(n as 1 | 2 | 3 | 4 | 5 | 6)}
+        onRowsChange={setRows}
         onViewModeChange={setViewMode}
       />
 
@@ -86,6 +89,7 @@ export function CalendarView() {
       ) : (
         <TimelineView
           currentDate={currentDate}
+          daysCount={rows}
           events={events}
           onEventClick={handleEventClick}
           onHourClick={handleDayClick}
