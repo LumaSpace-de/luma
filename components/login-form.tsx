@@ -35,10 +35,10 @@ export function LoginForm({
 
     if (result?.error) {
       setError("Ungültige E-Mail oder falsches Passwort")
+      setLoading(false)
     } else {
-      router.push("/calendar")
+      window.location.href = "/calendar"
     }
-    setLoading(false)
   }
 
   return (

@@ -54,11 +54,11 @@ export function SignupForm({
 
     if (result?.error) {
       setError("Konto erstellt – bitte anmelden")
-      router.push("/login")
+      setLoading(false)
+      window.location.href = "/login"
     } else {
-      router.push("/calendar")
+      window.location.href = "/calendar"
     }
-    setLoading(false)
   }
 
   return (
