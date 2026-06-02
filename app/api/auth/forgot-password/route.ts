@@ -3,14 +3,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { createResetToken, findUserByEmail } from "@/lib/users-db"
 
 async function sendResetEmail(to: string, code: string) {
-  await fetch("https://api.resend.com/emails", {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) throw new Error("RESEND_API_KEY is not set")
+
+  const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "LumaSpace <noreply@lumaspace.de>",
+      from: "LumaSpace <onboarding@resend.dev>",
       to,
       subject: "Dein Reset-Code für LumaSpace",
       html: `
@@ -25,6 +28,11 @@ async function sendResetEmail(to: string, code: string) {
       `,
     }),
   })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(`Resend error ${res.status}: ${JSON.stringify(body)}`)
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -36,13 +44,22 @@ export async function POST(req: NextRequest) {
 
   const user = await findUserByEmail(email)
 
-  // Always return success to avoid email enumeration
   if (!user) {
+    // Return success to avoid email enumeration
     return NextResponse.json({ success: true })
   }
 
   const code = await createResetToken(email)
-  await sendResetEmail(email, code)
+
+  try {
+    await sendResetEmail(email, code)
+  } catch (err) {
+    console.error("[forgot-password]", err)
+    return NextResponse.json(
+      { error: "E-Mail konnte nicht gesendet werden. Bitte später erneut versuchen." },
+      { status: 500 }
+    )
+  }
 
   return NextResponse.json({ success: true })
 }
