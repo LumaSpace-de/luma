@@ -2,7 +2,22 @@ import { getServerSession } from "next-auth"
 import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
-import { deletePage, updatePageTitle } from "@/lib/pages-db"
+import { deletePage, getPageById, updatePageContent, updatePageTitle } from "@/lib/pages-db"
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
+  }
+
+  const page = await getPageById(params.id)
+  if (!page) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 })
+
+  return NextResponse.json(page)
+}
 
 export async function PATCH(
   req: NextRequest,
@@ -13,7 +28,14 @@ export async function PATCH(
     return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
   }
 
-  const { title } = await req.json()
+  const body = await req.json()
+
+  if ("content" in body) {
+    await updatePageContent(params.id, body.content ?? "")
+    return NextResponse.json({ success: true })
+  }
+
+  const { title } = body
   if (!title?.trim()) {
     return NextResponse.json({ error: "Titel erforderlich" }, { status: 400 })
   }

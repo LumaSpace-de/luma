@@ -15,10 +15,13 @@ import {
   Home,
   LogOut,
   Mail,
+  MoreHorizontal,
+  Pencil,
   Plus,
   Search,
   Settings,
   Star,
+  Trash2,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -65,15 +68,31 @@ function PageTree({
   depth,
   pathname,
   onAddChild,
+  onDelete,
+  onRename,
 }: {
   pages: Page[]
   parentId: string | null
   depth: number
   pathname: string
   onAddChild: (parentId: string) => void
+  onDelete: (id: string) => void
+  onRename: (id: string, title: string) => void
 }) {
   const children = pages.filter((p) => p.parentId === parentId)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+
+  function startRename(page: Page) {
+    setRenamingId(page.id)
+    setRenameValue(page.title)
+  }
+
+  function commitRename(id: string) {
+    if (renameValue.trim()) onRename(id, renameValue.trim())
+    setRenamingId(null)
+  }
 
   return (
     <>
@@ -81,6 +100,7 @@ function PageTree({
         const hasChildren = pages.some((p) => p.parentId === page.id)
         const isExpanded = expanded[page.id] ?? true
         const active = pathname === `/pages/${page.id}`
+        const isRenaming = renamingId === page.id
 
         return (
           <div key={page.id}>
@@ -98,27 +118,59 @@ function PageTree({
                 onClick={() => setExpanded((e) => ({ ...e, [page.id]: !isExpanded }))}
               >
                 {hasChildren ? (
-                  isExpanded ? (
-                    <ChevronDown className="h-3 w-3" />
-                  ) : (
-                    <ChevronRight className="h-3 w-3" />
-                  )
+                  isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />
                 ) : (
                   <FileText className="h-3 w-3 opacity-50" />
                 )}
               </button>
 
-              <Link href={`/pages/${page.id}`} className="flex-1 truncate">
-                {page.title}
-              </Link>
+              {isRenaming ? (
+                <input
+                  autoFocus
+                  className="flex-1 rounded bg-background px-1 text-xs outline-none ring-1 ring-ring"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={() => commitRename(page.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitRename(page.id)
+                    if (e.key === "Escape") setRenamingId(null)
+                  }}
+                />
+              ) : (
+                <Link href={`/pages/${page.id}`} className="flex-1 truncate text-sm">
+                  {page.title}
+                </Link>
+              )}
 
-              <button
-                className="hidden h-4 w-4 shrink-0 items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100 hover:bg-accent group-hover:flex"
-                onClick={() => onAddChild(page.id)}
-                title="Unterseite erstellen"
-              >
-                <Plus className="h-3 w-3" />
-              </button>
+              <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
+                <button
+                  className="flex h-4 w-4 items-center justify-center rounded hover:bg-accent"
+                  onClick={() => onAddChild(page.id)}
+                  title="Unterseite erstellen"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex h-4 w-4 items-center justify-center rounded hover:bg-accent">
+                      <MoreHorizontal className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    <DropdownMenuItem className="gap-2 text-xs" onClick={() => startRename(page)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                      Umbenennen
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2 text-xs text-destructive focus:text-destructive"
+                      onClick={() => onDelete(page.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Löschen
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             {hasChildren && isExpanded && (
@@ -128,6 +180,8 @@ function PageTree({
                 depth={depth + 1}
                 pathname={pathname}
                 onAddChild={onAddChild}
+                onDelete={onDelete}
+                onRename={onRename}
               />
             )}
           </div>
@@ -184,6 +238,20 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
   function openTemplates(parentId: string | null = null) {
     setTemplatesParentId(parentId)
     setTemplatesOpen(true)
+  }
+
+  async function handleDeletePage(id: string) {
+    await fetch(`/api/pages/${id}`, { method: "DELETE" })
+    setPages((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  async function handleRenamePage(id: string, title: string) {
+    await fetch(`/api/pages/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    })
+    setPages((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)))
   }
 
   return (
@@ -324,6 +392,8 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
                 depth={0}
                 pathname={pathname}
                 onAddChild={(pid) => openTemplates(pid)}
+                onDelete={handleDeletePage}
+                onRename={handleRenamePage}
               />
             )}
           </>
