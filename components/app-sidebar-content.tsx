@@ -1,5 +1,6 @@
 "use client"
 
+import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -44,6 +45,11 @@ const workspaces = [
 
 export function AppSidebarContent() {
   const pathname = usePathname()
+  const { data: session } = useSession()
+
+  const userEmail = session?.user?.email ?? "bezzo19@gmx.de"
+  const userName = session?.user?.name ?? userEmail.split("@")[0]
+  const userInitials = userName.slice(0, 2).toUpperCase()
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
@@ -132,18 +138,20 @@ export function AppSidebarContent() {
       <div className="p-4">
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8 shrink-0">
-            <AvatarImage src="https://github.com/whoisbezofx.png" alt="@prodbybezo" />
-            <AvatarFallback>PB</AvatarFallback>
+            <AvatarFallback>{userInitials}</AvatarFallback>
           </Avatar>
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-medium">Prodbybezo</span>
-            <span className="truncate text-xs text-muted-foreground">bezzo19@gmx.de</span>
+            <span className="truncate text-sm font-medium">{userName}</span>
+            <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-7 w-7">
-              <Bell className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              title="Abmelden"
+            >
               <LogOut className="h-3.5 w-3.5" />
             </Button>
           </div>

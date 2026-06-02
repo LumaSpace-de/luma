@@ -3,6 +3,8 @@ import "@/styles/globals.css"
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 
+import { Providers } from "@/components/providers"
+
 export default function RootLayout({
   children,
 }: {
@@ -16,7 +18,7 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
