@@ -1,9 +1,10 @@
 "use client"
 
-import { Building2, Plus, Trash2 } from "lucide-react"
+import { Building2, PanelLeft, Plus, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 import {
   Dialog,
   DialogContent,
@@ -56,6 +57,7 @@ const planBadgeClass: Record<WorkspacePlan, string> = {
 }
 
 export default function DashboardPage() {
+  const { toggle } = useInlineSidebar()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -107,17 +109,18 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className="border-b px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Verwalte deine Workspaces</p>
-          </div>
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Workspace erstellen
+      <div className="flex h-12 shrink-0 items-center justify-between border-b px-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
+            <PanelLeft className="h-4 w-4" />
           </Button>
+          <h1 className="text-lg font-semibold tracking-tight">Dashboard</h1>
         </div>
+        <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-2">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Workspace erstellen</span>
+          <span className="sm:hidden">Neu</span>
+        </Button>
       </div>
 
       <div className="p-6">
