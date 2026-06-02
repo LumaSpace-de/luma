@@ -1,5 +1,4 @@
-import fs from "fs"
-import path from "path"
+import { supabase } from "./supabase"
 
 export interface DbUser {
   id: string
@@ -9,39 +8,43 @@ export interface DbUser {
   createdAt: string
 }
 
-const DB_PATH = path.join(process.cwd(), "data", "users.json")
+export async function findUserByEmail(email: string): Promise<DbUser | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, email, password, name, created_at")
+    .ilike("email", email)
+    .maybeSingle()
 
-function ensureDb() {
-  const dir = path.join(process.cwd(), "data")
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  if (!fs.existsSync(DB_PATH)) fs.writeFileSync(DB_PATH, "[]", "utf-8")
-}
+  if (error || !data) return null
 
-export function getUsers(): DbUser[] {
-  ensureDb()
-  try {
-    return JSON.parse(fs.readFileSync(DB_PATH, "utf-8"))
-  } catch {
-    return []
+  return {
+    id: data.id,
+    email: data.email,
+    password: data.password,
+    name: data.name,
+    createdAt: data.created_at,
   }
 }
 
-export function findUserByEmail(email: string): DbUser | undefined {
-  return getUsers().find((u) => u.email.toLowerCase() === email.toLowerCase())
-}
-
-export function createUser(
+export async function createUser(
   email: string,
   hashedPassword: string
-): DbUser {
-  const users = getUsers()
-  const user: DbUser = {
-    id: crypto.randomUUID(),
-    email,
-    password: hashedPassword,
-    name: email.split("@")[0],
-    createdAt: new Date().toISOString(),
+): Promise<DbUser> {
+  const name = email.split("@")[0]
+
+  const { data, error } = await supabase
+    .from("users")
+    .insert({ email, password: hashedPassword, name })
+    .select("id, email, password, name, created_at")
+    .single()
+
+  if (error) throw new Error(error.message)
+
+  return {
+    id: data.id,
+    email: data.email,
+    password: data.password,
+    name: data.name,
+    createdAt: data.created_at,
   }
-  fs.writeFileSync(DB_PATH, JSON.stringify([...users, user], null, 2), "utf-8")
-  return user
 }
