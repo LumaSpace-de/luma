@@ -6,13 +6,14 @@ export interface DbUser {
   password: string
   name: string
   username: string | null
+  avatarUrl: string | null
   createdAt: string
 }
 
 export async function findUserByEmail(email: string): Promise<DbUser | null> {
   const { data, error } = await supabase
     .from("users")
-    .select("id, email, password, name, username, created_at")
+    .select("id, email, password, name, username, avatar_url, created_at")
     .ilike("email", email)
     .maybeSingle()
 
@@ -24,6 +25,7 @@ export async function findUserByEmail(email: string): Promise<DbUser | null> {
     password: data.password,
     name: data.name,
     username: data.username ?? null,
+    avatarUrl: data.avatar_url ?? null,
     createdAt: data.created_at,
   }
 }
@@ -31,7 +33,7 @@ export async function findUserByEmail(email: string): Promise<DbUser | null> {
 export async function findUserByUsername(username: string): Promise<DbUser | null> {
   const { data, error } = await supabase
     .from("users")
-    .select("id, email, password, name, username, created_at")
+    .select("id, email, password, name, username, avatar_url, created_at")
     .ilike("username", username)
     .maybeSingle()
 
@@ -43,8 +45,19 @@ export async function findUserByUsername(username: string): Promise<DbUser | nul
     password: data.password,
     name: data.name,
     username: data.username ?? null,
+    avatarUrl: data.avatar_url ?? null,
     createdAt: data.created_at,
   }
+}
+
+export async function updateName(id: string, name: string): Promise<void> {
+  const { error } = await supabase.from("users").update({ name }).eq("id", id)
+  if (error) throw new Error(error.message)
+}
+
+export async function updateAvatarUrl(id: string, avatarUrl: string): Promise<void> {
+  const { error } = await supabase.from("users").update({ avatar_url: avatarUrl }).eq("id", id)
+  if (error) throw new Error(error.message)
 }
 
 export async function updateUsername(id: string, username: string): Promise<void> {
@@ -122,6 +135,7 @@ export async function createUser(
     password: data.password,
     name: data.name,
     username: null,
+    avatarUrl: null,
     createdAt: data.created_at,
   }
 }

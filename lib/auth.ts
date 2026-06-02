@@ -28,6 +28,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             username: user.username,
+            avatarUrl: user.avatarUrl,
           }
         } catch (err) {
           console.error("[authorize]", err)
@@ -46,6 +47,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.username = user.username
+        token.avatarUrl = user.avatarUrl
       }
       return token
     },
@@ -53,6 +55,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.username = token.username as string | null
+        session.user.avatarUrl = token.avatarUrl as string | null
       }
       return session
     },

@@ -1,6 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
+import { useEffect, useRef, useState } from "react"
+
+import { Camera } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,6 +11,20 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 
 export default function SettingsPage() {
+  const { data: session } = useSession()
+
+  // Avatar
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarLoading, setAvatarLoading] = useState(false)
+  const [avatarError, setAvatarError] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Name
+  const [name, setName] = useState("")
+  const [nameLoading, setNameLoading] = useState(false)
+  const [nameError, setNameError] = useState("")
+  const [nameSuccess, setNameSuccess] = useState(false)
+
   // Username
   const [username, setUsername] = useState("")
   const [usernameLoading, setUsernameLoading] = useState(false)
@@ -23,11 +40,62 @@ export default function SettingsPage() {
   const [pwSuccess, setPwSuccess] = useState(false)
 
   useEffect(() => {
+    if (session?.user?.avatarUrl) setAvatarUrl(session.user.avatarUrl)
+  }, [session])
+
+  useEffect(() => {
     fetch("/api/auth/profile")
       .then((r) => r.json())
-      .then((d) => setUsername(d.username ?? ""))
+      .then((d) => {
+        setName(d.name ?? "")
+        setUsername(d.username ?? "")
+      })
       .catch(() => {})
   }, [])
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarError("")
+    setAvatarLoading(true)
+
+    const formData = new FormData()
+    formData.append("avatar", file)
+
+    const res = await fetch("/api/auth/avatar", { method: "POST", body: formData })
+    const data = await res.json()
+
+    if (!res.ok) {
+      setAvatarError(data.error || "Upload fehlgeschlagen")
+    } else {
+      setAvatarUrl(data.avatarUrl)
+    }
+    setAvatarLoading(false)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
+  const initials = (session?.user?.name ?? "?").slice(0, 2).toUpperCase()
+
+  async function handleNameSave(e: React.FormEvent) {
+    e.preventDefault()
+    setNameError("")
+    setNameSuccess(false)
+    setNameLoading(true)
+
+    const res = await fetch("/api/auth/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) {
+      setNameError(data.error || "Fehler beim Speichern")
+    } else {
+      setNameSuccess(true)
+    }
+    setNameLoading(false)
+  }
 
   async function handleUsernameSave(e: React.FormEvent) {
     e.preventDefault()
@@ -87,6 +155,99 @@ export default function SettingsPage() {
           <p className="mt-1 text-sm text-muted-foreground">Verwalte dein Konto</p>
         </div>
 
+        {/* Avatar */}
+        <section>
+          <h2 className="text-base font-semibold">Profilbild</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">JPG, PNG, WebP oder GIF · max. 2 MB</p>
+
+          <div className="mt-4 flex items-center gap-5">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarLoading}
+              className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-border bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-xl font-semibold text-muted-foreground">
+                  {initials}
+                </span>
+              )}
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                <Camera className="h-5 w-5 text-white" />
+              </span>
+            </button>
+
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarLoading}
+              >
+                {avatarLoading ? "Wird hochgeladen…" : "Bild auswählen"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Klicke auf das Bild oder den Button.
+              </p>
+            </div>
+          </div>
+
+          {avatarError && (
+            <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {avatarError}
+            </p>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+        </section>
+
+        <Separator />
+
+        {/* Name */}
+        <section>
+          <h2 className="text-base font-semibold">Name</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">Dein Anzeigename in der App.</p>
+
+          <form onSubmit={handleNameSave} className="mt-4 flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="Dein Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={60}
+              />
+            </div>
+
+            {nameError && (
+              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {nameError}
+              </p>
+            )}
+            {nameSuccess && (
+              <p className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-500">
+                Name gespeichert
+              </p>
+            )}
+
+            <Button type="submit" className="w-full" disabled={nameLoading}>
+              {nameLoading ? "Wird gespeichert…" : "Speichern"}
+            </Button>
+          </form>
+        </section>
+
+        <Separator />
+
         {/* Username */}
         <section>
           <h2 className="text-base font-semibold">Benutzername</h2>
@@ -110,9 +271,7 @@ export default function SettingsPage() {
                   maxLength={30}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Buchstaben, Zahlen und _ · 3–30 Zeichen
-              </p>
+              <p className="text-xs text-muted-foreground">Buchstaben, Zahlen und _ · 3–30 Zeichen</p>
             </div>
 
             {usernameError && (

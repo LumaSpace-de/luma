@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth"
 import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
-import { findUserByEmail, findUserByUsername, updateUsername } from "@/lib/users-db"
+import { findUserByEmail, findUserByUsername, updateName, updateUsername } from "@/lib/users-db"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -14,6 +14,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 })
 
   return NextResponse.json({
+    name: user.name ?? "",
     username: user.username ?? "",
     email: user.email,
   })
@@ -25,7 +26,21 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
   }
 
-  const { username } = await req.json()
+  const body = await req.json()
+
+  if ("name" in body) {
+    const name = body.name?.trim()
+    if (!name || name.length < 1) {
+      return NextResponse.json({ error: "Name darf nicht leer sein" }, { status: 400 })
+    }
+    if (name.length > 60) {
+      return NextResponse.json({ error: "Name darf maximal 60 Zeichen haben" }, { status: 400 })
+    }
+    await updateName(session.user.id, name)
+    return NextResponse.json({ success: true })
+  }
+
+  const { username } = body
   const clean = username?.trim().replace(/^@/, "").toLowerCase()
 
   if (!clean || clean.length < 3) {

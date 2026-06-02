@@ -21,7 +21,7 @@ import {
   Star,
 } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -149,6 +149,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
   const userEmail = session?.user?.email ?? ""
   const userName = session?.user?.name ?? userEmail.split("@")[0]
   const userInitials = userName.slice(0, 2).toUpperCase()
+  const userAvatarUrl = (session?.user as { avatarUrl?: string | null })?.avatarUrl ?? null
 
   useEffect(() => {
     if (!session?.user) return
@@ -345,6 +346,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
       <div className="p-4">
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8 shrink-0">
+            {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={userName} />}
             <AvatarFallback>{userInitials}</AvatarFallback>
           </Avatar>
           <div className="flex min-w-0 flex-1 flex-col">
