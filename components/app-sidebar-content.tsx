@@ -10,7 +10,6 @@ import {
   Building2,
   Calendar,
   ChevronDown,
-  FileText,
   Home,
   LogOut,
   Mail,
@@ -195,9 +194,20 @@ export function AppSidebarContent() {
         <Separator className="my-3" />
 
         {/* Workspace */}
-        <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Workspace
-        </p>
+        <div className="flex items-center justify-between px-2 mb-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Workspace
+          </p>
+          {activeWorkspace && (
+            <button
+              onClick={() => setTemplatesOpen(true)}
+              className="flex h-5 w-5 items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+              title="Seite erstellen"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
         <div className="flex flex-col gap-0.5">
           {activeWorkspace ? (
             <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
@@ -215,14 +225,6 @@ export function AppSidebarContent() {
               <span>Workspace wählen</span>
             </Link>
           )}
-
-          <button
-            onClick={() => setTemplatesOpen(true)}
-            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-          >
-            <FileText className="h-4 w-4 shrink-0" />
-            <span>Vorlage für Seiten</span>
-          </button>
         </div>
       </div>
 
