@@ -26,11 +26,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
   }
 
-  const { displayName, username } = await req.json()
-
-  if (!displayName?.trim()) {
-    return NextResponse.json({ error: "Anzeigename ist erforderlich" }, { status: 400 })
-  }
+  const { username } = await req.json()
 
   const cleanUsername = username?.trim().replace(/^@/, "").toLowerCase()
 
@@ -51,8 +47,10 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  const user = await findUserByEmail(session.user.email)
+
   await updateUserProfile(session.user.id, {
-    displayName: displayName.trim(),
+    displayName: user?.displayName ?? user?.name ?? "",
     username: cleanUsername ?? "",
   })
 

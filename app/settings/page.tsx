@@ -1,6 +1,5 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -9,14 +8,11 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 
 export default function SettingsPage() {
-  const { data: session, update } = useSession()
-
-  // Profile
-  const [displayName, setDisplayName] = useState("")
+  // Username
   const [username, setUsername] = useState("")
-  const [profileLoading, setProfileLoading] = useState(false)
-  const [profileError, setProfileError] = useState("")
-  const [profileSuccess, setProfileSuccess] = useState(false)
+  const [usernameLoading, setUsernameLoading] = useState(false)
+  const [usernameError, setUsernameError] = useState("")
+  const [usernameSuccess, setUsernameSuccess] = useState(false)
 
   // Password
   const [current, setCurrent] = useState("")
@@ -29,33 +25,29 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/auth/profile")
       .then((r) => r.json())
-      .then((d) => {
-        setDisplayName(d.displayName ?? "")
-        setUsername(d.username ?? "")
-      })
+      .then((d) => setUsername(d.username ?? ""))
       .catch(() => {})
   }, [])
 
-  async function handleProfileSave(e: React.FormEvent) {
+  async function handleUsernameSave(e: React.FormEvent) {
     e.preventDefault()
-    setProfileError("")
-    setProfileSuccess(false)
-    setProfileLoading(true)
+    setUsernameError("")
+    setUsernameSuccess(false)
+    setUsernameLoading(true)
 
     const res = await fetch("/api/auth/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName, username }),
+      body: JSON.stringify({ username }),
     })
 
     const data = await res.json()
     if (!res.ok) {
-      setProfileError(data.error || "Fehler beim Speichern")
+      setUsernameError(data.error || "Fehler beim Speichern")
     } else {
-      setProfileSuccess(true)
-      await update({ name: displayName })
+      setUsernameSuccess(true)
     }
-    setProfileLoading(false)
+    setUsernameLoading(false)
   }
 
   async function handlePasswordSave(e: React.FormEvent) {
@@ -87,8 +79,6 @@ export default function SettingsPage() {
     setPwLoading(false)
   }
 
-  const initials = (displayName || session?.user?.name || "?").slice(0, 2).toUpperCase()
-
   return (
     <div className="flex-1 overflow-auto p-6">
       <div className="mx-auto max-w-lg space-y-8">
@@ -97,44 +87,18 @@ export default function SettingsPage() {
           <p className="mt-1 text-sm text-muted-foreground">Verwalte dein Konto</p>
         </div>
 
-        {/* Profile section */}
+        {/* Username */}
         <section>
-          <h2 className="text-base font-semibold">Profil</h2>
+          <h2 className="text-base font-semibold">Benutzername</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Dein öffentliches Profil und dein Benutzername.
+            Mit @Benutzername können andere dich finden.
           </p>
 
-          <form onSubmit={handleProfileSave} className="mt-4 flex flex-col gap-4">
-            {/* Avatar */}
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
-                {initials}
-              </div>
-              <div>
-                <p className="text-sm font-medium">{displayName || session?.user?.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {username ? `@${username}` : "Noch kein Benutzername"}
-                </p>
-              </div>
-            </div>
-
+          <form onSubmit={handleUsernameSave} className="mt-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="displayName">Anzeigename</Label>
-              <Input
-                id="displayName"
-                placeholder="Dein Name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="username">Benutzername</Label>
+              <Label htmlFor="username">@Benutzername</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  @
-                </span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
                 <Input
                   id="username"
                   placeholder="dein_name"
@@ -147,30 +111,30 @@ export default function SettingsPage() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Nur Buchstaben, Zahlen und _ · 3–30 Zeichen
+                Buchstaben, Zahlen und _ · 3–30 Zeichen
               </p>
             </div>
 
-            {profileError && (
+            {usernameError && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {profileError}
+                {usernameError}
               </p>
             )}
-            {profileSuccess && (
+            {usernameSuccess && (
               <p className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-500">
-                Profil gespeichert
+                Benutzername gespeichert
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={profileLoading}>
-              {profileLoading ? "Wird gespeichert…" : "Profil speichern"}
+            <Button type="submit" className="w-full" disabled={usernameLoading}>
+              {usernameLoading ? "Wird gespeichert…" : "Speichern"}
             </Button>
           </form>
         </section>
 
         <Separator />
 
-        {/* Password section */}
+        {/* Password */}
         <section>
           <h2 className="text-base font-semibold">Passwort ändern</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
