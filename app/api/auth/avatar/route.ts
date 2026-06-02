@@ -33,6 +33,12 @@ export async function POST(req: NextRequest) {
   const path = `${session.user.id}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
 
+  // ensure bucket exists
+  const { data: buckets } = await supabase.storage.listBuckets()
+  if (!buckets?.find((b) => b.name === "avatars")) {
+    await supabase.storage.createBucket("avatars", { public: true })
+  }
+
   const { error: uploadError } = await supabase.storage
     .from("avatars")
     .upload(path, buffer, { contentType: file.type, upsert: true })
