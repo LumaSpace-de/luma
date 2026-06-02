@@ -14,6 +14,7 @@ import {
   Mail,
   Plus,
   Search,
+  Settings,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -145,6 +146,17 @@ export function AppSidebarContent() {
             <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              asChild
+              title="Einstellungen"
+            >
+              <Link href="/settings">
+                <Settings className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
             <Button
               variant="ghost"
               size="icon"

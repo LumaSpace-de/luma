@@ -26,6 +26,18 @@ export async function findUserByEmail(email: string): Promise<DbUser | null> {
   }
 }
 
+export async function updateUserPassword(
+  id: string,
+  hashedPassword: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({ password: hashedPassword })
+    .eq("id", id)
+
+  if (error) throw new Error(error.message)
+}
+
 export async function createUser(
   email: string,
   hashedPassword: string
