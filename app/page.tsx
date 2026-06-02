@@ -382,10 +382,16 @@ export default function IndexPage() {
 
       {/* ── Footer ─────────────────────────────────────────── */}
       <footer className="relative z-10 border-t border-border/40 py-6 text-center">
-        <p className="text-xs text-muted-foreground/50">
-          Powered by{" "}
-          <span className="font-semibold text-muted-foreground">Flux Network</span>
-        </p>
+        <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground/50">
+          <Link href="/impressum" className="hover:text-muted-foreground transition-colors">Impressum</Link>
+          <Link href="/datenschutz" className="hover:text-muted-foreground transition-colors">Datenschutz</Link>
+          <Link href="/agb" className="hover:text-muted-foreground transition-colors">AGB</Link>
+          <span>·</span>
+          <span>
+            Powered by{" "}
+            <span className="font-semibold text-muted-foreground">Flux Network</span>
+          </span>
+        </div>
       </footer>
     </div>
   )
