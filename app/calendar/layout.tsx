@@ -1,5 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 export default function CalendarLayout({
   children,
@@ -8,10 +8,8 @@ export default function CalendarLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden">
-        <AppSidebar />
-        <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
-      </div>
+      <AppSidebar />
+      <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   )
 }

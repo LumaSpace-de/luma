@@ -5,6 +5,7 @@ import { de } from "date-fns/locale"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { SidebarTrigger } from "@/components/ui/sidebar"
 
 interface CalendarHeaderProps {
   currentDate: Date
@@ -20,11 +21,14 @@ export function CalendarHeader({
   onToday,
 }: CalendarHeaderProps) {
   return (
-    <div className="flex items-center justify-between px-6 py-4">
-      <h2 className="text-xl font-semibold">
-        {format(currentDate, "MMMM yyyy", { locale: de })}
-      </h2>
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between border-b px-4 py-3">
+      <div className="flex items-center gap-3">
+        <SidebarTrigger />
+        <h2 className="text-lg font-semibold">
+          {format(currentDate, "MMMM yyyy", { locale: de })}
+        </h2>
+      </div>
+      <div className="flex items-center gap-1">
         <Button variant="outline" size="sm" onClick={onToday}>
           Heute
         </Button>
