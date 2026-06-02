@@ -2,36 +2,35 @@
 
 import { format } from "date-fns"
 import { de } from "date-fns/locale"
-import { ChevronLeft, ChevronRight, PanelLeft, Plus } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, LayoutGrid, PanelLeft, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 import { cn } from "@/lib/utils"
 
+export type ViewMode = "month" | "timeline"
+
 interface CalendarHeaderProps {
   currentDate: Date
   columns: number
+  viewMode: ViewMode
   onPrev: () => void
   onNext: () => void
   onToday: () => void
   onAdd: () => void
   onColumnsChange: (n: number) => void
+  onViewModeChange: (m: ViewMode) => void
 }
 
 export function CalendarHeader({
-  currentDate,
-  columns,
-  onPrev,
-  onNext,
-  onToday,
-  onAdd,
-  onColumnsChange,
+  currentDate, columns, viewMode,
+  onPrev, onNext, onToday, onAdd, onColumnsChange, onViewModeChange,
 }: CalendarHeaderProps) {
   const { toggle } = useInlineSidebar()
 
   return (
     <div className="flex items-center justify-between border-b px-4 py-3">
-      {/* Left: sidebar toggle + title + navigation */}
+      {/* Left */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
           <PanelLeft className="h-4 w-4" />
@@ -50,26 +49,56 @@ export function CalendarHeader({
         </div>
       </div>
 
-      {/* Right: column picker + heute + neu */}
+      {/* Right */}
       <div className="flex items-center gap-2">
-        {/* Column picker 1–6 */}
+        {/* View toggle */}
         <div className="flex items-center rounded-md border bg-background p-0.5">
-          {([1, 2, 3, 4, 5, 6] as const).map((n) => (
-            <button
-              key={n}
-              onClick={() => onColumnsChange(n)}
-              className={cn(
-                "flex h-6 w-6 items-center justify-center rounded text-xs font-medium transition-colors",
-                columns === n
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              )}
-              title={`${n} Spalte${n === 1 ? "" : "n"}`}
-            >
-              {n}
-            </button>
-          ))}
+          <button
+            onClick={() => onViewModeChange("month")}
+            className={cn(
+              "flex h-6 w-6 items-center justify-center rounded transition-colors",
+              viewMode === "month"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+            title="Monatsansicht"
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => onViewModeChange("timeline")}
+            className={cn(
+              "flex h-6 w-6 items-center justify-center rounded transition-colors",
+              viewMode === "timeline"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+            title="Zeitstrahl"
+          >
+            <Clock className="h-3.5 w-3.5" />
+          </button>
         </div>
+
+        {/* Column picker — only in month view */}
+        {viewMode === "month" && (
+          <div className="hidden items-center rounded-md border bg-background p-0.5 sm:flex">
+            {([1, 2, 3, 4, 5, 6] as const).map((n) => (
+              <button
+                key={n}
+                onClick={() => onColumnsChange(n)}
+                className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded text-xs font-medium transition-colors",
+                  columns === n
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+                title={`${n} Spalte${n === 1 ? "" : "n"}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Mobile prev/next */}
         <div className="flex items-center gap-0.5 sm:hidden">

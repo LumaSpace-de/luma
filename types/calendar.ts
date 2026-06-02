@@ -5,6 +5,9 @@ export interface CalendarEvent {
   title: string
   date: string
   time?: string
+  endTime?: string
+  location?: string
   color: EventColor
   description?: string
+  allDay?: boolean
 }

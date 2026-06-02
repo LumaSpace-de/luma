@@ -1,18 +1,20 @@
 "use client"
 
-import { addMonths, subMonths } from "date-fns"
+import { addDays, addMonths, subDays, subMonths } from "date-fns"
 import { useState } from "react"
 
 import { useCalendarEvents } from "@/hooks/use-calendar-events"
 import { CalendarEvent } from "@/types/calendar"
 
 import { CalendarGrid } from "./calendar-grid"
-import { CalendarHeader } from "./calendar-header"
+import { CalendarHeader, ViewMode } from "./calendar-header"
 import { EventDialog } from "./event-dialog"
+import { TimelineView } from "./timeline-view"
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [columns, setColumns] = useState<1 | 2 | 3 | 4 | 5 | 6>(6)
+  const [viewMode, setViewMode] = useState<ViewMode>("month")
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
@@ -26,7 +28,7 @@ export function CalendarView() {
   }
 
   function handleAdd() {
-    setSelectedDate(new Date())
+    setSelectedDate(viewMode === "timeline" ? currentDate : new Date())
     setEditingEvent(null)
     setDialogOpen(true)
   }
@@ -42,26 +44,53 @@ export function CalendarView() {
     setEditingEvent(null)
   }
 
+  function handlePrev() {
+    if (viewMode === "timeline") {
+      setCurrentDate((d) => subDays(d, 1))
+    } else {
+      setCurrentDate((d) => subMonths(d, 1))
+    }
+  }
+
+  function handleNext() {
+    if (viewMode === "timeline") {
+      setCurrentDate((d) => addDays(d, 1))
+    } else {
+      setCurrentDate((d) => addMonths(d, 1))
+    }
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <CalendarHeader
         currentDate={currentDate}
         columns={columns}
-        onPrev={() => setCurrentDate(subMonths(currentDate, 1))}
-        onNext={() => setCurrentDate(addMonths(currentDate, 1))}
+        viewMode={viewMode}
+        onPrev={handlePrev}
+        onNext={handleNext}
         onToday={() => setCurrentDate(new Date())}
         onAdd={handleAdd}
         onColumnsChange={(n) => setColumns(n as 1 | 2 | 3 | 4 | 5 | 6)}
+        onViewModeChange={setViewMode}
       />
 
-      <CalendarGrid
-        currentDate={currentDate}
-        columns={columns}
-        events={events}
-        selectedDate={selectedDate}
-        onDayClick={handleDayClick}
-        onEventClick={handleEventClick}
-      />
+      {viewMode === "month" ? (
+        <CalendarGrid
+          currentDate={currentDate}
+          columns={columns}
+          events={events}
+          selectedDate={selectedDate}
+          onDayClick={handleDayClick}
+          onEventClick={handleEventClick}
+        />
+      ) : (
+        <TimelineView
+          currentDate={currentDate}
+          events={events}
+          onEventClick={handleEventClick}
+          onHourClick={handleDayClick}
+        />
+      )}
 
       <EventDialog
         open={dialogOpen}
