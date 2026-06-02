@@ -1,16 +1,6 @@
 "use client"
 
-import {
-  Building2,
-  Calendar,
-  CheckSquare,
-  FileText,
-  LayoutGrid,
-  MessageSquare,
-  Plus,
-  Trash2,
-  Users,
-} from "lucide-react"
+import { Building2, Plus, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -22,7 +12,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 type WorkspacePlan = "free" | "pro" | "enterprise"
@@ -65,51 +54,6 @@ const planBadgeClass: Record<WorkspacePlan, string> = {
   pro: "bg-blue-500/20 text-blue-400",
   enterprise: "bg-purple-500/20 text-purple-400",
 }
-
-const templates = [
-  {
-    icon: FileText,
-    label: "Leere Seite",
-    description: "Starte mit einem leeren Dokument.",
-    color: "text-muted-foreground",
-    bg: "bg-muted/40",
-  },
-  {
-    icon: Calendar,
-    label: "Kalender-Planung",
-    description: "Wochenplanung mit Terminen und Events.",
-    color: "text-blue-400",
-    bg: "bg-blue-500/10",
-  },
-  {
-    icon: LayoutGrid,
-    label: "Projekt-Board",
-    description: "Aufgaben in Spalten organisieren.",
-    color: "text-violet-400",
-    bg: "bg-violet-500/10",
-  },
-  {
-    icon: MessageSquare,
-    label: "Meeting-Notizen",
-    description: "Agenda, Protokoll und Aufgaben.",
-    color: "text-green-400",
-    bg: "bg-green-500/10",
-  },
-  {
-    icon: CheckSquare,
-    label: "Aufgaben-Liste",
-    description: "Einfache To-do-Liste mit Prioritäten.",
-    color: "text-orange-400",
-    bg: "bg-orange-500/10",
-  },
-  {
-    icon: Users,
-    label: "Team-Übersicht",
-    description: "Mitglieder, Rollen und Zuständigkeiten.",
-    color: "text-pink-400",
-    bg: "bg-pink-500/10",
-  },
-]
 
 export default function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
@@ -163,12 +107,11 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 overflow-auto">
-      {/* Page header */}
       <div className="border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Übersicht deiner Workspaces und Vorlagen</p>
+            <p className="text-sm text-muted-foreground">Verwalte deine Workspaces</p>
           </div>
           <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
@@ -177,105 +120,69 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="p-6 space-y-8">
-        {/* Workspaces */}
-        <section>
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Meine Workspaces
-          </h2>
+      <div className="p-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Meine Workspaces
+        </h2>
 
-          {loading ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {[1, 2].map((i) => (
-                <div key={i} className="h-28 animate-pulse rounded-xl border bg-muted/20" />
-              ))}
-            </div>
-          ) : workspaces.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-12 text-center">
-              <Building2 className="mb-3 h-8 w-8 text-muted-foreground/30" />
-              <p className="text-sm font-medium">Noch kein Workspace</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Erstelle deinen ersten Workspace um loszulegen.
-              </p>
-              <Button
-                onClick={() => setDialogOpen(true)}
-                variant="outline"
-                size="sm"
-                className="mt-3 gap-2"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Workspace erstellen
-              </Button>
-            </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {workspaces.map((ws) => (
-                <div
-                  key={ws.id}
-                  className="group relative flex items-center gap-3 rounded-xl border bg-card p-4 transition-colors hover:bg-accent/20"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <span className="text-base font-bold">{ws.name[0].toUpperCase()}</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{ws.name}</p>
-                    <span
-                      className={cn(
-                        "mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium",
-                        planBadgeClass[ws.plan]
-                      )}
-                    >
-                      {ws.plan.charAt(0).toUpperCase() + ws.plan.slice(1)} Plan
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                    onClick={() => handleDelete(ws.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <Separator />
-
-        {/* Templates */}
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Vorlagen
-            </h2>
-            <span className="text-xs text-muted-foreground">{templates.length} verfügbar</span>
-          </div>
-
+        {loading ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {templates.map((tpl) => {
-              const Icon = tpl.icon
-              return (
-                <button
-                  key={tpl.label}
-                  className="group flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-colors hover:bg-accent/20 hover:border-border"
-                >
-                  <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", tpl.bg)}>
-                    <Icon className={cn("h-4.5 w-4.5", tpl.color)} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{tpl.label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{tpl.description}</p>
-                  </div>
-                </button>
-              )
-            })}
+            {[1, 2].map((i) => (
+              <div key={i} className="h-20 animate-pulse rounded-xl border bg-muted/20" />
+            ))}
           </div>
-        </section>
+        ) : workspaces.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
+            <Building2 className="mb-3 h-8 w-8 text-muted-foreground/30" />
+            <p className="text-sm font-medium">Noch kein Workspace</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Erstelle deinen ersten Workspace um loszulegen.
+            </p>
+            <Button
+              onClick={() => setDialogOpen(true)}
+              variant="outline"
+              size="sm"
+              className="mt-3 gap-2"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Workspace erstellen
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {workspaces.map((ws) => (
+              <div
+                key={ws.id}
+                className="group relative flex items-center gap-3 rounded-xl border bg-card p-4 transition-colors hover:bg-accent/20"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <span className="text-base font-bold">{ws.name[0].toUpperCase()}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{ws.name}</p>
+                  <span
+                    className={cn(
+                      "mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium",
+                      planBadgeClass[ws.plan]
+                    )}
+                  >
+                    {ws.plan.charAt(0).toUpperCase() + ws.plan.slice(1)} Plan
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={() => handleDelete(ws.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Create Workspace Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

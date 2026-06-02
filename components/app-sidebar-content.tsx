@@ -4,6 +4,8 @@ import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
+
+import { TemplatesDialog } from "@/components/templates-dialog"
 import {
   Building2,
   Calendar,
@@ -55,6 +57,7 @@ export function AppSidebarContent() {
   const { data: session } = useSession()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
 
   const userEmail = session?.user?.email ?? ""
   const userName = session?.user?.name ?? userEmail.split("@")[0]
@@ -213,7 +216,10 @@ export function AppSidebarContent() {
             </Link>
           )}
 
-          <button className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground">
+          <button
+            onClick={() => setTemplatesOpen(true)}
+            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+          >
             <FileText className="h-4 w-4 shrink-0" />
             <span>Vorlage für Seiten</span>
           </button>
@@ -221,6 +227,8 @@ export function AppSidebarContent() {
       </div>
 
       <Separator />
+
+      <TemplatesDialog open={templatesOpen} onOpenChange={setTemplatesOpen} />
 
       {/* User footer */}
       <div className="p-4">
