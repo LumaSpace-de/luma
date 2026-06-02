@@ -137,7 +137,7 @@ function PageTree({
   )
 }
 
-export function AppSidebarContent() {
+export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
@@ -262,6 +262,7 @@ export function AppSidebarContent() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={cn(
                   "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                   active
