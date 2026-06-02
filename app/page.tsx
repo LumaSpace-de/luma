@@ -1,5 +1,6 @@
+import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, CalendarDays, Sparkles } from "lucide-react"
+import { ArrowRight, Sparkles } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,9 +17,13 @@ export default function IndexPage() {
       {/* Navbar */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-5">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg">
-            <CalendarDays className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <Image
+            src="/logo_icon.png"
+            alt="LumaSpace Logo"
+            width={36}
+            height={36}
+            className="rounded-lg"
+          />
           <span className="text-lg font-bold tracking-tight">LumaSpace</span>
         </div>
 
