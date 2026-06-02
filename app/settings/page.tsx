@@ -43,15 +43,12 @@ export default function SettingsPage() {
   const [pwSuccess, setPwSuccess] = useState(false)
 
   useEffect(() => {
-    if (session?.user?.avatarUrl) setAvatarUrl(session.user.avatarUrl)
-  }, [session])
-
-  useEffect(() => {
     fetch("/api/auth/profile")
       .then((r) => r.json())
       .then((d) => {
         setName(d.name ?? "")
         setUsername(d.username ?? "")
+        if (d.avatarUrl) setAvatarUrl(d.avatarUrl)
       })
       .catch(() => {})
   }, [])

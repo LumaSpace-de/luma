@@ -17,6 +17,7 @@ export async function GET() {
     name: user.name ?? "",
     username: user.username ?? "",
     email: user.email,
+    avatarUrl: user.avatarUrl ?? null,
   })
 }
 
