@@ -10,6 +10,8 @@ import {
   Building2,
   Calendar,
   ChevronDown,
+  ChevronRight,
+  FileText,
   Home,
   LogOut,
   Mail,
@@ -39,6 +41,12 @@ interface Workspace {
   plan: WorkspacePlan
 }
 
+interface Page {
+  id: string
+  title: string
+  parentId: string | null
+}
+
 const navigationItems = [
   { icon: Mail, label: "Inbox", href: "/inbox" },
   { icon: Calendar, label: "Kalender", href: "/calendar" },
@@ -51,12 +59,92 @@ const planLabel: Record<WorkspacePlan, string> = {
   enterprise: "Enterprise Plan",
 }
 
+function PageTree({
+  pages,
+  parentId,
+  depth,
+  pathname,
+  onAddChild,
+}: {
+  pages: Page[]
+  parentId: string | null
+  depth: number
+  pathname: string
+  onAddChild: (parentId: string) => void
+}) {
+  const children = pages.filter((p) => p.parentId === parentId)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+
+  return (
+    <>
+      {children.map((page) => {
+        const hasChildren = pages.some((p) => p.parentId === page.id)
+        const isExpanded = expanded[page.id] ?? true
+        const active = pathname === `/pages/${page.id}`
+
+        return (
+          <div key={page.id}>
+            <div
+              className={cn(
+                "group flex items-center gap-1 rounded-md py-1 pr-1 text-sm transition-colors",
+                active
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+              )}
+              style={{ paddingLeft: `${8 + depth * 12}px` }}
+            >
+              <button
+                className="flex h-4 w-4 shrink-0 items-center justify-center"
+                onClick={() => setExpanded((e) => ({ ...e, [page.id]: !isExpanded }))}
+              >
+                {hasChildren ? (
+                  isExpanded ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )
+                ) : (
+                  <FileText className="h-3 w-3 opacity-50" />
+                )}
+              </button>
+
+              <Link href={`/pages/${page.id}`} className="flex-1 truncate">
+                {page.title}
+              </Link>
+
+              <button
+                className="hidden h-4 w-4 shrink-0 items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100 hover:bg-accent group-hover:flex"
+                onClick={() => onAddChild(page.id)}
+                title="Unterseite erstellen"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            </div>
+
+            {hasChildren && isExpanded && (
+              <PageTree
+                pages={pages}
+                parentId={page.id}
+                depth={depth + 1}
+                pathname={pathname}
+                onAddChild={onAddChild}
+              />
+            )}
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
 export function AppSidebarContent() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null)
+  const [pages, setPages] = useState<Page[]>([])
   const [templatesOpen, setTemplatesOpen] = useState(false)
+  const [templatesParentId, setTemplatesParentId] = useState<string | null>(null)
 
   const userEmail = session?.user?.email ?? ""
   const userName = session?.user?.name ?? userEmail.split("@")[0]
@@ -64,13 +152,11 @@ export function AppSidebarContent() {
 
   useEffect(() => {
     if (!session?.user) return
-
     fetch("/api/workspaces")
       .then((r) => r.json())
       .then((data: Workspace[]) => {
         if (!Array.isArray(data)) return
         setWorkspaces(data)
-
         const savedId = localStorage.getItem("luma-active-workspace")
         const saved = data.find((w) => w.id === savedId)
         setActiveWorkspace(saved ?? data[0] ?? null)
@@ -78,9 +164,25 @@ export function AppSidebarContent() {
       .catch(() => {})
   }, [session])
 
+  useEffect(() => {
+    if (!activeWorkspace) return
+    fetch(`/api/pages?workspaceId=${activeWorkspace.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setPages(data)
+      })
+      .catch(() => {})
+  }, [activeWorkspace])
+
   function selectWorkspace(ws: Workspace) {
     setActiveWorkspace(ws)
+    setPages([])
     localStorage.setItem("luma-active-workspace", ws.id)
+  }
+
+  function openTemplates(parentId: string | null = null) {
+    setTemplatesParentId(parentId)
+    setTemplatesOpen(true)
   }
 
   return (
@@ -107,11 +209,7 @@ export function AppSidebarContent() {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="start">
               {workspaces.map((ws) => (
-                <DropdownMenuItem
-                  key={ws.id}
-                  className="gap-2 p-2"
-                  onClick={() => selectWorkspace(ws)}
-                >
+                <DropdownMenuItem key={ws.id} className="gap-2 p-2" onClick={() => selectWorkspace(ws)}>
                   <div className="flex h-6 w-6 items-center justify-center rounded bg-muted">
                     <span className="text-xs font-medium">{ws.name[0].toUpperCase()}</span>
                   </div>
@@ -193,44 +291,54 @@ export function AppSidebarContent() {
 
         <Separator className="my-3" />
 
-        {/* Workspace */}
-        <div className="flex items-center justify-between px-2 mb-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Workspace
-          </p>
-          {activeWorkspace && (
-            <button
-              onClick={() => setTemplatesOpen(true)}
-              className="flex h-5 w-5 items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-              title="Seite erstellen"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-        <div className="flex flex-col gap-0.5">
-          {activeWorkspace ? (
-            <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
-              <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="flex-1 truncate text-sm text-muted-foreground">
+        {/* Workspace pages */}
+        {activeWorkspace && (
+          <>
+            <div className="flex items-center justify-between px-2 mb-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground truncate">
                 {activeWorkspace.name}
-              </span>
+              </p>
+              <button
+                onClick={() => openTemplates(null)}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                title="Seite erstellen"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             </div>
-          ) : (
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-            >
-              <Building2 className="h-4 w-4 shrink-0" />
-              <span>Workspace wählen</span>
-            </Link>
-          )}
-        </div>
+
+            {pages.length === 0 ? (
+              <button
+                onClick={() => openTemplates(null)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:bg-accent/50 hover:text-muted-foreground"
+              >
+                <Plus className="h-3 w-3" />
+                <span>Seite hinzufügen</span>
+              </button>
+            ) : (
+              <PageTree
+                pages={pages}
+                parentId={null}
+                depth={0}
+                pathname={pathname}
+                onAddChild={(pid) => openTemplates(pid)}
+              />
+            )}
+          </>
+        )}
       </div>
 
       <Separator />
 
-      <TemplatesDialog open={templatesOpen} onOpenChange={setTemplatesOpen} />
+      <TemplatesDialog
+        open={templatesOpen}
+        onOpenChange={setTemplatesOpen}
+        workspaceId={activeWorkspace?.id ?? null}
+        parentId={templatesParentId}
+        onCreated={(page) =>
+          setPages((prev) => [...prev, { id: page.id, title: page.title, parentId: templatesParentId }])
+        }
+      />
 
       {/* User footer */}
       <div className="p-4">

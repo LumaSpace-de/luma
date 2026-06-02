@@ -8,6 +8,8 @@ import {
   MessageSquare,
   Users,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 import {
   Dialog,
@@ -21,6 +23,7 @@ const templates = [
   {
     icon: FileText,
     label: "Leere Seite",
+    template: "blank",
     description: "Starte mit einem leeren Dokument.",
     color: "text-muted-foreground",
     bg: "bg-muted/60",
@@ -28,6 +31,7 @@ const templates = [
   {
     icon: Calendar,
     label: "Kalender-Planung",
+    template: "calendar",
     description: "Wochenplanung mit Terminen.",
     color: "text-blue-400",
     bg: "bg-blue-500/10",
@@ -35,6 +39,7 @@ const templates = [
   {
     icon: LayoutGrid,
     label: "Projekt-Board",
+    template: "project",
     description: "Aufgaben in Spalten organisieren.",
     color: "text-violet-400",
     bg: "bg-violet-500/10",
@@ -42,6 +47,7 @@ const templates = [
   {
     icon: MessageSquare,
     label: "Meeting-Notizen",
+    template: "meeting",
     description: "Agenda, Protokoll und Aufgaben.",
     color: "text-green-400",
     bg: "bg-green-500/10",
@@ -49,6 +55,7 @@ const templates = [
   {
     icon: CheckSquare,
     label: "Aufgaben-Liste",
+    template: "tasks",
     description: "To-do-Liste mit Prioritäten.",
     color: "text-orange-400",
     bg: "bg-orange-500/10",
@@ -56,6 +63,7 @@ const templates = [
   {
     icon: Users,
     label: "Team-Übersicht",
+    template: "team",
     description: "Mitglieder, Rollen, Zuständigkeiten.",
     color: "text-pink-400",
     bg: "bg-pink-500/10",
@@ -65,14 +73,51 @@ const templates = [
 interface TemplatesDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  workspaceId: string | null
+  parentId?: string | null
+  onCreated?: (page: { id: string; title: string }) => void
 }
 
-export function TemplatesDialog({ open, onOpenChange }: TemplatesDialogProps) {
+export function TemplatesDialog({
+  open,
+  onOpenChange,
+  workspaceId,
+  parentId,
+  onCreated,
+}: TemplatesDialogProps) {
+  const router = useRouter()
+  const [loading, setLoading] = useState<string | null>(null)
+
+  async function handleSelect(tpl: (typeof templates)[number]) {
+    if (!workspaceId) return
+    setLoading(tpl.template)
+
+    const res = await fetch("/api/pages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workspaceId,
+        title: tpl.label,
+        template: tpl.template,
+        parentId: parentId ?? null,
+      }),
+    })
+
+    if (res.ok) {
+      const page = await res.json()
+      onCreated?.(page)
+      onOpenChange(false)
+      router.push(`/pages/${page.id}`)
+    }
+
+    setLoading(null)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Vorlage für Seiten</DialogTitle>
+          <DialogTitle>Vorlage wählen</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-2 pt-1">
@@ -80,16 +125,15 @@ export function TemplatesDialog({ open, onOpenChange }: TemplatesDialogProps) {
             const Icon = tpl.icon
             return (
               <button
-                key={tpl.label}
-                className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:bg-accent/40 hover:border-border active:scale-[0.99]"
-                onClick={() => onOpenChange(false)}
+                key={tpl.template}
+                disabled={loading !== null}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:bg-accent/40 active:scale-[0.99]",
+                  loading === tpl.template && "opacity-60"
+                )}
+                onClick={() => handleSelect(tpl)}
               >
-                <div
-                  className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                    tpl.bg
-                  )}
-                >
+                <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", tpl.bg)}>
                   <Icon className={cn("h-4 w-4", tpl.color)} />
                 </div>
                 <div className="min-w-0">
