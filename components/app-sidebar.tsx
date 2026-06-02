@@ -1,5 +1,8 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+
 import {
   Sidebar,
   SidebarContent,
@@ -43,13 +46,14 @@ import { Badge } from "@/components/ui/badge"
 
 export function AppSidebar() {
   const { open } = useSidebar()
+  const pathname = usePathname()
 
   const navigationItems = [
-    { icon: <Home className="h-4 w-4" />, label: "Dashboard", badge: 3 },
-    { icon: <Calendar className="h-4 w-4" />, label: "Calendar", badge: "09. Feb 2026"},
-    { icon: <BarChart className="h-4 w-4" />, label: "Analytics", badge: "New"},
-    { icon: <Mail className="h-4 w-4" />, label: "Inbox", badge: 0 },
-    { icon: <Folder className="h-4 w-4" />, label: "Documents", badge: "New"},
+    { icon: <Home className="h-4 w-4" />, label: "Dashboard", href: "/dashboard", badge: 3 },
+    { icon: <Calendar className="h-4 w-4" />, label: "Kalender", href: "/calendar", badge: null },
+    { icon: <BarChart className="h-4 w-4" />, label: "Analytics", href: "/analytics", badge: "New" },
+    { icon: <Mail className="h-4 w-4" />, label: "Inbox", href: "/inbox", badge: 0 },
+    { icon: <Folder className="h-4 w-4" />, label: "Dokumente", href: "/documents", badge: "New" },
   ]
 
   const workspaces = [
@@ -144,27 +148,31 @@ export function AppSidebar() {
             {navigationItems.map((item, index) => (
               <SidebarMenuItem key={index}>
                 <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
                   className="w-full justify-start gap-2"
                   tooltip={!open ? item.label : undefined}
                 >
-                  {item.icon}
-                  {open && (
-                    <>
-                      <span className="flex-1 text-left">{item.label}</span>
-                      {item.badge !== undefined && (
-                        <Badge
-                          variant={
-                            typeof item.badge === "number"
-                              ? "secondary"
-                              : "default"
-                          }
-                          className="ml-auto"
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </>
-                  )}
+                  <Link href={item.href}>
+                    {item.icon}
+                    {open && (
+                      <>
+                        <span className="flex-1 text-left">{item.label}</span>
+                        {item.badge !== null && item.badge !== undefined && item.badge !== 0 && (
+                          <Badge
+                            variant={
+                              typeof item.badge === "number"
+                                ? "secondary"
+                                : "default"
+                            }
+                            className="ml-auto"
+                          >
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </>
+                    )}
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
