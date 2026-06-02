@@ -82,7 +82,8 @@ export function CalendarHeader({
             </button>
           </div>
 
-          {/* Rows / days picker 1–7 */}
+          {/* Rows / days picker 1–7 — only in timeline mode */}
+          {viewMode === "timeline" && (
           <div className="flex items-center rounded-md border bg-background p-0.5">
             {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
               <button
@@ -94,12 +95,13 @@ export function CalendarHeader({
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
-                title={viewMode === "timeline" ? `${n} Tag${n === 1 ? "" : "e"}` : `${n} Zeile${n === 1 ? "" : "n"}`}
+                title={`${n} Tag${n === 1 ? "" : "e"}`}
               >
                 {n}
               </button>
             ))}
           </div>
+          )}
         </div>
 
         {/* Column picker — only in month view */}
