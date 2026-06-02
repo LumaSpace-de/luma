@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,8 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const wasReset = searchParams.get("reset") === "1"
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -66,7 +68,15 @@ export function LoginForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="password">Passwort</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Passwort</Label>
+            <Link
+              href="/forgot-password"
+              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              Passwort vergessen?
+            </Link>
+          </div>
           <Input
             id="password"
             type="password"
@@ -77,6 +87,12 @@ export function LoginForm({
             autoComplete="current-password"
           />
         </div>
+
+        {wasReset && (
+          <p className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-500">
+            Passwort geändert – jetzt anmelden
+          </p>
+        )}
 
         {error && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
