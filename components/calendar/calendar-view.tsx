@@ -24,6 +24,12 @@ export function CalendarView() {
     setDialogOpen(true)
   }
 
+  function handleAdd() {
+    setSelectedDate(new Date())
+    setEditingEvent(null)
+    setDialogOpen(true)
+  }
+
   function handleEventClick(event: CalendarEvent) {
     setEditingEvent(event)
     setSelectedDate(new Date(event.date))
@@ -36,12 +42,13 @@ export function CalendarView() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden">
       <CalendarHeader
         currentDate={currentDate}
         onPrev={() => setCurrentDate(subMonths(currentDate, 1))}
         onNext={() => setCurrentDate(addMonths(currentDate, 1))}
         onToday={() => setCurrentDate(new Date())}
+        onAdd={handleAdd}
       />
 
       <CalendarGrid

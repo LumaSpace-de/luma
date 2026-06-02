@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils"
 import { CalendarEvent, EventColor } from "@/types/calendar"
 
 const colorMap: Record<EventColor, string> = {
-  blue: "bg-blue-500",
-  green: "bg-green-500",
-  red: "bg-red-500",
-  yellow: "bg-yellow-500",
-  purple: "bg-purple-500",
+  blue: "bg-blue-600",
+  green: "bg-green-700",
+  red: "bg-red-600",
+  yellow: "bg-yellow-600",
+  purple: "bg-purple-600",
 }
 
 interface CalendarDayProps {
@@ -37,19 +37,20 @@ export function CalendarDay({
   return (
     <div
       className={cn(
-        "flex h-full min-h-[80px] w-full flex-col gap-1 p-1.5 transition-colors",
-        !isCurrentMonth && "opacity-40",
-        isSelected && "ring-1 ring-inset ring-primary"
+        "flex h-full min-h-[90px] w-full flex-col gap-1 p-1 transition-colors hover:bg-accent/20",
+        !isCurrentMonth && "opacity-35",
+        isSelected && "bg-accent/30"
       )}
     >
       <button
         onClick={onClick}
-        className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium hover:bg-accent"
+        className="w-fit"
+        tabIndex={-1}
       >
         <span
           className={cn(
-            "flex h-6 w-6 items-center justify-center rounded-full",
-            today && "bg-primary text-primary-foreground"
+            "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors hover:bg-accent",
+            today && "bg-primary text-primary-foreground hover:bg-primary/90"
           )}
         >
           {format(date, "d")}
@@ -64,21 +65,24 @@ export function CalendarDay({
               e.stopPropagation()
               onEventClick(event)
             }}
-            className="flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left text-xs hover:bg-accent/60"
+            className={cn(
+              "flex w-full items-center justify-between gap-1 rounded-md px-1.5 py-0.5 text-left text-xs text-white transition-opacity hover:opacity-90",
+              colorMap[event.color]
+            )}
           >
-            <span
-              className={cn(
-                "h-1.5 w-1.5 shrink-0 rounded-full",
-                colorMap[event.color]
-              )}
-            />
-            <span className="truncate text-foreground/80">{event.title}</span>
+            <span className="truncate font-medium">{event.title}</span>
+            {event.time && (
+              <span className="shrink-0 text-white/80">{event.time}</span>
+            )}
           </button>
         ))}
         {overflow > 0 && (
-          <span className="px-1 text-xs text-muted-foreground">
+          <button
+            onClick={onClick}
+            className="px-1.5 text-left text-xs text-muted-foreground hover:text-foreground"
+          >
             +{overflow} weitere
-          </span>
+          </button>
         )}
       </div>
     </div>

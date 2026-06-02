@@ -26,6 +26,7 @@ export function useCalendarEvents() {
   function addEvent(data: {
     title: string
     date: string
+    time?: string
     color: EventColor
     description?: string
   }) {

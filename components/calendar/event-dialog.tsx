@@ -17,11 +17,11 @@ import { Label } from "@/components/ui/label"
 import { CalendarEvent, EventColor } from "@/types/calendar"
 
 const COLORS: { value: EventColor; label: string; bg: string }[] = [
-  { value: "blue", label: "Blau", bg: "bg-blue-500" },
-  { value: "green", label: "Grün", bg: "bg-green-500" },
-  { value: "red", label: "Rot", bg: "bg-red-500" },
-  { value: "yellow", label: "Gelb", bg: "bg-yellow-500" },
-  { value: "purple", label: "Lila", bg: "bg-purple-500" },
+  { value: "blue", label: "Blau", bg: "bg-blue-600" },
+  { value: "green", label: "Grün", bg: "bg-green-700" },
+  { value: "red", label: "Rot", bg: "bg-red-600" },
+  { value: "yellow", label: "Gelb", bg: "bg-yellow-600" },
+  { value: "purple", label: "Lila", bg: "bg-purple-600" },
 ]
 
 interface EventDialogProps {
@@ -32,6 +32,7 @@ interface EventDialogProps {
   onSave: (data: {
     title: string
     date: string
+    time?: string
     color: EventColor
     description?: string
   }) => void
@@ -50,16 +51,19 @@ export function EventDialog({
 }: EventDialogProps) {
   const [title, setTitle] = useState("")
   const [color, setColor] = useState<EventColor>("blue")
+  const [time, setTime] = useState("")
   const [description, setDescription] = useState("")
 
   useEffect(() => {
     if (event) {
       setTitle(event.title)
       setColor(event.color)
+      setTime(event.time ?? "")
       setDescription(event.description ?? "")
     } else {
       setTitle("")
       setColor("blue")
+      setTime("")
       setDescription("")
     }
   }, [event, open])
@@ -68,15 +72,17 @@ export function EventDialog({
     e.preventDefault()
     if (!title.trim()) return
 
+    const payload = {
+      title,
+      color,
+      time: time || undefined,
+      description: description || undefined,
+    }
+
     if (event) {
-      onUpdate(event.id, { title, color, description: description || undefined })
+      onUpdate(event.id, payload)
     } else if (selectedDate) {
-      onSave({
-        title,
-        date: format(selectedDate, "yyyy-MM-dd"),
-        color,
-        description: description || undefined,
-      })
+      onSave({ ...payload, date: format(selectedDate, "yyyy-MM-dd") })
     }
     onClose()
   }
@@ -105,6 +111,18 @@ export function EventDialog({
               placeholder="Event-Titel"
               autoFocus
             />
+          </div>
+
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="event-time">Uhrzeit (optional)</Label>
+              <Input
+                id="event-time"
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
