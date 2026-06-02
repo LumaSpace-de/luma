@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { findUserByEmail } from "./users-db"
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET ?? "luma-space-secret-flux-network-2026",
   providers: [
     CredentialsProvider({
       name: "credentials",
