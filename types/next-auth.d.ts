@@ -6,11 +6,15 @@ declare module "next-auth" {
       id: string
       email: string
       name: string
+      username?: string | null
+      displayName?: string | null
     }
   }
   interface User {
     id: string
     email: string
     name: string
+    username?: string | null
+    displayName?: string | null
   }
 }

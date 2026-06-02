@@ -5,13 +5,15 @@ export interface DbUser {
   email: string
   password: string
   name: string
+  username: string | null
+  displayName: string | null
   createdAt: string
 }
 
 export async function findUserByEmail(email: string): Promise<DbUser | null> {
   const { data, error } = await supabase
     .from("users")
-    .select("id, email, password, name, created_at")
+    .select("id, email, password, name, username, display_name, created_at")
     .ilike("email", email)
     .maybeSingle()
 
@@ -22,8 +24,42 @@ export async function findUserByEmail(email: string): Promise<DbUser | null> {
     email: data.email,
     password: data.password,
     name: data.name,
+    username: data.username ?? null,
+    displayName: data.display_name ?? null,
     createdAt: data.created_at,
   }
+}
+
+export async function findUserByUsername(username: string): Promise<DbUser | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, email, password, name, username, display_name, created_at")
+    .ilike("username", username)
+    .maybeSingle()
+
+  if (error || !data) return null
+
+  return {
+    id: data.id,
+    email: data.email,
+    password: data.password,
+    name: data.name,
+    username: data.username ?? null,
+    displayName: data.display_name ?? null,
+    createdAt: data.created_at,
+  }
+}
+
+export async function updateUserProfile(
+  id: string,
+  { displayName, username }: { displayName: string; username: string }
+): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({ display_name: displayName, username, name: displayName })
+    .eq("id", id)
+
+  if (error) throw new Error(error.message)
 }
 
 export async function updateUserPassword(
@@ -91,6 +127,8 @@ export async function createUser(
     email: data.email,
     password: data.password,
     name: data.name,
+    username: null,
+    displayName: null,
     createdAt: data.created_at,
   }
 }
