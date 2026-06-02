@@ -16,13 +16,18 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const user = await findUserByEmail(credentials.email)
-        if (!user) return null
+        try {
+          const user = await findUserByEmail(credentials.email)
+          if (!user) return null
 
-        const valid = await bcrypt.compare(credentials.password, user.password)
-        if (!valid) return null
+          const valid = await bcrypt.compare(credentials.password, user.password)
+          if (!valid) return null
 
-        return { id: user.id, email: user.email, name: user.name }
+          return { id: user.id, email: user.email, name: user.name }
+        } catch (err) {
+          console.error("[authorize]", err)
+          return null
+        }
       },
     }),
   ],
