@@ -1,38 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 
+import { transporter } from "@/lib/mailer"
 import { createResetToken, findUserByEmail } from "@/lib/users-db"
 
 async function sendResetEmail(to: string, code: string) {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) throw new Error("RESEND_API_KEY is not set")
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "LumaSpace <onboarding@resend.dev>",
-      to,
-      subject: "Dein Reset-Code für LumaSpace",
-      html: `
-        <div style="font-family:sans-serif;max-width:400px;margin:0 auto">
-          <h2 style="margin-bottom:8px">Passwort zurücksetzen</h2>
-          <p style="color:#6b7280">Dein Code ist 15 Minuten gültig.</p>
-          <div style="font-size:36px;font-weight:bold;letter-spacing:8px;margin:24px 0;text-align:center">
-            ${code}
-          </div>
-          <p style="color:#6b7280;font-size:13px">Falls du das nicht angefordert hast, ignoriere diese E-Mail.</p>
+  await transporter.sendMail({
+    from: `"LumaSpace" <${process.env.SMTP_USER}>`,
+    to,
+    subject: "Dein Reset-Code für LumaSpace",
+    html: `
+      <div style="font-family:sans-serif;max-width:400px;margin:0 auto">
+        <h2 style="margin-bottom:8px">Passwort zurücksetzen</h2>
+        <p style="color:#6b7280">Dein Code ist 15 Minuten gültig.</p>
+        <div style="font-size:36px;font-weight:bold;letter-spacing:8px;margin:24px 0;text-align:center">
+          ${code}
         </div>
-      `,
-    }),
+        <p style="color:#6b7280;font-size:13px">Falls du das nicht angefordert hast, ignoriere diese E-Mail.</p>
+      </div>
+    `,
   })
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(`Resend error ${res.status}: ${JSON.stringify(body)}`)
-  }
 }
 
 export async function POST(req: NextRequest) {
