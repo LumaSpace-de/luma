@@ -5,21 +5,20 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import {
-  BarChart,
   Building2,
   Calendar,
   ChevronDown,
-  Folder,
+  FileText,
   Home,
   LogOut,
   Mail,
   Plus,
   Search,
   Settings,
+  Star,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -40,11 +39,9 @@ interface Workspace {
 }
 
 const navigationItems = [
-  { icon: Home, label: "Dashboard", href: "/dashboard", badge: null },
-  { icon: Calendar, label: "Kalender", href: "/calendar", badge: null },
-  { icon: BarChart, label: "Analytics", href: "/analytics", badge: "New" },
-  { icon: Mail, label: "Inbox", href: "/inbox", badge: null },
-  { icon: Folder, label: "Dokumente", href: "/documents", badge: "New" },
+  { icon: Mail, label: "Inbox", href: "/inbox" },
+  { icon: Calendar, label: "Kalender", href: "/calendar" },
+  { icon: Home, label: "Dashboard", href: "/dashboard" },
 ]
 
 const planLabel: Record<WorkspacePlan, string> = {
@@ -152,9 +149,9 @@ export function AppSidebarContent() {
 
       <Separator />
 
-      {/* Navigation */}
       <div className="flex-1 overflow-auto p-3">
-        <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {/* Navigation */}
+        <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Navigation
         </p>
         <nav className="flex flex-col gap-0.5">
@@ -173,16 +170,54 @@ export function AppSidebarContent() {
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="flex-1">{item.label}</span>
-                {item.badge && (
-                  <Badge variant="default" className="ml-auto text-xs">
-                    {item.badge}
-                  </Badge>
-                )}
+                <span>{item.label}</span>
               </Link>
             )
           })}
         </nav>
+
+        <Separator className="my-3" />
+
+        {/* Favoriten */}
+        <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Favoriten
+        </p>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
+            <Star className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+            <span className="text-xs text-muted-foreground/60">Noch keine Favoriten</span>
+          </div>
+        </div>
+
+        <Separator className="my-3" />
+
+        {/* Workspace */}
+        <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Workspace
+        </p>
+        <div className="flex flex-col gap-0.5">
+          {activeWorkspace ? (
+            <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
+              <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="flex-1 truncate text-sm text-muted-foreground">
+                {activeWorkspace.name}
+              </span>
+            </div>
+          ) : (
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            >
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span>Workspace wählen</span>
+            </Link>
+          )}
+
+          <button className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground">
+            <FileText className="h-4 w-4 shrink-0" />
+            <span>Vorlage für Seiten</span>
+          </button>
+        </div>
       </div>
 
       <Separator />
