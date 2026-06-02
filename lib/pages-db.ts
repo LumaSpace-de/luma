@@ -64,7 +64,7 @@ export async function createPage(
       template,
       parent_id: parentId ?? null,
     })
-    .select("id, title, workspace_id, parent_id, template, created_at")
+    .select("id, title, content, workspace_id, parent_id, template, created_at")
     .single()
 
   if (error) throw new Error(error.message)
@@ -72,6 +72,7 @@ export async function createPage(
   return {
     id: data.id,
     title: data.title,
+    content: data.content ?? null,
     workspaceId: data.workspace_id,
     parentId: data.parent_id,
     template: data.template,
