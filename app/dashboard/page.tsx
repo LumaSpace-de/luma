@@ -19,6 +19,8 @@ import { WorkspaceSettingsDialog } from "@/components/workspace-settings-dialog"
 
 type WorkspacePlan = "free" | "pro" | "enterprise"
 
+type WorkspaceRole = "owner" | "admin" | "member" | "viewer"
+
 interface Workspace {
   id: string
   name: string
@@ -26,6 +28,7 @@ interface Workspace {
   ownerId: string
   imageUrl: string | null
   createdAt: string
+  userRole: WorkspaceRole
 }
 
 const plans: {
@@ -278,7 +281,7 @@ export default function DashboardPage() {
       {/* Workspace settings dialog */}
       <WorkspaceSettingsDialog
         workspace={settingsWs}
-        isOwner={!!settingsWs && !!session?.user?.id && settingsWs.ownerId === session.user.id}
+        isOwner={!!settingsWs && (settingsWs.userRole === "owner")}
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         onUpdated={(updated) => {

@@ -13,6 +13,8 @@ import { supabase } from "./supabase"
 
 export type WorkspacePlan = "free" | "pro" | "enterprise"
 
+export type WorkspaceRole = "owner" | "admin" | "member" | "viewer"
+
 export interface Workspace {
   id: string
   name: string
@@ -20,6 +22,7 @@ export interface Workspace {
   ownerId: string
   imageUrl: string | null
   createdAt: string
+  userRole: WorkspaceRole
 }
 
 export interface WorkspaceMember {
@@ -42,13 +45,18 @@ export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> 
     .eq("owner_id", userId)
     .order("created_at", { ascending: true })
 
-  // 2. Workspaces where user is a member
+  // 2. Workspaces where user is a member (incl. role)
   const { data: memberships } = await supabase
     .from("workspace_members")
-    .select("workspace_id")
+    .select("workspace_id, role")
     .eq("user_id", userId)
 
   const memberIds = (memberships ?? []).map((m) => m.workspace_id as string).filter(Boolean)
+
+  // Build role map: workspaceId → role
+  const roleMap = new Map<string, WorkspaceRole>(
+    (memberships ?? []).map((m) => [m.workspace_id as string, (m.role ?? "member") as WorkspaceRole])
+  )
 
   let memberWorkspaces: Workspace[] = []
   if (memberIds.length > 0) {
@@ -56,10 +64,12 @@ export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> 
       .from("workspaces")
       .select("id, name, plan, owner_id, image_url, created_at")
       .in("id", memberIds)
-    memberWorkspaces = (mws ?? []).map(toWorkspace)
+    memberWorkspaces = (mws ?? []).map((w) =>
+      toWorkspace(w as Record<string, unknown>, roleMap.get(w.id as string) ?? "member")
+    )
   }
 
-  const ownedList = (owned ?? []).map(toWorkspace)
+  const ownedList = (owned ?? []).map((w) => toWorkspace(w as Record<string, unknown>, "owner"))
   const seen = new Set(ownedList.map((w) => w.id))
   const combined = [...ownedList]
   for (const w of memberWorkspaces) {
@@ -68,7 +78,7 @@ export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> 
   return combined
 }
 
-function toWorkspace(w: Record<string, unknown>): Workspace {
+function toWorkspace(w: Record<string, unknown>, role: WorkspaceRole = "member"): Workspace {
   return {
     id: w.id as string,
     name: w.name as string,
@@ -76,6 +86,7 @@ function toWorkspace(w: Record<string, unknown>): Workspace {
     ownerId: w.owner_id as string,
     imageUrl: (w.image_url as string | null) ?? null,
     createdAt: w.created_at as string,
+    userRole: role,
   }
 }
 
@@ -111,6 +122,7 @@ export async function createWorkspace(
     ownerId: data.owner_id,
     imageUrl: data.image_url ?? null,
     createdAt: data.created_at,
+    userRole: "owner" as WorkspaceRole,
   }
 }
 

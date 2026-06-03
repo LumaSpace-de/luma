@@ -38,12 +38,15 @@ import { cn } from "@/lib/utils"
 
 type WorkspacePlan = "free" | "pro" | "enterprise"
 
+type WorkspaceRole = "owner" | "admin" | "member" | "viewer"
+
 interface Workspace {
   id: string
   name: string
   plan: WorkspacePlan
   ownerId: string
   imageUrl: string | null
+  userRole: WorkspaceRole
 }
 
 interface Page {
@@ -69,6 +72,9 @@ function PageTree({
   parentId,
   depth,
   pathname,
+  canCreate,
+  canRename,
+  canDelete,
   onAddChild,
   onDelete,
   onRename,
@@ -77,6 +83,9 @@ function PageTree({
   parentId: string | null
   depth: number
   pathname: string
+  canCreate: boolean
+  canRename: boolean
+  canDelete: boolean
   onAddChild: (parentId: string) => void
   onDelete: (id: string) => void
   onRename: (id: string, title: string) => void
@@ -144,35 +153,45 @@ function PageTree({
                 </Link>
               )}
 
-              <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
-                <button
-                  className="flex h-4 w-4 items-center justify-center rounded hover:bg-accent"
-                  onClick={() => onAddChild(page.id)}
-                  title="Unterseite erstellen"
-                >
-                  <Plus className="h-3 w-3" />
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex h-4 w-4 items-center justify-center rounded hover:bg-accent">
-                      <MoreHorizontal className="h-3 w-3" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-40">
-                    <DropdownMenuItem className="gap-2 text-xs" onClick={() => startRename(page)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                      Umbenennen
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="gap-2 text-xs text-destructive focus:text-destructive"
-                      onClick={() => onDelete(page.id)}
+              {(canCreate || canRename || canDelete) && (
+                <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
+                  {canCreate && (
+                    <button
+                      className="flex h-4 w-4 items-center justify-center rounded hover:bg-accent"
+                      onClick={() => onAddChild(page.id)}
+                      title="Unterseite erstellen"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Löschen
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  )}
+                  {(canRename || canDelete) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex h-4 w-4 items-center justify-center rounded hover:bg-accent">
+                          <MoreHorizontal className="h-3 w-3" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-40">
+                        {canRename && (
+                          <DropdownMenuItem className="gap-2 text-xs" onClick={() => startRename(page)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                            Umbenennen
+                          </DropdownMenuItem>
+                        )}
+                        {canDelete && (
+                          <DropdownMenuItem
+                            className="gap-2 text-xs text-destructive focus:text-destructive"
+                            onClick={() => onDelete(page.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Löschen
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              )}
             </div>
 
             {hasChildren && isExpanded && (
@@ -181,6 +200,9 @@ function PageTree({
                 parentId={page.id}
                 depth={depth + 1}
                 pathname={pathname}
+                canCreate={canCreate}
+                canRename={canRename}
+                canDelete={canDelete}
                 onAddChild={onAddChild}
                 onDelete={onDelete}
                 onRename={onRename}
@@ -372,42 +394,57 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         <Separator className="my-3" />
 
         {/* Workspace pages */}
-        {activeWorkspace && (
-          <>
-            <div className="flex items-center justify-between px-2 mb-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                {activeWorkspace.name}
-              </p>
-              <button
-                onClick={() => openTemplates(null)}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                title="Seite erstellen"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
+        {activeWorkspace && (() => {
+          const role = activeWorkspace.userRole
+          const canCreate = role === "owner" || role === "admin" || role === "member"
+          const canRename = role === "owner" || role === "admin" || role === "member"
+          const canDelete = role === "owner" || role === "admin"
+          return (
+            <>
+              <div className="flex items-center justify-between px-2 mb-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                  {activeWorkspace.name}
+                </p>
+                {canCreate && (
+                  <button
+                    onClick={() => openTemplates(null)}
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    title="Seite erstellen"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
 
-            {pages.length === 0 ? (
-              <button
-                onClick={() => openTemplates(null)}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:bg-accent/50 hover:text-muted-foreground"
-              >
-                <Plus className="h-3 w-3" />
-                <span>Seite hinzufügen</span>
-              </button>
-            ) : (
-              <PageTree
-                pages={pages}
-                parentId={null}
-                depth={0}
-                pathname={pathname}
-                onAddChild={(pid) => openTemplates(pid)}
-                onDelete={handleDeletePage}
-                onRename={handleRenamePage}
-              />
-            )}
-          </>
-        )}
+              {pages.length === 0 ? (
+                canCreate ? (
+                  <button
+                    onClick={() => openTemplates(null)}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:bg-accent/50 hover:text-muted-foreground"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Seite hinzufügen</span>
+                  </button>
+                ) : (
+                  <p className="px-2 text-xs text-muted-foreground/50">Keine Seiten vorhanden</p>
+                )
+              ) : (
+                <PageTree
+                  pages={pages}
+                  parentId={null}
+                  depth={0}
+                  pathname={pathname}
+                  canCreate={canCreate}
+                  canRename={canRename}
+                  canDelete={canDelete}
+                  onAddChild={(pid) => openTemplates(pid)}
+                  onDelete={handleDeletePage}
+                  onRename={handleRenamePage}
+                />
+              )}
+            </>
+          )
+        })()}
       </div>
 
       <Separator />
