@@ -2,6 +2,8 @@ import { supabase } from "./supabase"
 
 // Required SQL (run once in Supabase SQL editor):
 // ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS image_url TEXT;
+// ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS is_private BOOLEAN NOT NULL DEFAULT false;
+// ALTER TABLE pages ADD COLUMN IF NOT EXISTS icon TEXT;
 // CREATE TABLE IF NOT EXISTS workspace_members (
 //   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 //   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
@@ -38,11 +40,12 @@ export interface WorkspaceMember {
 }
 
 export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> {
-  // 1. Owned workspaces
+  // 1. Owned workspaces (excluding private)
   const { data: owned } = await supabase
     .from("workspaces")
     .select("id, name, plan, owner_id, image_url, created_at")
     .eq("owner_id", userId)
+    .eq("is_private", false)
     .order("created_at", { ascending: true })
 
   // 2. Workspaces where user is a member (incl. role)
@@ -64,6 +67,7 @@ export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> 
       .from("workspaces")
       .select("id, name, plan, owner_id, image_url, created_at")
       .in("id", memberIds)
+      .eq("is_private", false)
     memberWorkspaces = (mws ?? []).map((w) =>
       toWorkspace(w as Record<string, unknown>, roleMap.get(w.id as string) ?? "member")
     )
@@ -204,4 +208,24 @@ export async function removeWorkspaceMember(workspaceId: string, userId: string)
     .eq("user_id", userId)
 
   if (error) throw new Error(error.message)
+}
+
+export async function getOrCreatePrivateWorkspace(userId: string): Promise<Workspace> {
+  const { data: existing } = await supabase
+    .from("workspaces")
+    .select("id, name, plan, owner_id, image_url, created_at")
+    .eq("owner_id", userId)
+    .eq("is_private", true)
+    .maybeSingle()
+
+  if (existing) return toWorkspace(existing as Record<string, unknown>, "owner")
+
+  const { data, error } = await supabase
+    .from("workspaces")
+    .insert({ name: "Privat", plan: "free", owner_id: userId, is_private: true })
+    .select("id, name, plan, owner_id, image_url, created_at")
+    .single()
+
+  if (error) throw new Error(error.message)
+  return toWorkspace(data as Record<string, unknown>, "owner")
 }

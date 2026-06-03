@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth"
 import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
-import { deletePage, getPageById, updatePageContent, updatePageTitle } from "@/lib/pages-db"
+import { deletePage, getPageById, updatePageContent, updatePageIcon, updatePageTitle } from "@/lib/pages-db"
 
 export async function GET(
   _req: NextRequest,
@@ -32,6 +32,11 @@ export async function PATCH(
 
   if ("content" in body) {
     await updatePageContent(params.id, body.content ?? "")
+    return NextResponse.json({ success: true })
+  }
+
+  if ("icon" in body) {
+    await updatePageIcon(params.id, body.icon ?? null)
     return NextResponse.json({ success: true })
   }
 
