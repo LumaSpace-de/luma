@@ -135,7 +135,6 @@ export async function getWorkspaceMembers(workspaceId: string): Promise<Workspac
 
   if (error || !data) return []
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data as any[]).map((r) => ({
     id: r.id,
     workspaceId: r.workspace_id,
