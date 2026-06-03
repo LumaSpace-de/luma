@@ -177,6 +177,16 @@ export async function addWorkspaceMember(workspaceId: string, userId: string): P
   if (error) throw new Error(error.message)
 }
 
+export async function updateWorkspaceMemberRole(workspaceId: string, userId: string, role: string): Promise<void> {
+  const { error } = await supabase
+    .from("workspace_members")
+    .update({ role })
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userId)
+
+  if (error) throw new Error(error.message)
+}
+
 export async function removeWorkspaceMember(workspaceId: string, userId: string): Promise<void> {
   const { error } = await supabase
     .from("workspace_members")

@@ -1,6 +1,6 @@
 "use client"
 
-import { Camera, Loader2, Mail, Trash2, UserMinus, X } from "lucide-react"
+import { Camera, Loader2, Mail, Trash2, UserMinus } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
 
 type WorkspacePlan = "free" | "pro" | "enterprise"
 
@@ -36,6 +37,36 @@ interface Props {
   onDeleted: (id: string) => void
 }
 
+const ROLES: { value: string; label: string; description: string; badge: string }[] = [
+  {
+    value: "admin",
+    label: "Admin",
+    description: "Kann Mitglieder & Einstellungen verwalten",
+    badge: "bg-purple-500/20 text-purple-400",
+  },
+  {
+    value: "member",
+    label: "Mitglied",
+    description: "Kann Seiten lesen & bearbeiten",
+    badge: "bg-blue-500/20 text-blue-400",
+  },
+  {
+    value: "viewer",
+    label: "Betrachter",
+    description: "Kann nur lesen",
+    badge: "bg-muted text-muted-foreground",
+  },
+]
+
+function RoleBadge({ role }: { role: string }) {
+  const r = ROLES.find((x) => x.value === role) ?? ROLES[1]
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", r.badge)}>
+      {r.label}
+    </span>
+  )
+}
+
 export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdated, onDeleted }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -56,6 +87,9 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
   const [addError, setAddError] = useState("")
   const [addSuccess, setAddSuccess] = useState(false)
 
+  // Which member's role dropdown is open
+  const [roleMenuFor, setRoleMenuFor] = useState<string | null>(null)
+
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
@@ -68,6 +102,7 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
     setAddError("")
     setAddSuccess(false)
     setImageError("")
+    setRoleMenuFor(null)
     fetchMembers()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspace?.id, open])
@@ -86,13 +121,11 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
     setNameError("")
     setNameSuccess(false)
     setNameLoading(true)
-
     const res = await fetch(`/api/workspaces/${workspace.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     })
-
     if (!res.ok) {
       const d = await res.json()
       setNameError(d.error || "Fehler beim Speichern")
@@ -108,13 +141,10 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
     if (!file || !workspace) return
     setImageError("")
     setImageLoading(true)
-
     const form = new FormData()
     form.append("image", file)
-
     const res = await fetch(`/api/workspaces/${workspace.id}/image`, { method: "POST", body: form })
     const data = await res.json()
-
     if (!res.ok) {
       setImageError(data.error || "Upload fehlgeschlagen")
     } else {
@@ -131,13 +161,11 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
     setAddError("")
     setAddSuccess(false)
     setAddLoading(true)
-
     const res = await fetch(`/api/workspaces/${workspace.id}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: addEmail }),
     })
-
     const data = await res.json()
     if (!res.ok) {
       setAddError(data.error || "Fehler beim Hinzufügen")
@@ -149,10 +177,21 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
     setAddLoading(false)
   }
 
+  async function handleRoleChange(userId: string, role: string) {
+    if (!workspace) return
+    setMembers((prev) => prev.map((m) => m.userId === userId ? { ...m, role } : m))
+    setRoleMenuFor(null)
+    await fetch(`/api/workspaces/${workspace.id}/members/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    })
+  }
+
   async function handleRemoveMember(userId: string) {
     if (!workspace) return
-    await fetch(`/api/workspaces/${workspace.id}/members/${userId}`, { method: "DELETE" })
     setMembers((prev) => prev.filter((m) => m.userId !== userId))
+    await fetch(`/api/workspaces/${workspace.id}/members/${userId}`, { method: "DELETE" })
   }
 
   async function handleDelete() {
@@ -167,14 +206,15 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
   const initials = (workspace?.name ?? "?").slice(0, 2).toUpperCase()
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { setRoleMenuFor(null); onOpenChange(v) }}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Workspace Einstellungen</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-6 py-2">
-          {/* ── Image + Name ── */}
+
+          {/* ── Bild + Name ── */}
           <section className="flex flex-col gap-4">
             <div className="flex items-center gap-5">
               <button
@@ -191,39 +231,21 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
                   </span>
                 )}
                 <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                  {imageLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                  ) : (
-                    <Camera className="h-4 w-4 text-white" />
-                  )}
+                  {imageLoading ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Camera className="h-4 w-4 text-white" />}
                 </span>
               </button>
-
               <div className="flex-1">
                 <p className="text-sm font-medium">Workspace-Bild</p>
                 <p className="text-xs text-muted-foreground">JPG, PNG, WebP · max. 2 MB</p>
                 {imageError && <p className="mt-1 text-xs text-destructive">{imageError}</p>}
               </div>
             </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
-              onChange={handleImageChange}
-            />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleImageChange} />
 
             <form onSubmit={handleNameSave} className="flex flex-col gap-2">
               <Label htmlFor="ws-name">Name</Label>
               <div className="flex gap-2">
-                <Input
-                  id="ws-name"
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); setNameSuccess(false) }}
-                  maxLength={80}
-                  placeholder="Workspace-Name"
-                />
+                <Input id="ws-name" value={name} onChange={(e) => { setName(e.target.value); setNameSuccess(false) }} maxLength={80} placeholder="Workspace-Name" />
                 <Button type="submit" disabled={nameLoading || !name.trim()} className="shrink-0">
                   {nameLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
                 </Button>
@@ -235,24 +257,36 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
 
           <Separator />
 
-          {/* ── Members ── */}
+          {/* ── Mitglieder & Berechtigungen ── */}
           <section>
-            <h3 className="mb-3 text-sm font-semibold">Mitglieder</h3>
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold">Mitglieder & Berechtigungen</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Lege fest was jedes Mitglied in diesem Workspace darf.
+              </p>
+            </div>
+
+            {/* Role legend */}
+            <div className="mb-3 flex flex-wrap gap-2">
+              {ROLES.map((r) => (
+                <div key={r.value} className="flex items-center gap-1.5">
+                  <RoleBadge role={r.value} />
+                  <span className="text-xs text-muted-foreground">{r.description}</span>
+                </div>
+              ))}
+            </div>
 
             {membersLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Lädt…
+                <Loader2 className="h-4 w-4 animate-spin" /> Lädt…
               </div>
             ) : members.length === 0 ? (
               <p className="text-sm text-muted-foreground">Noch keine weiteren Mitglieder.</p>
             ) : (
-              <ul className="mb-3 flex flex-col gap-1">
+              <ul className="mb-4 flex flex-col gap-1">
                 {members.map((m) => (
-                  <li
-                    key={m.userId}
-                    className="flex items-center gap-3 rounded-lg border px-3 py-2"
-                  >
+                  <li key={m.userId} className="relative flex items-center gap-3 rounded-lg border px-3 py-2">
+                    {/* Avatar */}
                     {m.avatarUrl ? (
                       <img src={m.avatarUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
                     ) : (
@@ -260,10 +294,48 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
                         {(m.name || m.email).slice(0, 2).toUpperCase()}
                       </div>
                     )}
+
+                    {/* Info */}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{m.name || m.email}</p>
                       <p className="truncate text-xs text-muted-foreground">{m.email}</p>
                     </div>
+
+                    {/* Role dropdown */}
+                    <div className="relative shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setRoleMenuFor(roleMenuFor === m.userId ? null : m.userId)}
+                        className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-accent/50 transition-colors"
+                      >
+                        <RoleBadge role={m.role} />
+                        <span className="text-muted-foreground">▾</span>
+                      </button>
+
+                      {roleMenuFor === m.userId && (
+                        <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-lg border bg-popover shadow-lg">
+                          {ROLES.map((r) => (
+                            <button
+                              key={r.value}
+                              type="button"
+                              onClick={() => handleRoleChange(m.userId, r.value)}
+                              className={cn(
+                                "flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-accent/50 transition-colors",
+                                m.role === r.value && "bg-accent/30"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <RoleBadge role={r.value} />
+                                {m.role === r.value && <span className="text-xs text-muted-foreground ml-auto">✓</span>}
+                              </div>
+                              <span className="text-xs text-muted-foreground">{r.description}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Remove */}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -301,23 +373,18 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
 
           <Separator />
 
-          {/* ── Danger zone ── */}
+          {/* ── Gefahrenzone ── */}
           <section>
             <h3 className="mb-1 text-sm font-semibold text-destructive">Gefahrenzone</h3>
             <p className="mb-3 text-xs text-muted-foreground">
               Löscht den Workspace und alle darin enthaltenen Seiten unwiderruflich.
             </p>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="gap-2"
-            >
+            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting} className="gap-2">
               {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
               Workspace löschen
             </Button>
           </section>
+
         </div>
       </DialogContent>
     </Dialog>
