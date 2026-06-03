@@ -1,6 +1,7 @@
 "use client"
 
 import { Building2, PanelLeft, Plus, Settings } from "lucide-react"
+import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,7 @@ interface Workspace {
   id: string
   name: string
   plan: WorkspacePlan
+  ownerId: string
   imageUrl: string | null
   createdAt: string
 }
@@ -60,6 +62,7 @@ const planBadgeClass: Record<WorkspacePlan, string> = {
 
 export default function DashboardPage() {
   const { toggle } = useInlineSidebar()
+  const { data: session } = useSession()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -275,6 +278,7 @@ export default function DashboardPage() {
       {/* Workspace settings dialog */}
       <WorkspaceSettingsDialog
         workspace={settingsWs}
+        isOwner={!!settingsWs && !!session?.user?.id && settingsWs.ownerId === session.user.id}
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         onUpdated={(updated) => {

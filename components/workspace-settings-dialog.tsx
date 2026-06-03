@@ -31,6 +31,7 @@ interface Member {
 
 interface Props {
   workspace: Workspace | null
+  isOwner: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onUpdated: (ws: Workspace) => void
@@ -67,7 +68,7 @@ function RoleBadge({ role }: { role: string }) {
   )
 }
 
-export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdated, onDeleted }: Props) {
+export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange, onUpdated, onDeleted }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState("")
@@ -214,14 +215,24 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
 
         <div className="flex flex-col gap-6 py-2">
 
+          {/* ── Mitglieds-Hinweis ── */}
+          {!isOwner && (
+            <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+              Du bist Mitglied dieses Workspaces. Nur der Inhaber kann Einstellungen ändern.
+            </div>
+          )}
+
           {/* ── Bild + Name ── */}
           <section className="flex flex-col gap-4">
             <div className="flex items-center gap-5">
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={imageLoading}
-                className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 border-border bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => isOwner && fileInputRef.current?.click()}
+                disabled={!isOwner || imageLoading}
+                className={cn(
+                  "group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 border-border bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  !isOwner && "cursor-default"
+                )}
               >
                 {imageUrl ? (
                   <img src={imageUrl} alt="Workspace" className="h-full w-full object-cover" />
@@ -230,13 +241,15 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
                     {initials}
                   </span>
                 )}
-                <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                  {imageLoading ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Camera className="h-4 w-4 text-white" />}
-                </span>
+                {isOwner && (
+                  <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    {imageLoading ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Camera className="h-4 w-4 text-white" />}
+                  </span>
+                )}
               </button>
               <div className="flex-1">
                 <p className="text-sm font-medium">Workspace-Bild</p>
-                <p className="text-xs text-muted-foreground">JPG, PNG, WebP · max. 2 MB</p>
+                <p className="text-xs text-muted-foreground">{isOwner ? "JPG, PNG, WebP · max. 2 MB" : "Nur der Inhaber kann das Bild ändern"}</p>
                 {imageError && <p className="mt-1 text-xs text-destructive">{imageError}</p>}
               </div>
             </div>
@@ -245,10 +258,12 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
             <form onSubmit={handleNameSave} className="flex flex-col gap-2">
               <Label htmlFor="ws-name">Name</Label>
               <div className="flex gap-2">
-                <Input id="ws-name" value={name} onChange={(e) => { setName(e.target.value); setNameSuccess(false) }} maxLength={80} placeholder="Workspace-Name" />
-                <Button type="submit" disabled={nameLoading || !name.trim()} className="shrink-0">
-                  {nameLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
-                </Button>
+                <Input id="ws-name" value={name} readOnly={!isOwner} onChange={(e) => { if (isOwner) { setName(e.target.value); setNameSuccess(false) } }} maxLength={80} placeholder="Workspace-Name" className={!isOwner ? "opacity-60" : ""} />
+                {isOwner && (
+                  <Button type="submit" disabled={nameLoading || !name.trim()} className="shrink-0">
+                    {nameLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
+                  </Button>
+                )}
               </div>
               {nameError && <p className="text-xs text-destructive">{nameError}</p>}
               {nameSuccess && <p className="text-xs text-green-500">Name gespeichert</p>}
@@ -301,89 +316,99 @@ export function WorkspaceSettingsDialog({ workspace, open, onOpenChange, onUpdat
                       <p className="truncate text-xs text-muted-foreground">{m.email}</p>
                     </div>
 
-                    {/* Role dropdown */}
-                    <div className="relative shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setRoleMenuFor(roleMenuFor === m.userId ? null : m.userId)}
-                        className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-accent/50 transition-colors"
+                    {/* Role: dropdown for owner, badge-only for members */}
+                    {isOwner ? (
+                      <div className="relative shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setRoleMenuFor(roleMenuFor === m.userId ? null : m.userId)}
+                          className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-accent/50 transition-colors"
+                        >
+                          <RoleBadge role={m.role} />
+                          <span className="text-muted-foreground">▾</span>
+                        </button>
+                        {roleMenuFor === m.userId && (
+                          <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-lg border bg-popover shadow-lg">
+                            {ROLES.map((r) => (
+                              <button
+                                key={r.value}
+                                type="button"
+                                onClick={() => handleRoleChange(m.userId, r.value)}
+                                className={cn(
+                                  "flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-accent/50 transition-colors",
+                                  m.role === r.value && "bg-accent/30"
+                                )}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <RoleBadge role={r.value} />
+                                  {m.role === r.value && <span className="text-xs text-muted-foreground ml-auto">✓</span>}
+                                </div>
+                                <span className="text-xs text-muted-foreground">{r.description}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <RoleBadge role={m.role} />
+                    )}
+
+                    {/* Remove — only for owner */}
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveMember(m.userId)}
                       >
-                        <RoleBadge role={m.role} />
-                        <span className="text-muted-foreground">▾</span>
-                      </button>
-
-                      {roleMenuFor === m.userId && (
-                        <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-lg border bg-popover shadow-lg">
-                          {ROLES.map((r) => (
-                            <button
-                              key={r.value}
-                              type="button"
-                              onClick={() => handleRoleChange(m.userId, r.value)}
-                              className={cn(
-                                "flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-accent/50 transition-colors",
-                                m.role === r.value && "bg-accent/30"
-                              )}
-                            >
-                              <div className="flex items-center gap-2">
-                                <RoleBadge role={r.value} />
-                                {m.role === r.value && <span className="text-xs text-muted-foreground ml-auto">✓</span>}
-                              </div>
-                              <span className="text-xs text-muted-foreground">{r.description}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Remove */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleRemoveMember(m.userId)}
-                    >
-                      <UserMinus className="h-3.5 w-3.5" />
-                    </Button>
+                        <UserMinus className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
 
-            <form onSubmit={handleAddMember} className="flex flex-col gap-2">
-              <Label htmlFor="add-email" className="flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5" />
-                Mitglied hinzufügen
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="add-email"
-                  type="email"
-                  placeholder="E-Mail-Adresse"
-                  value={addEmail}
-                  onChange={(e) => { setAddEmail(e.target.value); setAddError(""); setAddSuccess(false) }}
-                />
-                <Button type="submit" variant="secondary" disabled={addLoading || !addEmail.trim()} className="shrink-0">
-                  {addLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Hinzufügen"}
+            {isOwner && (
+              <form onSubmit={handleAddMember} className="flex flex-col gap-2">
+                <Label htmlFor="add-email" className="flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5" />
+                  Mitglied hinzufügen
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="add-email"
+                    type="email"
+                    placeholder="E-Mail-Adresse"
+                    value={addEmail}
+                    onChange={(e) => { setAddEmail(e.target.value); setAddError(""); setAddSuccess(false) }}
+                  />
+                  <Button type="submit" variant="secondary" disabled={addLoading || !addEmail.trim()} className="shrink-0">
+                    {addLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Hinzufügen"}
+                  </Button>
+                </div>
+                {addError && <p className="text-xs text-destructive">{addError}</p>}
+                {addSuccess && <p className="text-xs text-green-500">Mitglied hinzugefügt</p>}
+              </form>
+            )}
+          </section>
+
+          {/* ── Gefahrenzone — nur für Inhaber ── */}
+          {isOwner && (
+            <>
+              <Separator />
+              <section>
+                <h3 className="mb-1 text-sm font-semibold text-destructive">Gefahrenzone</h3>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Löscht den Workspace und alle darin enthaltenen Seiten unwiderruflich.
+                </p>
+                <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting} className="gap-2">
+                  {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                  Workspace löschen
                 </Button>
-              </div>
-              {addError && <p className="text-xs text-destructive">{addError}</p>}
-              {addSuccess && <p className="text-xs text-green-500">Mitglied hinzugefügt</p>}
-            </form>
-          </section>
-
-          <Separator />
-
-          {/* ── Gefahrenzone ── */}
-          <section>
-            <h3 className="mb-1 text-sm font-semibold text-destructive">Gefahrenzone</h3>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Löscht den Workspace und alle darin enthaltenen Seiten unwiderruflich.
-            </p>
-            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting} className="gap-2">
-              {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-              Workspace löschen
-            </Button>
-          </section>
+              </section>
+            </>
+          )}
 
         </div>
       </DialogContent>

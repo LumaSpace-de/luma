@@ -35,43 +35,48 @@ export interface WorkspaceMember {
 }
 
 export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> {
-  // Owned workspaces
+  // 1. Owned workspaces
   const { data: owned } = await supabase
     .from("workspaces")
     .select("id, name, plan, owner_id, image_url, created_at")
     .eq("owner_id", userId)
     .order("created_at", { ascending: true })
 
-  // Member workspaces (joined via workspace_members)
-  const { data: memberRows } = await supabase
+  // 2. Workspaces where user is a member
+  const { data: memberships } = await supabase
     .from("workspace_members")
-    .select("workspaces(id, name, plan, owner_id, image_url, created_at)")
+    .select("workspace_id")
     .eq("user_id", userId)
 
-  const memberWorkspaces = (memberRows ?? [])
-    .map((r) => (r.workspaces as unknown as Record<string, unknown> | null))
-    .filter(Boolean) as Record<string, unknown>[]
+  const memberIds = (memberships ?? []).map((m) => m.workspace_id as string).filter(Boolean)
 
-  const toWorkspace = (w: Record<string, unknown>): Workspace => ({
+  let memberWorkspaces: Workspace[] = []
+  if (memberIds.length > 0) {
+    const { data: mws } = await supabase
+      .from("workspaces")
+      .select("id, name, plan, owner_id, image_url, created_at")
+      .in("id", memberIds)
+    memberWorkspaces = (mws ?? []).map(toWorkspace)
+  }
+
+  const ownedList = (owned ?? []).map(toWorkspace)
+  const seen = new Set(ownedList.map((w) => w.id))
+  const combined = [...ownedList]
+  for (const w of memberWorkspaces) {
+    if (!seen.has(w.id)) combined.push(w)
+  }
+  return combined
+}
+
+function toWorkspace(w: Record<string, unknown>): Workspace {
+  return {
     id: w.id as string,
     name: w.name as string,
     plan: w.plan as WorkspacePlan,
     ownerId: w.owner_id as string,
     imageUrl: (w.image_url as string | null) ?? null,
     createdAt: w.created_at as string,
-  })
-
-  const ownedList = (owned ?? []).map(toWorkspace)
-  const memberList = memberWorkspaces.map(toWorkspace)
-
-  // Merge, deduplicate by id
-  const seen = new Set(ownedList.map((w) => w.id))
-  const combined = [...ownedList]
-  for (const w of memberList) {
-    if (!seen.has(w.id)) combined.push(w)
   }
-
-  return combined
 }
 
 export async function getWorkspaceById(id: string, ownerId: string): Promise<Workspace | null> {
@@ -83,15 +88,7 @@ export async function getWorkspaceById(id: string, ownerId: string): Promise<Wor
     .single()
 
   if (error || !data) return null
-
-  return {
-    id: data.id,
-    name: data.name,
-    plan: data.plan as WorkspacePlan,
-    ownerId: data.owner_id,
-    imageUrl: data.image_url ?? null,
-    createdAt: data.created_at,
-  }
+  return toWorkspace(data as Record<string, unknown>)
 }
 
 export async function createWorkspace(

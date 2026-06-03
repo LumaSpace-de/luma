@@ -42,6 +42,8 @@ interface Workspace {
   id: string
   name: string
   plan: WorkspacePlan
+  ownerId: string
+  imageUrl: string | null
 }
 
 interface Page {
@@ -262,10 +264,14 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary">
-                  <span className="text-sm font-medium text-primary-foreground">
-                    {activeWorkspace.name[0].toUpperCase()}
-                  </span>
+                <div className="h-8 w-8 shrink-0 overflow-hidden rounded-md bg-primary">
+                  {activeWorkspace.imageUrl ? (
+                    <img src={activeWorkspace.imageUrl} alt={activeWorkspace.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-sm font-medium text-primary-foreground">
+                      {activeWorkspace.name[0].toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col items-start">
                   <span className="truncate text-sm font-medium">{activeWorkspace.name}</span>
@@ -279,8 +285,12 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
             <DropdownMenuContent className="w-56" align="start">
               {workspaces.map((ws) => (
                 <DropdownMenuItem key={ws.id} className="gap-2 p-2" onClick={() => selectWorkspace(ws)}>
-                  <div className="flex h-6 w-6 items-center justify-center rounded bg-muted">
-                    <span className="text-xs font-medium">{ws.name[0].toUpperCase()}</span>
+                  <div className="h-6 w-6 shrink-0 overflow-hidden rounded bg-muted">
+                    {ws.imageUrl ? (
+                      <img src={ws.imageUrl} alt={ws.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-xs font-medium">{ws.name[0].toUpperCase()}</span>
+                    )}
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{ws.name}</span>
