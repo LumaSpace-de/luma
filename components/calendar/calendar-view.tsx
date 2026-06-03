@@ -20,7 +20,7 @@ export function CalendarView() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
 
-  const { events, addEvent, updateEvent, deleteEvent } = useCalendarEvents()
+  const { events, loading, addEvent, updateEvent, deleteEvent } = useCalendarEvents()
 
   function handleDayClick(date: Date) {
     setSelectedDate(date)
@@ -63,6 +63,11 @@ export function CalendarView() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {loading && (
+        <div className="flex items-center justify-center py-2 text-xs text-muted-foreground">
+          Kalender wird geladen…
+        </div>
+      )}
       <CalendarHeader
         currentDate={currentDate}
         columns={columns}
