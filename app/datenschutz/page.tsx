@@ -21,8 +21,8 @@ export default function DatenschutzPage() {
             <p>
               Verantwortlicher im Sinne der DSGVO ist:<br /><br />
               Flux Network<br />
-              [Straße und Hausnummer]<br />
-              [PLZ] [Stadt]<br />
+              Sandbrink 7<br />
+              31558 Hagenburg<br />
               E-Mail: support@lumaspace.de
             </p>
           </section>
