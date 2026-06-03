@@ -24,7 +24,7 @@ export default function IndexPage() {
             height={36}
             className="rounded-lg"
           />
-          <span className="text-lg font-bold tracking-tight">LumaSpace</span>
+          <span className="text-lg font-bold tracking-tight"></span>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/login">
