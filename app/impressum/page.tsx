@@ -20,8 +20,8 @@ export default function ImpressumPage() {
             <h2 className="mb-2 text-base font-semibold text-foreground">Angaben gemäß § 5 TMG</h2>
             <p>
               Flux Network<br />
-              [Straße und Hausnummer]<br />
-              [PLZ] [Stadt]<br />
+              Sandbrink 7<br />
+              31558 Hagenburg<br />
               Deutschland
             </p>
           </section>
@@ -37,8 +37,8 @@ export default function ImpressumPage() {
             <h2 className="mb-2 text-base font-semibold text-foreground">Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
             <p>
               Flux Network<br />
-              [Straße und Hausnummer]<br />
-              [PLZ] [Stadt]
+              Sandbrink 7<br />
+              31558 Hagenburg
             </p>
           </section>
 
