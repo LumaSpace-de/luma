@@ -35,22 +35,43 @@ export interface WorkspaceMember {
 }
 
 export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> {
-  const { data, error } = await supabase
+  // Owned workspaces
+  const { data: owned } = await supabase
     .from("workspaces")
     .select("id, name, plan, owner_id, image_url, created_at")
     .eq("owner_id", userId)
     .order("created_at", { ascending: true })
 
-  if (error || !data) return []
+  // Member workspaces (joined via workspace_members)
+  const { data: memberRows } = await supabase
+    .from("workspace_members")
+    .select("workspaces(id, name, plan, owner_id, image_url, created_at)")
+    .eq("user_id", userId)
 
-  return data.map((w) => ({
-    id: w.id,
-    name: w.name,
+  const memberWorkspaces = (memberRows ?? [])
+    .map((r) => (r.workspaces as unknown as Record<string, unknown> | null))
+    .filter(Boolean) as Record<string, unknown>[]
+
+  const toWorkspace = (w: Record<string, unknown>): Workspace => ({
+    id: w.id as string,
+    name: w.name as string,
     plan: w.plan as WorkspacePlan,
-    ownerId: w.owner_id,
-    imageUrl: w.image_url ?? null,
-    createdAt: w.created_at,
-  }))
+    ownerId: w.owner_id as string,
+    imageUrl: (w.image_url as string | null) ?? null,
+    createdAt: w.created_at as string,
+  })
+
+  const ownedList = (owned ?? []).map(toWorkspace)
+  const memberList = memberWorkspaces.map(toWorkspace)
+
+  // Merge, deduplicate by id
+  const seen = new Set(ownedList.map((w) => w.id))
+  const combined = [...ownedList]
+  for (const w of memberList) {
+    if (!seen.has(w.id)) combined.push(w)
+  }
+
+  return combined
 }
 
 export async function getWorkspaceById(id: string, ownerId: string): Promise<Workspace | null> {
