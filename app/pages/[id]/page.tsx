@@ -37,6 +37,7 @@ export default function PageView({ params }: { params: { id: string } }) {
   const [content, setContent] = useState("")
   const [icon, setIcon] = useState<string | null>(null)
   const [canEdit, setCanEdit] = useState(false)
+  const [canDelete, setCanDelete] = useState(false)
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -51,6 +52,7 @@ export default function PageView({ params }: { params: { id: string } }) {
           setContent(data.content ?? "")
           setIcon(data.icon ?? null)
           setCanEdit(data.canEdit ?? false)
+          setCanDelete(data.canDelete ?? false)
         }
       })
       .catch(() => {})
@@ -134,13 +136,19 @@ export default function PageView({ params }: { params: { id: string } }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                className="gap-2 text-destructive focus:text-destructive"
-                onClick={handleDelete}
-              >
-                <Trash2 className="h-4 w-4" />
-                Seite löschen
-              </DropdownMenuItem>
+              {canDelete ? (
+                <DropdownMenuItem
+                  className="gap-2 text-destructive focus:text-destructive"
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Seite löschen
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem disabled className="gap-2 text-xs text-muted-foreground">
+                  Keine Berechtigung
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

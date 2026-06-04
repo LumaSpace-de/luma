@@ -19,8 +19,9 @@ export async function GET(
 
   const role = await getUserRoleInWorkspace(session.user.id, page.workspaceId)
   const canEdit = role !== null && role !== "viewer"
+  const canDelete = role === "owner" || role === "admin"
 
-  return NextResponse.json({ ...page, canEdit })
+  return NextResponse.json({ ...page, canEdit, canDelete })
 }
 
 export async function PATCH(
