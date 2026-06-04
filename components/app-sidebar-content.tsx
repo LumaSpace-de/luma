@@ -189,7 +189,7 @@ function PageTree({
                 </Link>
               )}
 
-              <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
+              <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                 {canCreate && (
                   <button
                     className="flex h-4 w-4 items-center justify-center rounded hover:bg-accent"
