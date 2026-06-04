@@ -24,17 +24,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
   }
 
-  const { name, plan } = await req.json()
+  const { name } = await req.json()
 
   if (!name?.trim()) {
     return NextResponse.json({ error: "Name ist erforderlich" }, { status: 400 })
   }
 
-  const validPlans: WorkspacePlan[] = ["free", "enterprise"]
-  if (!validPlans.includes(plan)) {
-    return NextResponse.json({ error: "Ungültiger Plan" }, { status: 400 })
-  }
-
-  const workspace = await createWorkspace(name.trim(), plan, session.user.id)
+  const workspace = await createWorkspace(name.trim(), "free", session.user.id)
   return NextResponse.json(workspace, { status: 201 })
 }

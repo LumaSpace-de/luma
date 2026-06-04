@@ -31,26 +31,6 @@ interface Workspace {
   userRole: WorkspaceRole
 }
 
-const plans: {
-  value: WorkspacePlan
-  label: string
-  description: string
-  color: string
-}[] = [
-  {
-    value: "free",
-    label: "Free",
-    description: "Alle Kernfunktionen, kostenlos für immer.",
-    color: "bg-muted text-muted-foreground",
-  },
-  {
-    value: "enterprise",
-    label: "Enterprise",
-    description: "Für verifizierte Unternehmen – SSO, eigene Domain & dedizierter Support.",
-    color: "bg-purple-500/20 text-purple-400",
-  },
-]
-
 const planBadgeClass: Record<WorkspacePlan, string> = {
   free: "bg-muted text-muted-foreground",
   enterprise: "bg-purple-500/20 text-purple-400",
@@ -65,7 +45,6 @@ export default function DashboardPage() {
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false)
   const [name, setName] = useState("")
-  const [selectedPlan, setSelectedPlan] = useState<WorkspacePlan>("free")
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState("")
 
@@ -91,7 +70,7 @@ export default function DashboardPage() {
     const res = await fetch("/api/workspaces", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, plan: selectedPlan }),
+      body: JSON.stringify({ name }),
     })
 
     if (!res.ok) {
@@ -105,7 +84,6 @@ export default function DashboardPage() {
     setWorkspaces((prev) => [...prev, workspace])
     setCreateOpen(false)
     setName("")
-    setSelectedPlan("free")
     setCreating(false)
   }
 
@@ -219,39 +197,13 @@ export default function DashboardPage() {
               />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label>Plan wählen</Label>
-              <div className="flex flex-col gap-2">
-                {plans.map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => setSelectedPlan(p.value)}
-                    className={cn(
-                      "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors",
-                      selectedPlan === p.value
-                        ? "border-primary bg-primary/5"
-                        : "hover:bg-accent/50"
-                    )}
-                  >
-                    <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-primary">
-                      {selectedPlan === p.value && (
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{p.label}</span>
-                        <span className={cn("rounded-full px-1.5 py-0.5 text-xs font-medium", p.color)}>
-                          {p.label}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{p.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <p className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              Neue Workspaces starten im <span className="font-medium text-foreground">Free Plan</span>. Für Enterprise wende dich an{" "}
+              <a href="mailto:support@lumaspace.de" className="text-primary underline-offset-2 hover:underline">
+                support@lumaspace.de
+              </a>
+              .
+            </p>
 
             {error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">

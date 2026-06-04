@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react"
 import { useEffect, useRef, useState } from "react"
 
-import { Camera, PanelLeft } from "lucide-react"
+import { Building2, Camera, PanelLeft } from "lucide-react"
 
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
@@ -34,6 +34,9 @@ export default function SettingsPage() {
   const [usernameError, setUsernameError] = useState("")
   const [usernameSuccess, setUsernameSuccess] = useState(false)
 
+  // Workspaces
+  const [workspaces, setWorkspaces] = useState<{ id: string; name: string; plan: string; imageUrl: string | null; userRole: string }[]>([])
+
   // Password
   const [current, setCurrent] = useState("")
   const [newPw, setNewPw] = useState("")
@@ -41,6 +44,13 @@ export default function SettingsPage() {
   const [pwLoading, setPwLoading] = useState(false)
   const [pwError, setPwError] = useState("")
   const [pwSuccess, setPwSuccess] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/workspaces")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setWorkspaces(d) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     fetch("/api/auth/profile")
@@ -363,6 +373,49 @@ export default function SettingsPage() {
               {pwLoading ? "Wird gespeichert…" : "Passwort speichern"}
             </Button>
           </form>
+        </section>
+
+        <Separator />
+
+        {/* Workspaces & Plan */}
+        <section>
+          <h2 className="text-base font-semibold">Workspaces & Plan</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">Deine Workspaces und ihre aktuellen Pläne.</p>
+
+          <div className="mt-4 flex flex-col gap-2">
+            {workspaces.length === 0 ? (
+              <p className="text-sm text-muted-foreground/60">Keine Workspaces gefunden.</p>
+            ) : (
+              workspaces.map((ws) => (
+                <div key={ws.id} className="flex items-center gap-3 rounded-lg border bg-card p-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary/10">
+                    {ws.imageUrl ? (
+                      <img src={ws.imageUrl} alt={ws.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <Building2 className="h-4 w-4 text-primary/60" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{ws.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{ws.userRole}</p>
+                  </div>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    ws.plan === "enterprise"
+                      ? "bg-purple-500/20 text-purple-400"
+                      : "bg-muted text-muted-foreground"
+                  }`}>
+                    {ws.plan === "enterprise" ? "Enterprise" : "Free"}
+                  </span>
+                </div>
+              ))
+            )}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Enterprise Plan?{" "}
+              <a href="mailto:support@lumaspace.de" className="text-primary underline-offset-2 hover:underline">
+                support@lumaspace.de
+              </a>
+            </p>
+          </div>
         </section>
       </div>
     </div>

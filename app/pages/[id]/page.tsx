@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { MoreHorizontal, PanelLeft, Trash2 } from "lucide-react"
+import { MoreHorizontal, PanelLeft, Smile, Trash2, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,11 +13,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
+import { cn } from "@/lib/utils"
+
+const EMOJI_OPTIONS = [
+  "📄","📝","📌","⭐","🎯","📊","💡","🗂️","📂","🔔",
+  "🏠","✅","💼","📅","🚀","🎨","💬","🔗","📋","🔒",
+  "💰","🎁","✏️","🌟","❤️","🔍",
+]
 
 interface PageData {
   id: string
   title: string
   content: string | null
+  icon: string | null
 }
 
 export default function PageView({ params }: { params: { id: string } }) {
@@ -26,6 +34,8 @@ export default function PageView({ params }: { params: { id: string } }) {
   const [page, setPage] = useState<PageData | null>(null)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
+  const [icon, setIcon] = useState<string | null>(null)
+  const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -37,10 +47,21 @@ export default function PageView({ params }: { params: { id: string } }) {
           setPage(data)
           setTitle(data.title ?? "")
           setContent(data.content ?? "")
+          setIcon(data.icon ?? null)
         }
       })
       .catch(() => {})
   }, [params.id])
+
+  async function handleIconSelect(emoji: string | null) {
+    setIcon(emoji)
+    setIconPickerOpen(false)
+    await fetch(`/api/pages/${params.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ icon: emoji }),
+    })
+  }
 
   const saveTitle = useCallback(async (value: string) => {
     if (!value.trim()) return
@@ -123,8 +144,60 @@ export default function PageView({ params }: { params: { id: string } }) {
       </div>
 
       {/* Editor */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto" onClick={() => setIconPickerOpen(false)}>
         <div className="mx-auto max-w-2xl px-6 py-10">
+          {/* Icon picker */}
+          <div className="relative mb-3" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setIconPickerOpen((o) => !o)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm transition-colors hover:bg-accent/60",
+                icon ? "text-foreground" : "text-muted-foreground/40"
+              )}
+              title={icon ? "Icon ändern" : "Icon hinzufügen"}
+            >
+              {icon ? (
+                <span className="text-2xl leading-none">{icon}</span>
+              ) : (
+                <>
+                  <Smile className="h-4 w-4" />
+                  <span className="text-xs">Icon hinzufügen</span>
+                </>
+              )}
+            </button>
+
+            {iconPickerOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1 rounded-xl border bg-popover p-3 shadow-xl">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Icon wählen</span>
+                  {icon && (
+                    <button
+                      onClick={() => handleIconSelect(null)}
+                      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent"
+                    >
+                      <X className="h-3 w-3" />
+                      Entfernen
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-6 gap-1">
+                  {EMOJI_OPTIONS.map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => handleIconSelect(e)}
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-md text-lg transition-colors hover:bg-accent",
+                        icon === e && "ring-2 ring-primary"
+                      )}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Title */}
           <input
             className="w-full bg-transparent text-3xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/30"
