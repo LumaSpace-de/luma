@@ -3,8 +3,37 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
 import { createInvitation } from "@/lib/invitations-db"
-import { findUserByEmail, findUserByUsername } from "@/lib/users-db"
+import { DbUser } from "@/lib/users-db"
 import { getWorkspaceMembers } from "@/lib/workspaces-db"
+import { supabase } from "@/lib/supabase"
+
+async function findUserByEmailWithError(email: string): Promise<{ user: DbUser | null; error: string | null }> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, email, password, name, username, avatar_url, created_at")
+    .ilike("email", email)
+    .maybeSingle()
+  if (error) return { user: null, error: error.message }
+  if (!data) return { user: null, error: null }
+  return {
+    user: { id: data.id, email: data.email, password: data.password, name: data.name, username: data.username ?? null, avatarUrl: data.avatar_url ?? null, createdAt: data.created_at },
+    error: null,
+  }
+}
+
+async function findUserByUsernameWithError(username: string): Promise<{ user: DbUser | null; error: string | null }> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, email, password, name, username, avatar_url, created_at")
+    .ilike("username", username)
+    .maybeSingle()
+  if (error) return { user: null, error: error.message }
+  if (!data) return { user: null, error: null }
+  return {
+    user: { id: data.id, email: data.email, password: data.password, name: data.name, username: data.username ?? null, avatarUrl: data.avatar_url ?? null, createdAt: data.created_at },
+    error: null,
+  }
+}
 
 export async function GET(
   _req: NextRequest,
@@ -36,10 +65,21 @@ export async function POST(
   }
 
   let user = null
+  let lookupError: string | null = null
+
   if (query.startsWith("@")) {
-    user = await findUserByUsername(query.slice(1).toLowerCase())
+    const result = await findUserByUsernameWithError(query.slice(1).toLowerCase())
+    user = result.user
+    lookupError = result.error
   } else {
-    user = await findUserByEmail(query.toLowerCase())
+    const result = await findUserByEmailWithError(query.toLowerCase())
+    user = result.user
+    lookupError = result.error
+  }
+
+  if (lookupError) {
+    console.error("[invite] lookup error:", lookupError)
+    return NextResponse.json({ error: `Datenbankfehler: ${lookupError}` }, { status: 500 })
   }
 
   if (!user) {
@@ -56,11 +96,12 @@ export async function POST(
   try {
     await createInvitation(params.id, user.id, session.user.id)
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : ""
-    if (msg.includes("duplicate") || msg.includes("unique")) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error("[invite] createInvitation error:", msg)
+    if (msg.includes("duplicate") || msg.includes("unique") || msg.includes("already")) {
       return NextResponse.json({ error: "Einladung bereits gesendet oder Nutzer ist bereits Mitglied" }, { status: 400 })
     }
-    return NextResponse.json({ error: "Fehler beim Einladen" }, { status: 500 })
+    return NextResponse.json({ error: `Fehler beim Einladen: ${msg}` }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
