@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react"
 import { ArrowUp, Bot, Loader2, Sparkles, X } from "lucide-react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -19,9 +19,12 @@ interface Props {
 }
 
 export function AIAssistantDialog({ open, onClose }: Props) {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, stop } = useChat({
+  const { messages, sendMessage, stop, status } = useChat({
     api: "/api/ai",
   })
+
+  const [input, setInput] = useState("")
+  const isLoading = status === "submitted" || status === "streaming"
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -44,12 +47,17 @@ export function AIAssistantDialog({ open, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey)
   }, [open, onClose])
 
+  function submit() {
+    const text = input.trim()
+    if (!text || isLoading) return
+    setInput("")
+    sendMessage({ role: "user", content: text })
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      if (input.trim() && !isLoading) {
-        handleSubmit(e as unknown as React.FormEvent)
-      }
+      submit()
     }
   }
 
@@ -68,8 +76,8 @@ export function AIAssistantDialog({ open, onClose }: Props) {
 
         {/* Header */}
         <div className="flex items-center gap-2.5 border-b px-4 py-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-violet-600">
-            <Sparkles className="h-3.5 w-3.5 text-white" />
+          <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-violet-600">
+            <Sparkles className="size-3.5 text-white" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold">LumaSpace AI</p>
@@ -77,9 +85,9 @@ export function AIAssistantDialog({ open, onClose }: Props) {
           </div>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            <X className="h-4 w-4" />
+            <X className="size-4" />
           </button>
         </div>
 
@@ -87,8 +95,8 @@ export function AIAssistantDialog({ open, onClose }: Props) {
         <div className="flex-1 overflow-y-auto p-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-600/20">
-                <Bot className="h-6 w-6 text-violet-400" />
+              <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-600/20">
+                <Bot className="size-6 text-violet-400" />
               </div>
               <p className="font-medium">Wie kann ich dir helfen?</p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -99,7 +107,7 @@ export function AIAssistantDialog({ open, onClose }: Props) {
                   <button
                     key={s}
                     onClick={() => {
-                      handleInputChange({ target: { value: s } } as React.ChangeEvent<HTMLTextAreaElement>)
+                      setInput(s)
                       setTimeout(() => inputRef.current?.focus(), 0)
                     }}
                     className="rounded-full border border-border/60 bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -117,8 +125,8 @@ export function AIAssistantDialog({ open, onClose }: Props) {
                   className={cn("flex gap-3", m.role === "user" && "justify-end")}
                 >
                   {m.role === "assistant" && (
-                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-violet-600">
-                      <Sparkles className="h-3 w-3 text-white" />
+                    <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-violet-600">
+                      <Sparkles className="size-3 text-white" />
                     </div>
                   )}
                   <div
@@ -129,20 +137,27 @@ export function AIAssistantDialog({ open, onClose }: Props) {
                         : "rounded-tl-sm bg-muted/60 text-foreground"
                     )}
                   >
-                    <p className="whitespace-pre-wrap">{m.content}</p>
+                    <p className="whitespace-pre-wrap">
+                      {m.parts
+                        ? m.parts
+                            .filter((p) => p.type === "text")
+                            .map((p) => (p as { type: "text"; text: string }).text)
+                            .join("")
+                        : ""}
+                    </p>
                   </div>
                 </div>
               ))}
               {isLoading && (
                 <div className="flex gap-3">
-                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-violet-600">
-                    <Sparkles className="h-3 w-3 text-white" />
+                  <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-violet-600">
+                    <Sparkles className="size-3 text-white" />
                   </div>
                   <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm bg-muted/60 px-4 py-3">
                     {[0, 1, 2].map((i) => (
                       <span
                         key={i}
-                        className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40"
+                        className="size-1.5 rounded-full bg-muted-foreground/40"
                         style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
                       />
                     ))}
@@ -156,11 +171,11 @@ export function AIAssistantDialog({ open, onClose }: Props) {
 
         {/* Input */}
         <div className="border-t p-3">
-          <form onSubmit={handleSubmit} className="flex items-end gap-2">
+          <div className="flex items-end gap-2">
             <textarea
               ref={inputRef}
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Frag mich etwas… (Enter zum Senden)"
               rows={1}
@@ -176,20 +191,21 @@ export function AIAssistantDialog({ open, onClose }: Props) {
               <button
                 type="button"
                 onClick={stop}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-accent"
+                className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-accent"
               >
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
+                onClick={submit}
                 disabled={!input.trim()}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+                className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
               >
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="size-4" />
               </button>
             )}
-          </form>
+          </div>
           <p className="mt-1.5 text-center text-[10px] text-muted-foreground/40">
             Shift+Enter für neue Zeile · Esc zum Schließen
           </p>
