@@ -617,58 +617,59 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
           )}
         </div>
 
-        <Separator className="my-4" />
-
-        {/* Workspace pages */}
-        {activeWorkspace && (
-          <>
-            <div className="mb-1 flex items-center justify-between px-2">
-              <p className="truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {activeWorkspace.name}
-              </p>
-              {canCreate && (
-                <button
-                  onClick={() => openTemplates(activeWorkspace.id, null)}
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  title="Seite erstellen"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-
-            {pages.length === 0 ? (
-              canCreate ? (
-                <button
-                  onClick={() => openTemplates(activeWorkspace.id, null)}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:bg-accent/50 hover:text-muted-foreground"
-                >
-                  <Plus className="h-3 w-3" />
-                  <span>Seite hinzufügen</span>
-                </button>
-              ) : (
-                <p className="px-2 text-xs text-muted-foreground/50">Keine Seiten vorhanden</p>
-              )
-            ) : (
-              <PageTree
-                pages={pages}
-                parentId={null}
-                depth={0}
-                pathname={pathname}
-                canCreate={canCreate}
-                canRename={canRename}
-                canDelete={canDelete}
-                favorites={favSet}
-                onAddChild={(pid) => openTemplates(activeWorkspace.id, pid)}
-                onDelete={handleDeletePage}
-                onRename={handleRenamePage}
-                onFavorite={handleFavorite}
-                onIconChange={handleIconChange}
-              />
-            )}
-          </>
-        )}
       </div>
+
+      <Separator />
+
+      {/* Workspace pages — fixed at bottom above user footer */}
+      {activeWorkspace && (
+        <div className="max-h-60 overflow-auto px-3 py-3">
+          <div className="mb-1 flex items-center justify-between px-2">
+            <p className="truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {activeWorkspace.name}
+            </p>
+            {canCreate && (
+              <button
+                onClick={() => openTemplates(activeWorkspace.id, null)}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                title="Seite erstellen"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {pages.length === 0 ? (
+            canCreate ? (
+              <button
+                onClick={() => openTemplates(activeWorkspace.id, null)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:bg-accent/50 hover:text-muted-foreground"
+              >
+                <Plus className="h-3 w-3" />
+                <span>Seite hinzufügen</span>
+              </button>
+            ) : (
+              <p className="px-2 text-xs text-muted-foreground/50">Keine Seiten vorhanden</p>
+            )
+          ) : (
+            <PageTree
+              pages={pages}
+              parentId={null}
+              depth={0}
+              pathname={pathname}
+              canCreate={canCreate}
+              canRename={canRename}
+              canDelete={canDelete}
+              favorites={favSet}
+              onAddChild={(pid) => openTemplates(activeWorkspace.id, pid)}
+              onDelete={handleDeletePage}
+              onRename={handleRenamePage}
+              onFavorite={handleFavorite}
+              onIconChange={handleIconChange}
+            />
+          )}
+        </div>
+      )}
 
       <Separator />
 
