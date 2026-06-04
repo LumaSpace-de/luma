@@ -4,6 +4,7 @@ import { addDays, addMonths, subDays, subMonths } from "date-fns"
 import { useState } from "react"
 
 import { useCalendarEvents } from "@/hooks/use-calendar-events"
+import { useCalendarLabels } from "@/hooks/use-calendar-labels"
 import { CalendarEvent } from "@/types/calendar"
 
 import { CalendarGrid } from "./calendar-grid"
@@ -13,7 +14,7 @@ import { TimelineView } from "./timeline-view"
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [columns, setColumns] = useState<1 | 2 | 3 | 4 | 5 | 6>(6)
+  const [columns, setColumns] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(7)
   const [rows, setRows] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>("month")
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -21,6 +22,7 @@ export function CalendarView() {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
 
   const { events, loading, addEvent, updateEvent, deleteEvent } = useCalendarEvents()
+  const { labels, addLabel } = useCalendarLabels()
 
   function handleDayClick(date: Date) {
     setSelectedDate(date)
@@ -77,7 +79,7 @@ export function CalendarView() {
         onNext={handleNext}
         onToday={() => setCurrentDate(new Date())}
         onAdd={handleAdd}
-        onColumnsChange={(n) => setColumns(n as 1 | 2 | 3 | 4 | 5 | 6)}
+        onColumnsChange={(n) => setColumns(n as 1 | 2 | 3 | 4 | 5 | 6 | 7)}
         onRowsChange={setRows}
         onViewModeChange={setViewMode}
       />
@@ -87,6 +89,7 @@ export function CalendarView() {
           currentDate={currentDate}
           columns={columns}
           events={events}
+          labels={labels}
           selectedDate={selectedDate}
           onDayClick={handleDayClick}
           onEventClick={handleEventClick}
@@ -106,6 +109,8 @@ export function CalendarView() {
         onClose={handleClose}
         selectedDate={selectedDate}
         event={editingEvent}
+        labels={labels}
+        onAddLabel={addLabel}
         onSave={addEvent}
         onUpdate={updateEvent}
         onDelete={deleteEvent}

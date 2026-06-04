@@ -58,6 +58,7 @@ export function useCalendarEvents() {
     color: EventColor
     description?: string
     allDay?: boolean
+    labelId?: string
   }) {
     const optimistic: CalendarEvent = { id: crypto.randomUUID(), ...data }
     setEvents((prev) => [...prev, optimistic])

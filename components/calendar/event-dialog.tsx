@@ -2,7 +2,7 @@
 
 import { format } from "date-fns"
 import { de } from "date-fns/locale"
-import { MapPin, Trash2 } from "lucide-react"
+import { MapPin, Plus, Trash2, X } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CalendarEvent, EventColor } from "@/types/calendar"
+import { CalendarEvent, CalendarLabel, EventColor } from "@/types/calendar"
+import { cn } from "@/lib/utils"
 
 const COLORS: { value: EventColor; label: string; bg: string }[] = [
   { value: "blue",   label: "Blau",  bg: "bg-blue-600" },
@@ -22,6 +23,11 @@ const COLORS: { value: EventColor; label: string; bg: string }[] = [
   { value: "red",    label: "Rot",   bg: "bg-red-600" },
   { value: "yellow", label: "Gelb",  bg: "bg-yellow-600" },
   { value: "purple", label: "Lila",  bg: "bg-purple-600" },
+]
+
+const LABEL_COLORS = [
+  "#3b82f6","#22c55e","#f59e0b","#ef4444","#a855f7",
+  "#ec4899","#14b8a6","#f97316","#6366f1","#84cc16",
 ]
 
 // 30-minute steps, 00:00 – 23:30
@@ -36,6 +42,8 @@ interface EventDialogProps {
   onClose: () => void
   selectedDate: Date | null
   event?: CalendarEvent | null
+  labels: CalendarLabel[]
+  onAddLabel: (name: string, color: string) => CalendarLabel
   onSave: (data: {
     title: string
     date: string
@@ -44,13 +52,14 @@ interface EventDialogProps {
     location?: string
     color: EventColor
     description?: string
+    labelId?: string
   }) => void
   onUpdate: (id: string, data: Partial<Omit<CalendarEvent, "id">>) => void
   onDelete: (id: string) => void
 }
 
 export function EventDialog({
-  open, onClose, selectedDate, event, onSave, onUpdate, onDelete,
+  open, onClose, selectedDate, event, labels, onAddLabel, onSave, onUpdate, onDelete,
 }: EventDialogProps) {
   const [title, setTitle]           = useState("")
   const [color, setColor]           = useState<EventColor>("blue")
@@ -58,7 +67,13 @@ export function EventDialog({
   const [endTime, setEndTime]       = useState("10:00")
   const [location, setLocation]     = useState("")
   const [description, setDescription] = useState("")
+  const [labelId, setLabelId]       = useState<string | undefined>(undefined)
   const [geoLoading, setGeoLoading] = useState(false)
+
+  // New label creation state
+  const [showNewLabel, setShowNewLabel] = useState(false)
+  const [newLabelName, setNewLabelName] = useState("")
+  const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[0])
 
   useEffect(() => {
     if (event) {
@@ -68,6 +83,7 @@ export function EventDialog({
       setEndTime(event.endTime ?? "10:00")
       setLocation(event.location ?? "")
       setDescription(event.description ?? "")
+      setLabelId(event.labelId)
     } else {
       setTitle("")
       setColor("blue")
@@ -75,7 +91,11 @@ export function EventDialog({
       setEndTime("10:00")
       setLocation("")
       setDescription("")
+      setLabelId(undefined)
     }
+    setShowNewLabel(false)
+    setNewLabelName("")
+    setNewLabelColor(LABEL_COLORS[0])
   }, [event, open])
 
   function handleSubmit(e: React.FormEvent) {
@@ -89,6 +109,7 @@ export function EventDialog({
       endTime:     endTime || undefined,
       location:    location.trim() || undefined,
       description: description.trim() || undefined,
+      labelId:     labelId || undefined,
     }
 
     if (event) {
@@ -97,6 +118,14 @@ export function EventDialog({
       onSave({ ...payload, date: format(selectedDate, "yyyy-MM-dd") })
     }
     onClose()
+  }
+
+  function handleCreateLabel() {
+    if (!newLabelName.trim()) return
+    const label = onAddLabel(newLabelName.trim(), newLabelColor)
+    setLabelId(label.id)
+    setShowNewLabel(false)
+    setNewLabelName("")
   }
 
   async function handleGeolocate() {
@@ -112,8 +141,7 @@ export function EventDialog({
           )
           const data = await res.json()
           const addr = data.address
-          const place =
-            addr.city ?? addr.town ?? addr.village ?? addr.county ?? ""
+          const place = addr.city ?? addr.town ?? addr.village ?? addr.county ?? ""
           const road = addr.road ? `${addr.road}${addr.house_number ? " " + addr.house_number : ""}` : ""
           setLocation([road, place].filter(Boolean).join(", ") || `${lat.toFixed(4)}, ${lon.toFixed(4)}`)
         } catch {
@@ -150,6 +178,100 @@ export function EventDialog({
             />
           </div>
 
+          {/* Labels */}
+          <div className="flex flex-col gap-1.5">
+            <Label>Label</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {/* No label option */}
+              <button
+                type="button"
+                onClick={() => setLabelId(undefined)}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                  !labelId
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border text-muted-foreground hover:bg-accent"
+                )}
+              >
+                Kein Label
+              </button>
+
+              {labels.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => setLabelId(l.id === labelId ? undefined : l.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
+                    labelId === l.id
+                      ? "border-transparent font-medium text-white"
+                      : "border-border text-muted-foreground hover:bg-accent"
+                  )}
+                  style={labelId === l.id ? { backgroundColor: l.color, borderColor: l.color } : {}}
+                >
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ backgroundColor: l.color }}
+                  />
+                  {l.name}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setShowNewLabel((v) => !v)}
+                className="flex items-center gap-1 rounded-full border border-dashed border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
+              >
+                <Plus className="h-3 w-3" />
+                Neu
+              </button>
+            </div>
+
+            {/* Inline new label form */}
+            {showNewLabel && (
+              <div className="mt-1 flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs font-medium">Neues Label erstellen</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={newLabelName}
+                    onChange={(e) => setNewLabelName(e.target.value)}
+                    placeholder="Label-Name"
+                    className="h-8 text-xs"
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateLabel() } }}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewLabel(false)}
+                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {LABEL_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setNewLabelColor(c)}
+                      className="h-5 w-5 rounded-full transition-transform hover:scale-110"
+                      style={{ backgroundColor: c, outline: newLabelColor === c ? `2px solid ${c}` : "none", outlineOffset: "2px" }}
+                    />
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={!newLabelName.trim()}
+                  onClick={handleCreateLabel}
+                >
+                  Label erstellen
+                </Button>
+              </div>
+            )}
+          </div>
+
           {/* Time range */}
           <div className="flex gap-3">
             <div className="flex flex-1 flex-col gap-1.5">
@@ -159,7 +281,6 @@ export function EventDialog({
                 value={time}
                 onChange={(e) => {
                   setTime(e.target.value)
-                  // auto-advance end time if needed
                   if (e.target.value >= endTime) {
                     const idx = TIME_OPTIONS.indexOf(e.target.value)
                     setEndTime(TIME_OPTIONS[Math.min(idx + 2, TIME_OPTIONS.length - 1)])

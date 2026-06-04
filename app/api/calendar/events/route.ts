@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     color: body.color ?? "blue",
     description: body.description ?? undefined,
     allDay: body.allDay ?? false,
+    labelId: body.labelId ?? undefined,
   }
 
   const created = await createCalendarEvent(session.user.id, event)

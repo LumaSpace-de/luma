@@ -122,7 +122,7 @@ export function CalendarHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-32">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
+              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                 <DropdownMenuItem
                   key={n}
                   onClick={() => onColumnsChange(n)}

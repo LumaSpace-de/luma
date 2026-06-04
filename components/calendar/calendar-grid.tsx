@@ -11,7 +11,7 @@ import {
   startOfWeek,
 } from "date-fns"
 
-import { CalendarEvent } from "@/types/calendar"
+import { CalendarEvent, CalendarLabel } from "@/types/calendar"
 
 import { CalendarDay } from "./calendar-day"
 
@@ -21,6 +21,7 @@ interface CalendarGridProps {
   currentDate: Date
   columns: number
   events: CalendarEvent[]
+  labels: CalendarLabel[]
   selectedDate: Date | null
   onDayClick: (date: Date) => void
   onEventClick: (event: CalendarEvent) => void
@@ -30,6 +31,7 @@ export function CalendarGrid({
   currentDate,
   columns,
   events,
+  labels,
   selectedDate,
   onDayClick,
   onEventClick,
@@ -80,6 +82,7 @@ export function CalendarGrid({
             key={day.toISOString()}
             date={day}
             events={events.filter((e) => isSameDay(new Date(e.date), day))}
+            labels={labels}
             isCurrentMonth={isSameMonth(day, currentDate)}
             isSelected={selectedDate ? isSameDay(day, selectedDate) : false}
             onClick={() => onDayClick(day)}

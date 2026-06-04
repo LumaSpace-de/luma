@@ -1,5 +1,11 @@
 export type EventColor = "blue" | "green" | "red" | "yellow" | "purple"
 
+export interface CalendarLabel {
+  id: string
+  name: string
+  color: string // hex color e.g. "#3b82f6"
+}
+
 export interface CalendarEvent {
   id: string
   title: string
@@ -10,4 +16,5 @@ export interface CalendarEvent {
   color: EventColor
   description?: string
   allDay?: boolean
+  labelId?: string
 }

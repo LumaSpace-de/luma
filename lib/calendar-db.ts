@@ -13,8 +13,10 @@ import { CalendarEvent, EventColor } from "@/types/calendar"
 //   color TEXT NOT NULL DEFAULT 'blue',
 //   description TEXT,
 //   all_day BOOLEAN NOT NULL DEFAULT false,
+//   label_id TEXT,
 //   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 // );
+// ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS label_id TEXT;
 
 function rowToEvent(row: Record<string, unknown>): CalendarEvent {
   return {
@@ -27,6 +29,7 @@ function rowToEvent(row: Record<string, unknown>): CalendarEvent {
     color: (row.color as EventColor) ?? "blue",
     description: (row.description as string | null) ?? undefined,
     allDay: (row.all_day as boolean | null) ?? false,
+    labelId: (row.label_id as string | null) ?? undefined,
   }
 }
 
@@ -58,6 +61,7 @@ export async function createCalendarEvent(
       color: event.color,
       description: event.description ?? null,
       all_day: event.allDay ?? false,
+      label_id: event.labelId ?? null,
     })
     .select()
     .single()
@@ -80,6 +84,7 @@ export async function updateCalendarEvent(
   if (patch.color !== undefined) update.color = patch.color
   if (patch.description !== undefined) update.description = patch.description ?? null
   if (patch.allDay !== undefined) update.all_day = patch.allDay
+  if ("labelId" in patch) update.label_id = patch.labelId ?? null
 
   const { error } = await supabase
     .from("calendar_events")
