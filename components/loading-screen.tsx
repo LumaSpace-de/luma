@@ -41,7 +41,7 @@ export function LoadingScreen() {
         </div>
 
         {/* Name */}
-        <span className="text-2xl font-bold tracking-tight">LumaSpace</span>
+        <span className="text-2xl font-bold tracking-tight"></span>
 
         {/* Dots */}
         <div className="flex items-center gap-1.5">
