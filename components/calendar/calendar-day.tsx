@@ -38,22 +38,25 @@ export function CalendarDay({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => e.key === "Enter" && onClick()}
       className={cn(
-        "flex h-full min-h-[90px] w-full flex-col gap-1 p-1 transition-colors hover:bg-accent/20",
+        "flex h-full min-h-[90px] w-full cursor-pointer flex-col gap-1 p-1 transition-colors hover:bg-accent/20",
         !isCurrentMonth && "opacity-35",
         isSelected && "bg-accent/30"
       )}
     >
-      <button onClick={onClick} className="w-fit" tabIndex={-1}>
-        <span
-          className={cn(
-            "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors hover:bg-accent",
-            today && "bg-primary text-primary-foreground hover:bg-primary/90"
-          )}
-        >
-          {format(date, "d")}
-        </span>
-      </button>
+      <span
+        className={cn(
+          "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors",
+          today && "bg-primary text-primary-foreground",
+          !today && "hover:bg-accent"
+        )}
+      >
+        {format(date, "d")}
+      </span>
 
       <div className="flex w-full flex-col gap-0.5">
         {visible.map((event) => {
