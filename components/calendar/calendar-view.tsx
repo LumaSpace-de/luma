@@ -9,6 +9,7 @@ import { CalendarEvent } from "@/types/calendar"
 
 import { CalendarGrid } from "./calendar-grid"
 import { CalendarHeader, ViewMode } from "./calendar-header"
+import { DayPanel } from "./day-panel"
 import { EventDialog } from "./event-dialog"
 import { TimelineView } from "./timeline-view"
 
@@ -18,6 +19,7 @@ export function CalendarView() {
   const [rows, setRows] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>("month")
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [dayPanelDate, setDayPanelDate] = useState<Date | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
 
@@ -25,9 +27,13 @@ export function CalendarView() {
   const { labels, addLabel } = useCalendarLabels()
 
   function handleDayClick(date: Date) {
-    setSelectedDate(date)
-    setEditingEvent(null)
-    setDialogOpen(true)
+    if (viewMode === "month") {
+      setDayPanelDate(date)
+    } else {
+      setSelectedDate(date)
+      setEditingEvent(null)
+      setDialogOpen(true)
+    }
   }
 
   function handleAdd() {
@@ -39,6 +45,12 @@ export function CalendarView() {
   function handleEventClick(event: CalendarEvent) {
     setEditingEvent(event)
     setSelectedDate(new Date(event.date))
+    setDialogOpen(true)
+  }
+
+  function handleNewEventForDay(date: Date) {
+    setSelectedDate(date)
+    setEditingEvent(null)
     setDialogOpen(true)
   }
 
@@ -84,25 +96,39 @@ export function CalendarView() {
         onViewModeChange={setViewMode}
       />
 
-      {viewMode === "month" ? (
-        <CalendarGrid
-          currentDate={currentDate}
-          columns={columns}
-          events={events}
-          labels={labels}
-          selectedDate={selectedDate}
-          onDayClick={handleDayClick}
-          onEventClick={handleEventClick}
-        />
-      ) : (
-        <TimelineView
-          currentDate={currentDate}
-          daysCount={rows}
-          events={events}
-          onEventClick={handleEventClick}
-          onHourClick={handleDayClick}
-        />
-      )}
+      <div className="flex flex-1 overflow-hidden">
+        {viewMode === "month" ? (
+          <CalendarGrid
+            currentDate={currentDate}
+            columns={columns}
+            events={events}
+            labels={labels}
+            selectedDate={dayPanelDate}
+            onDayClick={handleDayClick}
+            onEventClick={handleEventClick}
+          />
+        ) : (
+          <TimelineView
+            currentDate={currentDate}
+            daysCount={rows}
+            events={events}
+            onEventClick={handleEventClick}
+            onHourClick={handleDayClick}
+          />
+        )}
+
+        {dayPanelDate && viewMode === "month" && (
+          <DayPanel
+            date={dayPanelDate}
+            events={events}
+            labels={labels}
+            onClose={() => setDayPanelDate(null)}
+            onDateChange={setDayPanelDate}
+            onEventClick={handleEventClick}
+            onNewEvent={handleNewEventForDay}
+          />
+        )}
+      </div>
 
       <EventDialog
         open={dialogOpen}
