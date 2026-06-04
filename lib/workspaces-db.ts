@@ -13,7 +13,7 @@ import { supabase } from "./supabase"
 //   UNIQUE(workspace_id, user_id)
 // );
 
-export type WorkspacePlan = "free" | "pro" | "enterprise"
+export type WorkspacePlan = "free" | "enterprise"
 
 export type WorkspaceRole = "owner" | "admin" | "member" | "viewer"
 

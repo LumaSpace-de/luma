@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { WorkspaceSettingsDialog } from "@/components/workspace-settings-dialog"
 
-type WorkspacePlan = "free" | "pro" | "enterprise"
+type WorkspacePlan = "free" | "enterprise"
 
 type WorkspaceRole = "owner" | "admin" | "member" | "viewer"
 
@@ -40,26 +40,19 @@ const plans: {
   {
     value: "free",
     label: "Free",
-    description: "Grundfunktionen, 1 Workspace.",
+    description: "Alle Kernfunktionen, kostenlos für immer.",
     color: "bg-muted text-muted-foreground",
-  },
-  {
-    value: "pro",
-    label: "Pro",
-    description: "Alle Features, unbegrenzte Mitglieder.",
-    color: "bg-blue-500/20 text-blue-400",
   },
   {
     value: "enterprise",
     label: "Enterprise",
-    description: "Pro + SSO, eigene Domain, dedizierter Support.",
+    description: "Für verifizierte Unternehmen – SSO, eigene Domain & dedizierter Support.",
     color: "bg-purple-500/20 text-purple-400",
   },
 ]
 
 const planBadgeClass: Record<WorkspacePlan, string> = {
   free: "bg-muted text-muted-foreground",
-  pro: "bg-blue-500/20 text-blue-400",
   enterprise: "bg-purple-500/20 text-purple-400",
 }
 

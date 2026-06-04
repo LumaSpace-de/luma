@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
-type WorkspacePlan = "free" | "pro" | "enterprise"
+type WorkspacePlan = "free" | "enterprise"
 
 interface Workspace {
   id: string

@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Name ist erforderlich" }, { status: 400 })
   }
 
-  const validPlans: WorkspacePlan[] = ["free", "pro", "enterprise"]
+  const validPlans: WorkspacePlan[] = ["free", "enterprise"]
   if (!validPlans.includes(plan)) {
     return NextResponse.json({ error: "Ungültiger Plan" }, { status: 400 })
   }

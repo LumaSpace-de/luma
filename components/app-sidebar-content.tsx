@@ -42,7 +42,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
-type WorkspacePlan = "free" | "pro" | "enterprise"
+type WorkspacePlan = "free" | "enterprise"
 type WorkspaceRole = "owner" | "admin" | "member" | "viewer"
 
 interface Workspace {
@@ -77,7 +77,6 @@ const navigationItems = [
 
 const planLabel: Record<WorkspacePlan, string> = {
   free: "Free Plan",
-  pro: "Pro Plan",
   enterprise: "Enterprise Plan",
 }
 

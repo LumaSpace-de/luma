@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, CalendarDays, Clock, FileText, LayoutGrid, MapPin, Plus, Sparkles, UserCircle, Building2, Camera } from "lucide-react"
+import { ArrowRight, Check, Clock, FileText, LayoutGrid, Mail, MapPin, Plus, Sparkles, UserCircle, Building2, Camera } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -265,8 +265,8 @@ export default function IndexPage() {
             <div className="border-b border-border/40 bg-card/60 p-4">
               <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-2">
                 {["FLUX0 WORKSPACE", "Stark Industries", "Wayne Enterprises"].map((name, i) => {
-                  const plans = ["Pro Plan", "Free Plan", "Enterprise Plan"]
-                  const colors = ["bg-blue-500/20 text-blue-400", "bg-muted text-muted-foreground", "bg-purple-500/20 text-purple-400"]
+                  const plans = ["Free Plan", "Free Plan", "Enterprise Plan"]
+                  const colors = ["bg-muted text-muted-foreground", "bg-muted text-muted-foreground", "bg-purple-500/20 text-purple-400"]
                   return (
                     <div key={i} className="flex items-center gap-2 rounded-md border border-border/40 bg-muted/30 px-2 py-1.5">
                       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/20 text-[8px] font-bold text-primary">
@@ -289,7 +289,7 @@ export default function IndexPage() {
                 <h3 className="font-semibold">Workspaces</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Organisiere deine Projekte in Workspaces – mit Free, Pro und Enterprise Plan.
+                Organisiere deine Projekte in Workspaces – kostenlos oder als verifiziertes Unternehmen.
               </p>
             </div>
           </div>
@@ -375,6 +375,106 @@ export default function IndexPage() {
               </div>
               <p className="text-sm text-muted-foreground">
                 Profilbild hochladen, Name, @Benutzername und Passwort jederzeit ändern.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── Pricing ────────────────────────────────────────── */}
+      <section className="relative z-10 mx-auto w-full max-w-4xl px-6 pb-28">
+        <div className="mb-12 text-center">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Einfache Preise</h2>
+          <p className="mt-3 text-muted-foreground">
+            Kostenlos für jeden – oder maßgeschneidert für dein Unternehmen.
+          </p>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2">
+
+          {/* ── Free ── */}
+          <div className="flex flex-col rounded-2xl border border-border/60 bg-card/40 p-8 backdrop-blur-sm">
+            <div className="mb-6">
+              <span className="inline-block rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                Free
+              </span>
+              <div className="mt-4 flex items-end gap-1">
+                <span className="text-4xl font-bold tracking-tight">€0</span>
+                <span className="mb-1 text-sm text-muted-foreground">/ Monat</span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Für immer kostenlos. Kein Kreditkarte nötig.
+              </p>
+            </div>
+
+            <ul className="mb-8 flex flex-col gap-3 text-sm">
+              {[
+                "Kalender mit Monatsraster & Timeline",
+                "Seiten-Editor mit verschachtelten Seiten",
+                "Privater Bereich & Favoriten",
+                "Workspace mit unbegrenzten Mitgliedern",
+                "Einladungssystem für Mitglieder",
+                "Profil mit Avatar & Benutzername",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2.5">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                  <span className="text-muted-foreground">{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-auto">
+              <Link href="/signup">
+                <button className="w-full rounded-xl border border-border bg-background py-2.5 text-sm font-medium transition-colors hover:bg-accent">
+                  Kostenlos starten
+                </button>
+              </Link>
+            </div>
+          </div>
+
+          {/* ── Enterprise ── */}
+          <div className="relative flex flex-col overflow-hidden rounded-2xl border border-purple-500/30 bg-card/40 p-8 backdrop-blur-sm">
+            {/* Glow */}
+            <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-600/8 via-transparent to-transparent" />
+
+            <div className="relative mb-6">
+              <span className="inline-block rounded-full bg-purple-500/20 px-3 py-1 text-xs font-medium text-purple-400">
+                Enterprise
+              </span>
+              <div className="mt-4 flex items-end gap-1">
+                <span className="text-4xl font-bold tracking-tight">Auf Anfrage</span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Nur für verifizierte Unternehmen. Melde dich bei uns.
+              </p>
+            </div>
+
+            <ul className="relative mb-8 flex flex-col gap-3 text-sm">
+              {[
+                "Alles aus Free",
+                "Unbegrenzte Workspaces",
+                "SSO & eigene Domain",
+                "Dedizierter Support & SLA",
+                "Erweiterte Rollen & Berechtigungen",
+                "Unternehmens-Verifizierung erforderlich",
+              ].map((f, i) => (
+                <li key={f} className="flex items-start gap-2.5">
+                  <Check className={`mt-0.5 h-4 w-4 shrink-0 ${i === 5 ? "text-purple-400" : "text-green-500"}`} />
+                  <span className={i === 5 ? "font-medium text-purple-300" : "text-muted-foreground"}>{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="relative mt-auto">
+              <a href="mailto:support@lumaspace.de?subject=Enterprise-Anfrage">
+                <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-500">
+                  <Mail className="h-4 w-4" />
+                  Anfrage stellen
+                </button>
+              </a>
+              <p className="mt-3 text-center text-xs text-muted-foreground/60">
+                support@lumaspace.de · Wir melden uns innerhalb 24h
               </p>
             </div>
           </div>
