@@ -15,5 +15,5 @@ Antworte auf Deutsch, außer der Nutzer schreibt in einer anderen Sprache.`,
     messages,
   })
 
-  return result.toDataStreamResponse()
+  return result.toUIMessageStreamResponse()
 }
