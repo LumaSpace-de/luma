@@ -412,8 +412,68 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
+      {/* Workspace switcher — top */}
+      <div className="border-b p-3">
+        {activeWorkspace ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent">
+                <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md bg-primary">
+                  {activeWorkspace.imageUrl ? (
+                    <img src={activeWorkspace.imageUrl} alt={activeWorkspace.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-sm font-medium text-primary-foreground">
+                      {activeWorkspace.name[0].toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col items-start">
+                  <span className="truncate text-sm font-medium">{activeWorkspace.name}</span>
+                  <span className="text-xs text-muted-foreground">{planLabel[activeWorkspace.plan]}</span>
+                </div>
+                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="start">
+              {workspaces.map((ws) => (
+                <DropdownMenuItem key={ws.id} className="gap-2 p-2" onClick={() => selectWorkspace(ws)}>
+                  <div className="h-6 w-6 shrink-0 overflow-hidden rounded bg-muted">
+                    {ws.imageUrl ? (
+                      <img src={ws.imageUrl} alt={ws.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-xs font-medium">
+                        {ws.name[0].toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{ws.name}</span>
+                    <span className="text-xs text-muted-foreground">{planLabel[ws.plan]}</span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="gap-2 p-2">
+                <Link href="/dashboard">
+                  <Plus className="h-4 w-4" />
+                  <span>Workspace verwalten</span>
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Link
+            href="/dashboard"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Building2 className="h-4 w-4" />
+            <span>Workspace erstellen</span>
+          </Link>
+        )}
+      </div>
+
       {/* Search */}
-      <div className="p-3 pt-4">
+      <div className="p-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Suchen..." className="bg-background pl-8" />
@@ -538,66 +598,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         </div>
 
         <Separator className="my-4" />
-
-        {/* Workspace switcher — moved down */}
-        <div className="mb-2">
-          {activeWorkspace ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent">
-                  <div className="h-6 w-6 shrink-0 overflow-hidden rounded bg-primary">
-                    {activeWorkspace.imageUrl ? (
-                      <img src={activeWorkspace.imageUrl} alt={activeWorkspace.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center text-xs font-medium text-primary-foreground">
-                        {activeWorkspace.name[0].toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col items-start">
-                    <span className="truncate text-sm font-medium">{activeWorkspace.name}</span>
-                    <span className="text-xs text-muted-foreground">{planLabel[activeWorkspace.plan]}</span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="start">
-                {workspaces.map((ws) => (
-                  <DropdownMenuItem key={ws.id} className="gap-2 p-2" onClick={() => selectWorkspace(ws)}>
-                    <div className="h-6 w-6 shrink-0 overflow-hidden rounded bg-muted">
-                      {ws.imageUrl ? (
-                        <img src={ws.imageUrl} alt={ws.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center text-xs font-medium">
-                          {ws.name[0].toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{ws.name}</span>
-                      <span className="text-xs text-muted-foreground">{planLabel[ws.plan]}</span>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="gap-2 p-2">
-                  <Link href="/dashboard">
-                    <Plus className="h-4 w-4" />
-                    <span>Workspace verwalten</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link
-              href="/dashboard"
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <Building2 className="h-4 w-4" />
-              <span>Workspace erstellen</span>
-            </Link>
-          )}
-        </div>
 
         {/* Workspace pages */}
         {activeWorkspace && (
