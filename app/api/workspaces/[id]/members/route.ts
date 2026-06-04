@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
 import { createInvitation } from "@/lib/invitations-db"
-import { findUserByEmail } from "@/lib/users-db"
+import { findUserByEmail, findUserByUsername } from "@/lib/users-db"
 import { getWorkspaceMembers } from "@/lib/workspaces-db"
 
 export async function GET(
@@ -29,19 +29,28 @@ export async function POST(
   }
 
   const body = await req.json()
-  const email = body.email?.trim().toLowerCase()
+  const query = (body.query ?? body.email ?? "").trim()
 
-  if (!email) {
-    return NextResponse.json({ error: "E-Mail erforderlich" }, { status: 400 })
+  if (!query) {
+    return NextResponse.json({ error: "E-Mail oder @Benutzername erforderlich" }, { status: 400 })
   }
 
-  const user = await findUserByEmail(email)
+  let user = null
+  if (query.startsWith("@")) {
+    user = await findUserByUsername(query.slice(1).toLowerCase())
+  } else {
+    user = await findUserByEmail(query.toLowerCase())
+  }
+
   if (!user) {
-    return NextResponse.json({ error: "Kein Nutzer mit dieser E-Mail gefunden" }, { status: 404 })
+    return NextResponse.json(
+      { error: query.startsWith("@") ? "Kein Nutzer mit diesem Benutzernamen gefunden" : "Kein Nutzer mit dieser E-Mail gefunden" },
+      { status: 404 }
+    )
   }
 
   if (user.id === session.user.id) {
-    return NextResponse.json({ error: "Du bist bereits Inhaber dieses Workspaces" }, { status: 400 })
+    return NextResponse.json({ error: "Du kannst dich nicht selbst einladen" }, { status: 400 })
   }
 
   try {
@@ -49,7 +58,7 @@ export async function POST(
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : ""
     if (msg.includes("duplicate") || msg.includes("unique")) {
-      return NextResponse.json({ error: "Einladung wurde bereits gesendet oder Nutzer ist bereits Mitglied" }, { status: 400 })
+      return NextResponse.json({ error: "Einladung bereits gesendet oder Nutzer ist bereits Mitglied" }, { status: 400 })
     }
     return NextResponse.json({ error: "Fehler beim Einladen" }, { status: 500 })
   }

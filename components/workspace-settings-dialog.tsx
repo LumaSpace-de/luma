@@ -180,7 +180,7 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
     const res = await fetch(`/api/workspaces/${workspace.id}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: addEmail }),
+      body: JSON.stringify({ query: addEmail }),
     })
     const data = await res.json()
     if (!res.ok) {
@@ -398,13 +398,13 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
               <form onSubmit={handleAddMember} className="flex flex-col gap-2">
                 <Label htmlFor="add-email" className="flex items-center gap-1.5">
                   <Mail className="h-3.5 w-3.5" />
-                  Mitglied hinzufügen
+                  Mitglied einladen
                 </Label>
                 <div className="flex gap-2">
                   <Input
                     id="add-email"
-                    type="email"
-                    placeholder="E-Mail-Adresse"
+                    type="text"
+                    placeholder="E-Mail oder @Benutzername"
                     value={addEmail}
                     onChange={(e) => { setAddEmail(e.target.value); setAddError(""); setAddSuccess(false) }}
                   />
