@@ -129,6 +129,7 @@ export default function PageView({ params }: { params: { id: string } }) {
 
         <div className="flex items-center gap-1">
           {saving && <span className="text-xs text-muted-foreground/60">Speichert…</span>}
+          {canDelete && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -136,7 +137,6 @@ export default function PageView({ params }: { params: { id: string } }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {canDelete ? (
                 <DropdownMenuItem
                   className="gap-2 text-destructive focus:text-destructive"
                   onClick={handleDelete}
@@ -144,13 +144,9 @@ export default function PageView({ params }: { params: { id: string } }) {
                   <Trash2 className="h-4 w-4" />
                   Seite löschen
                 </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem disabled className="gap-2 text-xs text-muted-foreground">
-                  Keine Berechtigung
-                </DropdownMenuItem>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </div>
       </div>
 
