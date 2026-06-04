@@ -156,6 +156,21 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
+  async function handleImageRemove() {
+    if (!workspace) return
+    setImageError("")
+    setImageLoading(true)
+    const res = await fetch(`/api/workspaces/${workspace.id}/image`, { method: "DELETE" })
+    if (!res.ok) {
+      const d = await res.json()
+      setImageError(d.error || "Fehler beim Entfernen")
+    } else {
+      setImageUrl(null)
+      onUpdated({ ...workspace, imageUrl: null, name })
+    }
+    setImageLoading(false)
+  }
+
   async function handleAddMember(e: React.FormEvent) {
     e.preventDefault()
     if (!workspace) return
@@ -250,6 +265,16 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
               <div className="flex-1">
                 <p className="text-sm font-medium">Workspace-Bild</p>
                 <p className="text-xs text-muted-foreground">{isOwner ? "JPG, PNG, WebP · max. 2 MB" : "Nur der Inhaber kann das Bild ändern"}</p>
+                {isOwner && imageUrl && (
+                  <button
+                    type="button"
+                    onClick={handleImageRemove}
+                    disabled={imageLoading}
+                    className="mt-1.5 text-xs text-muted-foreground underline-offset-2 hover:text-destructive hover:underline"
+                  >
+                    Bild entfernen
+                  </button>
+                )}
                 {imageError && <p className="mt-1 text-xs text-destructive">{imageError}</p>}
               </div>
             </div>

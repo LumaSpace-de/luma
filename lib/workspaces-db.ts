@@ -150,7 +150,7 @@ export async function updateWorkspaceName(id: string, ownerId: string, name: str
   if (error) throw new Error(error.message)
 }
 
-export async function updateWorkspaceImage(id: string, ownerId: string, imageUrl: string): Promise<void> {
+export async function updateWorkspaceImage(id: string, ownerId: string, imageUrl: string | null): Promise<void> {
   const { error } = await supabase
     .from("workspaces")
     .update({ image_url: imageUrl })

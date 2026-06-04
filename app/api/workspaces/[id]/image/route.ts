@@ -58,3 +58,16 @@ export async function POST(
 
   return NextResponse.json({ imageUrl })
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
+  }
+
+  await updateWorkspaceImage(params.id, session.user.id, null)
+  return NextResponse.json({ success: true })
+}
