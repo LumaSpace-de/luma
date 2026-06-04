@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import { TemplatesDialog } from "@/components/templates-dialog"
+import { AIAssistantDialog } from "@/components/ai-assistant-dialog"
 import {
   Building2,
   Calendar,
@@ -22,6 +23,7 @@ import {
   Search,
   Settings,
   Smile,
+  Sparkles,
   Star,
   Trash2,
 } from "lucide-react"
@@ -299,6 +301,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
 
   const [favorites, setFavorites] = useState<FavoritePage[]>([])
   const [inboxCount, setInboxCount] = useState(0)
+  const [aiOpen, setAiOpen] = useState(false)
 
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [templatesParentId, setTemplatesParentId] = useState<string | null>(null)
@@ -477,12 +480,19 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         )}
       </div>
 
-      {/* Search */}
-      <div className="p-3">
-        <div className="relative">
+      {/* Search + AI button */}
+      <div className="flex items-center gap-2 p-3">
+        <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Suchen..." className="bg-background pl-8" />
         </div>
+        <button
+          onClick={() => setAiOpen(true)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border/60 bg-gradient-to-br from-blue-500/10 to-violet-600/10 text-violet-400 transition-colors hover:from-blue-500/20 hover:to-violet-600/20 hover:text-violet-300"
+          title="AI Assistent"
+        >
+          <Sparkles className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-auto px-3 pb-3">
@@ -677,6 +687,8 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
           }
         }}
       />
+
+      <AIAssistantDialog open={aiOpen} onClose={() => setAiOpen(false)} />
 
       {/* User footer */}
       <div className="p-4">
