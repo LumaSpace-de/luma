@@ -32,6 +32,14 @@ export async function PATCH(
     return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
   }
 
+  const page = await getPageById(params.id)
+  if (!page) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 })
+
+  const role = await getUserRoleInWorkspace(session.user.id, page.workspaceId)
+  if (!role || role === "viewer") {
+    return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 })
+  }
+
   const body = await req.json()
 
   if ("content" in body) {
@@ -60,6 +68,14 @@ export async function DELETE(
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
+  }
+
+  const page = await getPageById(params.id)
+  if (!page) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 })
+
+  const role = await getUserRoleInWorkspace(session.user.id, page.workspaceId)
+  if (!role || role === "viewer" || role === "member") {
+    return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 })
   }
 
   await deletePage(params.id)

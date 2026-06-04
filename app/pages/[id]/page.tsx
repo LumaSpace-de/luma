@@ -210,21 +210,24 @@ export default function PageView({ params }: { params: { id: string } }) {
 
           {/* Title */}
           <input
-            className="w-full bg-transparent text-3xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/30"
+            className="w-full bg-transparent text-3xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/30 disabled:cursor-default"
             placeholder="Titel…"
             value={title}
+            disabled={!canEdit}
             onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => saveTitle(title)}
+            onBlur={() => canEdit && saveTitle(title)}
           />
 
           <div className="mt-1 h-px bg-border/40" />
 
           {/* Content */}
           <textarea
-            className="mt-6 min-h-[60vh] w-full resize-none bg-transparent text-sm leading-relaxed text-foreground/90 outline-none placeholder:text-muted-foreground/30"
-            placeholder="Fange an zu schreiben… Ziele, Notizen, Ideen"
+            className="mt-6 min-h-[60vh] w-full resize-none bg-transparent text-sm leading-relaxed text-foreground/90 outline-none placeholder:text-muted-foreground/30 disabled:cursor-default"
+            placeholder={canEdit ? "Fange an zu schreiben… Ziele, Notizen, Ideen" : ""}
             value={content}
+            disabled={!canEdit}
             onChange={(e) => {
+              if (!canEdit) return
               setContent(e.target.value)
               saveContent(e.target.value)
             }}
