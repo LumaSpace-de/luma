@@ -619,8 +619,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
 
       </div>
 
-      <Separator />
-
       {/* Workspace pages — fixed at bottom above user footer */}
       {activeWorkspace && (
         <div className="max-h-60 overflow-auto px-3 py-3">
