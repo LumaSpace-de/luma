@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
 import { deletePage, getPageById, updatePageContent, updatePageIcon, updatePageTitle } from "@/lib/pages-db"
+import { getUserRoleInWorkspace } from "@/lib/workspaces-db"
 
 export async function GET(
   _req: NextRequest,
@@ -16,7 +17,10 @@ export async function GET(
   const page = await getPageById(params.id)
   if (!page) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 })
 
-  return NextResponse.json(page)
+  const role = await getUserRoleInWorkspace(session.user.id, page.workspaceId)
+  const canEdit = role !== null && role !== "viewer"
+
+  return NextResponse.json({ ...page, canEdit })
 }
 
 export async function PATCH(

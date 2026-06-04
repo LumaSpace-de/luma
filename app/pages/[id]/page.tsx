@@ -26,6 +26,7 @@ interface PageData {
   title: string
   content: string | null
   icon: string | null
+  canEdit: boolean
 }
 
 export default function PageView({ params }: { params: { id: string } }) {
@@ -35,6 +36,7 @@ export default function PageView({ params }: { params: { id: string } }) {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [icon, setIcon] = useState<string | null>(null)
+  const [canEdit, setCanEdit] = useState(false)
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -48,6 +50,7 @@ export default function PageView({ params }: { params: { id: string } }) {
           setTitle(data.title ?? "")
           setContent(data.content ?? "")
           setIcon(data.icon ?? null)
+          setCanEdit(data.canEdit ?? false)
         }
       })
       .catch(() => {})
@@ -146,8 +149,8 @@ export default function PageView({ params }: { params: { id: string } }) {
       {/* Editor */}
       <div className="flex-1 overflow-auto" onClick={() => setIconPickerOpen(false)}>
         <div className="mx-auto max-w-2xl px-6 py-10">
-          {/* Icon picker */}
-          <div className="relative mb-3" onClick={(e) => e.stopPropagation()}>
+          {/* Icon picker — only for members/admins/owners */}
+          {canEdit && <div className="relative mb-3" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setIconPickerOpen((o) => !o)}
               className={cn(
@@ -196,7 +199,14 @@ export default function PageView({ params }: { params: { id: string } }) {
                 </div>
               </div>
             )}
-          </div>
+          </div>}
+
+          {/* Icon display for viewers */}
+          {!canEdit && icon && (
+            <div className="mb-3 px-2">
+              <span className="text-2xl leading-none">{icon}</span>
+            </div>
+          )}
 
           {/* Title */}
           <input

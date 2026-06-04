@@ -39,6 +39,28 @@ export interface WorkspaceMember {
   avatarUrl: string | null
 }
 
+export async function getUserRoleInWorkspace(
+  userId: string,
+  workspaceId: string
+): Promise<WorkspaceRole | null> {
+  const { data: ws } = await supabase
+    .from("workspaces")
+    .select("owner_id")
+    .eq("id", workspaceId)
+    .maybeSingle()
+  if (!ws) return null
+  if (ws.owner_id === userId) return "owner"
+
+  const { data: member } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userId)
+    .maybeSingle()
+  if (!member) return null
+  return (member.role ?? "member") as WorkspaceRole
+}
+
 export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> {
   // 1. Owned workspaces (excluding private)
   const { data: owned } = await supabase

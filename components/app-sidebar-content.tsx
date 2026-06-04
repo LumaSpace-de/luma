@@ -212,6 +212,7 @@ function PageTree({
                         Umbenennen
                       </DropdownMenuItem>
                     )}
+                    {canRename && (
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger className="gap-2 text-xs">
                         <Smile className="h-3.5 w-3.5" />
@@ -242,6 +243,7 @@ function PageTree({
                         )}
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
+                    )}
                     <DropdownMenuItem className="gap-2 text-xs" onClick={() => onFavorite(page)}>
                       <Star className={cn("h-3.5 w-3.5", isFav && "fill-yellow-400 text-yellow-400")} />
                       {isFav ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
