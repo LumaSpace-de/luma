@@ -2,8 +2,9 @@ import { getServerSession } from "next-auth"
 import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
+import { createInvitation } from "@/lib/invitations-db"
 import { findUserByEmail } from "@/lib/users-db"
-import { addWorkspaceMember, getWorkspaceMembers } from "@/lib/workspaces-db"
+import { getWorkspaceMembers } from "@/lib/workspaces-db"
 
 export async function GET(
   _req: NextRequest,
@@ -44,13 +45,13 @@ export async function POST(
   }
 
   try {
-    await addWorkspaceMember(params.id, user.id)
+    await createInvitation(params.id, user.id, session.user.id)
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : ""
     if (msg.includes("duplicate") || msg.includes("unique")) {
-      return NextResponse.json({ error: "Nutzer ist bereits Mitglied" }, { status: 400 })
+      return NextResponse.json({ error: "Einladung wurde bereits gesendet oder Nutzer ist bereits Mitglied" }, { status: 400 })
     }
-    return NextResponse.json({ error: "Fehler beim Hinzufügen" }, { status: 500 })
+    return NextResponse.json({ error: "Fehler beim Einladen" }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

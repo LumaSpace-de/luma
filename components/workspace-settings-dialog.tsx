@@ -413,7 +413,7 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
                   </Button>
                 </div>
                 {addError && <p className="text-xs text-destructive">{addError}</p>}
-                {addSuccess && <p className="text-xs text-green-500">Mitglied hinzugefügt</p>}
+                {addSuccess && <p className="text-xs text-green-500">Einladung gesendet ✓</p>}
               </form>
             )}
           </section>

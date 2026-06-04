@@ -299,6 +299,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
   const [privatePages, setPrivatePages] = useState<Page[]>([])
 
   const [favorites, setFavorites] = useState<FavoritePage[]>([])
+  const [inboxCount, setInboxCount] = useState(0)
 
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [templatesParentId, setTemplatesParentId] = useState<string | null>(null)
@@ -325,6 +326,11 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         const saved = data.find((w) => w.id === savedId)
         setActiveWorkspace(saved ?? data[0] ?? null)
       })
+      .catch(() => {})
+
+    fetch("/api/inbox?count=1")
+      .then((r) => r.json())
+      .then((d) => { if (typeof d.count === "number") setInboxCount(d.count) })
       .catch(() => {})
 
     fetch("/api/workspaces/private")
@@ -489,6 +495,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
           {navigationItems.map((item) => {
             const Icon = item.icon
             const active = pathname === item.href
+            const badge = item.href === "/inbox" && inboxCount > 0 ? inboxCount : null
             return (
               <Link
                 key={item.href}
@@ -502,7 +509,12 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {badge !== null && (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                    {badge}
+                  </span>
+                )}
               </Link>
             )
           })}
