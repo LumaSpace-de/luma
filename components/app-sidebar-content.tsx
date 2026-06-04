@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import { TemplatesDialog } from "@/components/templates-dialog"
-import { AIAssistantDialog } from "@/components/ai-assistant-dialog"
 import {
   Building2,
   Calendar,
@@ -688,7 +687,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         }}
       />
 
-      <AIAssistantDialog open={aiOpen} onClose={() => setAiOpen(false)} />
 
       {/* User footer */}
       <div className="p-4">
