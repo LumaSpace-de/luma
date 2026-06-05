@@ -12,6 +12,7 @@ import {
   Calendar,
   ChevronDown,
   ChevronRight,
+  Compass,
   FileText,
   Home,
   Lock,
@@ -76,6 +77,7 @@ const navigationItems = [
   { icon: Calendar, label: "Kalender", href: "/calendar" },
   { icon: Mail, label: "Inbox", href: "/inbox" },
   { icon: BarChart2, label: "Statistiken", href: "/statistics" },
+  { icon: Compass, label: "Entdecken", href: "/discover" },
 ]
 
 const planLabel: Record<WorkspacePlan, string> = {
