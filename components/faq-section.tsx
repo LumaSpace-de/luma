@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: "Wie bekomme ich Enterprise-Zugang?",
-    a: "Schreib uns eine E-Mail an support@lumaspace.de mit dem Betreff „Enterprise-Anfrage". Wir melden uns innerhalb von 24 Stunden bei dir.",
+    a: "Schreib uns eine E-Mail an support@lumaspace.de mit dem Betreff 'Enterprise-Anfrage'. Wir melden uns innerhalb von 24 Stunden bei dir.",
   },
 ]
 
