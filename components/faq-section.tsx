@@ -57,7 +57,28 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   )
 }
 
-export function FaqSection() {
+interface FaqSectionProps {
+  variant?: "landing" | "dashboard"
+}
+
+export function FaqSection({ variant = "landing" }: FaqSectionProps) {
+  if (variant === "dashboard") {
+    return (
+      <div className="mt-10">
+        <div className="mb-5">
+          <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground">
+            Häufige Fragen
+          </h2>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-card px-5">
+          {FAQS.map((faq) => (
+            <FaqItem key={faq.q} q={faq.q} a={faq.a} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <section className="relative z-10 mx-auto w-full max-w-2xl px-6 pb-28">
       <div className="mb-10 text-center">
