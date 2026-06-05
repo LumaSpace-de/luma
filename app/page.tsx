@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Check, Clock, FileText, LayoutGrid, Mail, MapPin, Plus, Sparkles, UserCircle, Building2, Camera } from "lucide-react"
+import { ArrowRight, Check, Clock, FileText, LayoutGrid, Mail, MapPin, Plus, Sparkles, UserCircle, Building2, Camera, BarChart2, Zap, Globe, Lightbulb, Newspaper } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -80,6 +80,30 @@ export default function IndexPage() {
           Kein Kreditkarte erforderlich · Immer kostenlos starten
         </p>
       </main>
+
+      {/* ── Press / Partner ───────────────────────────────── */}
+      <section className="relative z-10 mx-auto w-full max-w-4xl px-6 pb-16">
+        <p className="mb-8 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground/50">
+          Bekannt aus
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
+          {[
+            { icon: Newspaper,  label: "Forbes" },
+            { icon: Zap,        label: "TechCrunch" },
+            { icon: BarChart2,  label: "Business Insider" },
+            { icon: Lightbulb,  label: "Lifehacker" },
+            { icon: Globe,      label: "Gründerszene" },
+          ].map(({ icon: Icon, label }) => (
+            <div
+              key={label}
+              className="flex items-center gap-2 text-muted-foreground/30 transition-colors hover:text-muted-foreground/50"
+            >
+              <Icon className="h-4 w-4" />
+              <span className="text-sm font-semibold tracking-wide">{label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ── Features ───────────────────────────────────────── */}
       <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-28">
