@@ -404,42 +404,9 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
 
   return (
     <div className="mt-2">
-      {/* Nav toolbar for adding blocks */}
-      {canEdit && (
-        <div ref={menuRef} className="mb-3 flex items-center gap-1 rounded-lg border border-border/40 bg-muted/20 px-2 py-1">
-          <button
-            onClick={() => setMenuOpen(o => !o)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground",
-              menuOpen && "bg-accent text-foreground"
-            )}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Hinzufügen</span>
-          </button>
-
-          {menuOpen && (
-            <>
-              <div className="mx-1 h-4 w-px bg-border/60" />
-              {BLOCK_TYPES.map(bt => (
-                <button
-                  key={bt.type}
-                  onClick={() => addBlock(bt.type)}
-                  className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  title={bt.description}
-                >
-                  {bt.icon}
-                  <span className="hidden sm:inline">{bt.label}</span>
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-      )}
-
       {/* Rendered blocks */}
       {blocks.length > 0 && (
-        <div className="flex flex-col gap-3 pl-7">
+        <div className="flex flex-col gap-3 pl-7 mb-4">
           {blocks.map((block, i) => (
             <BlockWrapper
               key={block.id}
@@ -470,6 +437,41 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
               )}
             </BlockWrapper>
           ))}
+        </div>
+      )}
+
+      {/* Centered + pill button */}
+      {canEdit && (
+        <div ref={menuRef} className="relative flex justify-center">
+          <button
+            onClick={() => setMenuOpen(o => !o)}
+            className="flex items-center gap-2 rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background shadow-md transition-opacity hover:opacity-80"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 overflow-hidden rounded-xl border bg-popover shadow-xl">
+              <div className="border-b border-border/40 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                Block einfügen
+              </div>
+              {BLOCK_TYPES.map(bt => (
+                <button
+                  key={bt.type}
+                  onClick={() => addBlock(bt.type)}
+                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-muted">
+                    {bt.icon}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium leading-tight">{bt.label}</p>
+                    <p className="text-xs text-muted-foreground">{bt.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
