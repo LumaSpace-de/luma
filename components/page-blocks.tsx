@@ -420,7 +420,13 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
               onDelete={() => removeBlock(block.id)}
             >
               {block.type === "task_table" && (
-                <PageTaskTable pageId={pageId} canEdit={canEdit} />
+                <PageTaskTable
+                  pageId={pageId}
+                  canEdit={canEdit}
+                  blockData={block.data}
+                  onBlockDataChange={d => updateBlockData(block.id, d)}
+                  onRemoveTable={() => removeBlock(block.id)}
+                />
               )}
               {block.type === "divider" && <DividerBlock />}
               {block.type === "heading" && (

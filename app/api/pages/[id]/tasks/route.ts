@@ -30,8 +30,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const role = await getUserRoleInWorkspace(session.user.id, page.workspaceId)
   if (!role || role === "viewer") return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 })
 
-  const { title } = await req.json()
-  const task = await createTask(params.id, title ?? "")
+  const { title, rowData } = await req.json()
+  const task = await createTask(params.id, title ?? "", rowData ?? {})
   if (!task) return NextResponse.json({ error: "Fehler beim Erstellen" }, { status: 500 })
   return NextResponse.json(task, { status: 201 })
 }
