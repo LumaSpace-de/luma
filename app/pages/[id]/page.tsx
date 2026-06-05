@@ -42,6 +42,15 @@ export default function PageView({ params }: { params: { id: string } }) {
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-resize textarea on content change
+  useEffect(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.style.height = "auto"
+    ta.style.height = `${ta.scrollHeight}px`
+  }, [content])
 
   useEffect(() => {
     fetch(`/api/pages/${params.id}`)
@@ -227,7 +236,9 @@ export default function PageView({ params }: { params: { id: string } }) {
 
           {/* Content */}
           <textarea
-            className="mt-6 min-h-[35vh] w-full resize-none bg-transparent text-sm leading-relaxed text-foreground/90 outline-none placeholder:text-muted-foreground/30 disabled:cursor-default"
+            ref={textareaRef}
+            rows={3}
+            className="mt-4 w-full resize-none bg-transparent text-sm leading-relaxed text-foreground/90 outline-none placeholder:text-muted-foreground/30 disabled:cursor-default"
             placeholder={canEdit ? "Fange an zu schreiben… Ziele, Notizen, Ideen" : ""}
             value={content}
             disabled={!canEdit}
