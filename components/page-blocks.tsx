@@ -451,7 +451,7 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
           </button>
 
           {menuOpen && (
-            <div className="absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 overflow-hidden rounded-xl border bg-popover shadow-xl">
+            <div className="absolute top-full left-1/2 z-50 mt-2 w-56 -translate-x-1/2 overflow-hidden rounded-xl border bg-popover shadow-xl">
               <div className="border-b border-border/40 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
                 Block einfügen
               </div>
