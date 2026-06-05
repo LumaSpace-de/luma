@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { WorkspaceSettingsDialog } from "@/components/workspace-settings-dialog"
-import { FaqSection } from "@/components/faq-section"
 
 type WorkspacePlan = "free" | "enterprise"
 
@@ -177,7 +176,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <FaqSection variant="dashboard" />
       </div>
 
       {/* Create workspace dialog */}
