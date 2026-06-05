@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 
 import { TemplatesDialog } from "@/components/templates-dialog"
 import {
+  BarChart2,
   Building2,
   Calendar,
   ChevronDown,
@@ -74,6 +75,7 @@ const navigationItems = [
   { icon: Home, label: "Dashboard", href: "/dashboard" },
   { icon: Calendar, label: "Kalender", href: "/calendar" },
   { icon: Mail, label: "Inbox", href: "/inbox" },
+  { icon: BarChart2, label: "Statistiken", href: "/statistics" },
 ]
 
 const planLabel: Record<WorkspacePlan, string> = {
