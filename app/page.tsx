@@ -4,6 +4,7 @@ import { ArrowRight, Check, Clock, FileText, LayoutGrid, Mail, MapPin, Plus, Spa
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { FaqSection } from "@/components/faq-section"
 
 export default function IndexPage() {
   return (
@@ -481,6 +482,9 @@ export default function IndexPage() {
 
         </div>
       </section>
+
+      {/* ── FAQ ────────────────────────────────────────────── */}
+      <FaqSection />
 
       {/* ── Footer ─────────────────────────────────────────── */}
       <footer className="relative z-10 border-t border-border/40 py-6 text-center">
