@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Check, ChevronDown, Plus, Trash2 } from "lucide-react"
+import { Check, ChevronDown, Plus, Trash2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PageTask } from "@/lib/tasks-db"
 
@@ -85,13 +85,15 @@ function PriorityBadge({ value, onChange, disabled }: { value: PageTask["priorit
 interface PageTaskTableProps {
   pageId: string
   canEdit: boolean
+  onRemove?: () => void
 }
 
-export function PageTaskTable({ pageId, canEdit }: PageTaskTableProps) {
+export function PageTaskTable({ pageId, canEdit, onRemove }: PageTaskTableProps) {
   const [tasks, setTasks] = useState<PageTask[]>([])
   const [loading, setLoading] = useState(true)
   const [newTitle, setNewTitle] = useState("")
   const [adding, setAdding] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const newInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -141,15 +143,41 @@ export function PageTaskTable({ pageId, canEdit }: PageTaskTableProps) {
     await fetch(`/api/pages/${pageId}/tasks/${id}`, { method: "DELETE" })
   }
 
+  async function handleRemove() {
+    // delete all tasks then call onRemove
+    await Promise.all(tasks.map(t => fetch(`/api/pages/${pageId}/tasks/${t.id}`, { method: "DELETE" })))
+    setTasks([])
+    onRemove?.()
+  }
+
   if (loading) return null
 
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-muted-foreground">Aufgaben</h3>
-        <span className="text-xs text-muted-foreground/50">
-          {tasks.filter(t => t.status === "done").length}/{tasks.length} erledigt
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground/50">
+            {tasks.filter(t => t.status === "done").length}/{tasks.length} erledigt
+          </span>
+          {canEdit && onRemove && (
+            confirmRemove ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Tabelle löschen?</span>
+                <button onClick={handleRemove} className="text-xs text-destructive hover:underline">Ja</button>
+                <button onClick={() => setConfirmRemove(false)} className="text-xs text-muted-foreground hover:underline">Nein</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmRemove(true)}
+                className="flex items-center gap-1 text-xs text-muted-foreground/40 transition-colors hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Entfernen
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border/60">

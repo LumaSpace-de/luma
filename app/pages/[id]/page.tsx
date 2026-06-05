@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { MoreHorizontal, PanelLeft, Smile, Trash2, X } from "lucide-react"
+import { CheckSquare, MoreHorizontal, PanelLeft, Plus, Smile, Trash2, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -41,6 +41,8 @@ export default function PageView({ params }: { params: { id: string } }) {
   const [canDelete, setCanDelete] = useState(false)
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showTaskTable, setShowTaskTable] = useState(false)
+  const [blockMenuOpen, setBlockMenuOpen] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -56,6 +58,11 @@ export default function PageView({ params }: { params: { id: string } }) {
           setCanDelete(data.canDelete ?? false)
         }
       })
+      .catch(() => {})
+    // auto-show task table if tasks already exist for this page
+    fetch(`/api/pages/${params.id}/tasks`)
+      .then(r => r.ok ? r.json() : [])
+      .then((tasks: unknown[]) => { if (tasks.length > 0) setShowTaskTable(true) })
       .catch(() => {})
   }, [params.id])
 
@@ -238,8 +245,50 @@ export default function PageView({ params }: { params: { id: string } }) {
             }}
           />
 
-          {/* Task table */}
-          <PageTaskTable pageId={params.id} canEdit={canEdit} />
+          {/* + Block menu button */}
+          {canEdit && !showTaskTable && (
+            <div className="relative mt-4">
+              <button
+                onClick={() => setBlockMenuOpen(o => !o)}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground/40 transition-colors hover:bg-accent/50 hover:text-muted-foreground"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Inhalt hinzufügen</span>
+              </button>
+
+              {blockMenuOpen && (
+                <div
+                  className="absolute left-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-xl border bg-popover shadow-lg"
+                  onMouseLeave={() => setBlockMenuOpen(false)}
+                >
+                  <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                    Block einfügen
+                  </div>
+                  <button
+                    onClick={() => { setShowTaskTable(true); setBlockMenuOpen(false) }}
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-muted">
+                      <CheckSquare className="h-4 w-4 text-blue-400" />
+                    </span>
+                    <div>
+                      <p className="font-medium">Aufgabentabelle</p>
+                      <p className="text-xs text-muted-foreground">Tasks mit Status & Priorität</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Task table block */}
+          {showTaskTable && (
+            <PageTaskTable
+              pageId={params.id}
+              canEdit={canEdit}
+              onRemove={() => setShowTaskTable(false)}
+            />
+          )}
         </div>
       </div>
     </div>
