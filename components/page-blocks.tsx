@@ -4,18 +4,19 @@ import { useEffect, useRef, useState } from "react"
 import {
   AlertCircle,
   CheckSquare,
-  ChevronDown,
   Code2,
   GripVertical,
   Heading1,
   Minus,
   Plus,
   Quote,
+  Table2,
   Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PageBlock, BlockType } from "@/lib/blocks-db"
 import { PageTaskTable } from "@/components/page-task-table"
+import { PageDataTable } from "@/components/page-data-table"
 
 // ── Block menu definition ──────────────────────────────────────────────────
 
@@ -30,6 +31,12 @@ const BLOCK_TYPES: {
     label: "Aufgabentabelle",
     description: "Tasks mit Status & Priorität",
     icon: <CheckSquare className="h-4 w-4 text-blue-400" />,
+  },
+  {
+    type: "data_table",
+    label: "Datenbank",
+    description: "Freie Tabelle mit eigenen Spalten",
+    icon: <Table2 className="h-4 w-4 text-teal-400" />,
   },
   {
     type: "heading",
@@ -296,7 +303,7 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
 
   async function removeBlock(id: string) {
     const block = blocks.find(b => b.id === id)
-    if (block?.type === "task_table") {
+    if (block?.type === "task_table" || block?.type === "data_table") {
       const tasks: { id: string }[] = await fetch(`/api/pages/${pageId}/tasks?blockId=${id}`).then(r => r.ok ? r.json() : [])
       await Promise.all(tasks.map(t => fetch(`/api/pages/${pageId}/tasks/${t.id}`, { method: "DELETE" })))
     }
@@ -345,6 +352,16 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
             >
               {block.type === "task_table" && (
                 <PageTaskTable
+                  pageId={pageId}
+                  blockId={block.id}
+                  canEdit={canEdit}
+                  blockData={block.data}
+                  onBlockDataChange={d => updateBlockData(block.id, d)}
+                  onRemoveTable={() => removeBlock(block.id)}
+                />
+              )}
+              {block.type === "data_table" && (
+                <PageDataTable
                   pageId={pageId}
                   blockId={block.id}
                   canEdit={canEdit}
