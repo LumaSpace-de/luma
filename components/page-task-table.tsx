@@ -404,7 +404,7 @@ export function PageTaskTable({
                 </th>
               )}
 
-              {canEdit && <th className="w-8" />}
+              {canEdit && <th className="w-10" />}
             </tr>
           </thead>
 
@@ -505,13 +505,14 @@ export function PageTaskTable({
                   </td>
                 ))}
 
-                {canEdit && <td />}
-
                 {/* Delete row */}
                 {canEdit && (
-                  <td className="w-8 px-1 py-1.5">
-                    <button onClick={() => remove(task.id)} className="transition-colors">
-                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground/20 hover:text-destructive" />
+                  <td className="w-10 px-2 py-1.5">
+                    <button
+                      onClick={() => remove(task.id)}
+                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </td>
                 )}
