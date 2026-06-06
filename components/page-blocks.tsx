@@ -355,7 +355,7 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
     // Also delete tasks if it's a task_table block
     const block = blocks.find(b => b.id === id)
     if (block?.type === "task_table") {
-      const tasks: { id: string }[] = await fetch(`/api/pages/${pageId}/tasks`).then(r => r.ok ? r.json() : [])
+      const tasks: { id: string }[] = await fetch(`/api/pages/${pageId}/tasks?blockId=${id}`).then(r => r.ok ? r.json() : [])
       await Promise.all(tasks.map(t => fetch(`/api/pages/${pageId}/tasks/${t.id}`, { method: "DELETE" })))
     }
     setBlocks(prev => prev.filter(b => b.id !== id))
@@ -422,6 +422,7 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
               {block.type === "task_table" && (
                 <PageTaskTable
                   pageId={pageId}
+                  blockId={block.id}
                   canEdit={canEdit}
                   blockData={block.data}
                   onBlockDataChange={d => updateBlockData(block.id, d)}

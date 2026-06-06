@@ -93,13 +93,14 @@ function EditableLabel({ value, canEdit, onSave, className }: { value: string; c
 
 interface PageTaskTableProps {
   pageId: string
+  blockId: string
   canEdit: boolean
   blockData?: Record<string, unknown>
   onBlockDataChange?: (data: Record<string, unknown>) => void
   onRemoveTable?: () => void
 }
 
-export function PageTaskTable({ pageId, canEdit, blockData, onBlockDataChange, onRemoveTable }: PageTaskTableProps) {
+export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockDataChange, onRemoveTable }: PageTaskTableProps) {
   const tableName     = (blockData?.name as string) ?? "Aufgaben"
   const customColumns = (blockData?.customColumns as CustomColumn[]) ?? []
   const builtinLabels = (blockData?.builtinLabels as Record<string, string>) ?? {}
@@ -116,8 +117,7 @@ export function PageTaskTable({ pageId, canEdit, blockData, onBlockDataChange, o
   ]
   // Visible columns in order (skip hidden builtins)
   const visibleColIds = columnOrder.filter(id =>
-    (id === "title") ||
-    ((id === "status" || id === "priority") && !hiddenBuiltins.includes(id)) ||
+    ((id === "title" || id === "status" || id === "priority") && !hiddenBuiltins.includes(id)) ||
     customColumns.some(c => c.id === id)
   )
 
@@ -133,12 +133,12 @@ export function PageTaskTable({ pageId, canEdit, blockData, onBlockDataChange, o
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetch(`/api/pages/${pageId}/tasks`)
+    fetch(`/api/pages/${pageId}/tasks?blockId=${blockId}`)
       .then(r => r.ok ? r.json() : [])
       .then((d: unknown) => setTasks(Array.isArray(d) ? d as Task[] : []))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [pageId])
+  }, [pageId, blockId])
 
   // ── Block data helpers ─────────────────────────────────────────────────
 
@@ -198,7 +198,7 @@ export function PageTaskTable({ pageId, canEdit, blockData, onBlockDataChange, o
     const res = await fetch(`/api/pages/${pageId}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: init?.title ?? "", rowData: init?.rowData ?? {} }),
+      body: JSON.stringify({ title: init?.title ?? "", rowData: init?.rowData ?? {}, blockId }),
     })
     if (res.ok) { const t = await res.json() as Task; setTasks(prev => [...prev, t]) }
   }
@@ -284,6 +284,7 @@ export function PageTaskTable({ pageId, canEdit, blockData, onBlockDataChange, o
         <div className="group flex items-center gap-1">
           {canEdit && <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/30 active:cursor-grabbing" />}
           <EditableLabel value={builtinLabels.title ?? "Aufgabe"} canEdit={canEdit} onSave={v => renameBuiltin("title", v)} className="text-xs font-medium text-muted-foreground/70" />
+          {canEdit && <button onClick={() => hideBuiltin("title")} className="ml-auto shrink-0 opacity-0 transition-opacity group-hover:opacity-100"><X className="h-3 w-3 text-muted-foreground/40 hover:text-destructive" /></button>}
         </div>
       </th>
     )
