@@ -144,6 +144,8 @@ export function PageTaskTable({
 }: PageTaskTableProps) {
   const tableName = (blockData?.name as string) ?? "Aufgaben"
   const customColumns = (blockData?.customColumns as CustomColumn[]) ?? []
+  const builtinLabels = (blockData?.builtinLabels as Record<string, string>) ?? {}
+  const hiddenBuiltins = (blockData?.hiddenBuiltins as string[]) ?? []
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -182,6 +184,14 @@ export function PageTaskTable({
 
   function renameColumn(id: string, label: string) {
     bd({ customColumns: customColumns.map(c => c.id === id ? { ...c, label } : c) })
+  }
+
+  function renameBuiltin(key: string, label: string) {
+    bd({ builtinLabels: { ...builtinLabels, [key]: label } })
+  }
+
+  function hideBuiltin(key: string) {
+    bd({ hiddenBuiltins: [...hiddenBuiltins.filter(k => k !== key), key] })
   }
 
   // ── Task helpers ───────────────────────────────────────────────────────
@@ -267,7 +277,8 @@ export function PageTaskTable({
 
   if (loading) return <div className="h-16 animate-pulse rounded-xl bg-muted/20" />
 
-  const colCount = 4 + customColumns.length + (canEdit ? 2 : 0)
+  const visibleBuiltins = 2 - hiddenBuiltins.filter(k => k === "status" || k === "priority").length
+  const colCount = 2 + visibleBuiltins + customColumns.length + (canEdit ? 2 : 0)
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40">
@@ -317,9 +328,33 @@ export function PageTaskTable({
           <thead>
             <tr className="border-b border-border/30 bg-muted/10">
               <th className="w-9 px-2 py-1.5" />
-              <th className="min-w-[180px] px-3 py-1.5 text-left text-xs font-medium text-muted-foreground/70">Aufgabe</th>
-              <th className="w-28 px-3 py-1.5 text-left text-xs font-medium text-muted-foreground/70">Status</th>
-              <th className="w-24 px-3 py-1.5 text-left text-xs font-medium text-muted-foreground/70">Priorität</th>
+
+              {/* Aufgabe — always visible, renameable */}
+              <th className="min-w-[180px] px-3 py-1.5">
+                <div className="group flex items-center gap-1">
+                  <EditableLabel value={builtinLabels.title ?? "Aufgabe"} canEdit={canEdit} onSave={v => renameBuiltin("title", v)} className="text-xs font-medium text-muted-foreground/70" />
+                </div>
+              </th>
+
+              {/* Status — renameable + removable */}
+              {!hiddenBuiltins.includes("status") && (
+                <th className="w-28 px-3 py-1.5">
+                  <div className="group flex items-center gap-1">
+                    <EditableLabel value={builtinLabels.status ?? "Status"} canEdit={canEdit} onSave={v => renameBuiltin("status", v)} className="text-xs font-medium text-muted-foreground/70" />
+                    {canEdit && <button onClick={() => hideBuiltin("status")} className="ml-auto shrink-0 opacity-0 transition-opacity group-hover:opacity-100"><X className="h-3 w-3 text-muted-foreground/40 hover:text-destructive" /></button>}
+                  </div>
+                </th>
+              )}
+
+              {/* Priorität — renameable + removable */}
+              {!hiddenBuiltins.includes("priority") && (
+                <th className="w-24 px-3 py-1.5">
+                  <div className="group flex items-center gap-1">
+                    <EditableLabel value={builtinLabels.priority ?? "Priorität"} canEdit={canEdit} onSave={v => renameBuiltin("priority", v)} className="text-xs font-medium text-muted-foreground/70" />
+                    {canEdit && <button onClick={() => hideBuiltin("priority")} className="ml-auto shrink-0 opacity-0 transition-opacity group-hover:opacity-100"><X className="h-3 w-3 text-muted-foreground/40 hover:text-destructive" /></button>}
+                  </div>
+                </th>
+              )}
 
               {customColumns.map(col => (
                 <th key={col.id} className="min-w-[120px] px-3 py-1.5">
@@ -413,7 +448,7 @@ export function PageTaskTable({
                 </td>
 
                 {/* Status */}
-                <td className="w-28 px-3 py-1.5">
+                {!hiddenBuiltins.includes("status") && <td className="w-28 px-3 py-1.5">
                   <MiniSelect
                     value={task.status}
                     options={STATUS_OPTS}
@@ -425,10 +460,10 @@ export function PageTaskTable({
                     }}
                     renderItem={o => { const s = STATUS_OPTS.find(x => x.value === o.value)!; return <span className={cn("text-xs", s.color)}>{o.label}</span> }}
                   />
-                </td>
+                </td>}
 
                 {/* Priority */}
-                <td className="w-24 px-3 py-1.5">
+                {!hiddenBuiltins.includes("priority") && <td className="w-24 px-3 py-1.5">
                   <MiniSelect
                     value={task.priority}
                     options={PRIORITY_OPTS}
@@ -450,7 +485,7 @@ export function PageTaskTable({
                       </span>
                     )}}
                   />
-                </td>
+                </td>}
 
                 {/* Custom column cells */}
                 {customColumns.map(col => (
@@ -475,11 +510,8 @@ export function PageTaskTable({
                 {/* Delete row */}
                 {canEdit && (
                   <td className="w-8 px-1 py-1.5">
-                    <button
-                      onClick={() => remove(task.id)}
-                      className="opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground/30 hover:text-destructive" />
+                    <button onClick={() => remove(task.id)} className="transition-colors">
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground/20 hover:text-destructive" />
                     </button>
                   </td>
                 )}
