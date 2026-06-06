@@ -1,0 +1,90 @@
+import { supabase } from "./supabase"
+
+export interface PageTask {
+  id: string
+  pageId: string
+  title: string
+  status: "todo" | "in_progress" | "done"
+  priority: "low" | "medium" | "high"
+  dueDate: string | null
+  rowData: Record<string, string>
+  createdAt: string
+}
+
+// Required SQL (run once in Supabase):
+// CREATE TABLE IF NOT EXISTS page_blocks (
+//   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+//   page_id UUID NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+//   type TEXT NOT NULL,
+//   data JSONB NOT NULL DEFAULT '{}',
+//   position INTEGER NOT NULL DEFAULT 0,
+//   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+// );
+// CREATE TABLE IF NOT EXISTS page_tasks (
+//   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+//   page_id UUID NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+//   block_id UUID,
+//   title TEXT NOT NULL DEFAULT '',
+//   status TEXT NOT NULL DEFAULT 'todo',
+//   priority TEXT NOT NULL DEFAULT 'medium',
+//   due_date TEXT,
+//   row_data JSONB DEFAULT '{}',
+//   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+// );
+
+function rowToTask(r: Record<string, unknown>): PageTask {
+  return {
+    id: r.id as string,
+    pageId: r.page_id as string,
+    title: r.title as string,
+    status: (r.status as PageTask["status"]) ?? "todo",
+    priority: (r.priority as PageTask["priority"]) ?? "medium",
+    dueDate: (r.due_date as string | null) ?? null,
+    rowData: (r.row_data as Record<string, string>) ?? {},
+    createdAt: r.created_at as string,
+  }
+}
+
+export async function getTasksByPage(pageId: string, blockId?: string): Promise<PageTask[]> {
+  let q = supabase.from("page_tasks").select("*").eq("page_id", pageId)
+  if (blockId) q = q.eq("block_id", blockId)
+  const { data, error } = await q.order("created_at", { ascending: true })
+  if (error || !data) return []
+  return data.map(rowToTask)
+}
+
+export async function createTask(
+  pageId: string,
+  title: string,
+  rowData: Record<string, string> = {},
+  blockId?: string
+): Promise<PageTask | null> {
+  const { data, error } = await supabase
+    .from("page_tasks")
+    .insert({ page_id: pageId, title, row_data: rowData, block_id: blockId ?? null })
+    .select()
+    .single()
+  if (error || !data) return null
+  return rowToTask(data)
+}
+
+export async function updateTask(
+  id: string,
+  patch: Partial<Omit<PageTask, "id" | "pageId" | "createdAt">>
+): Promise<void> {
+  const dbPatch: Record<string, unknown> = {}
+  if ("title" in patch) dbPatch.title = patch.title
+  if ("status" in patch) dbPatch.status = patch.status
+  if ("priority" in patch) dbPatch.priority = patch.priority
+  if ("dueDate" in patch) dbPatch.due_date = patch.dueDate
+  if ("rowData" in patch) dbPatch.row_data = patch.rowData
+  await supabase.from("page_tasks").update(dbPatch).eq("id", id)
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  await supabase.from("page_tasks").delete().eq("id", id)
+}
+
+export async function deleteTasksByBlock(blockId: string): Promise<void> {
+  await supabase.from("page_tasks").delete().eq("block_id", blockId)
+}

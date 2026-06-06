@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
+import { PageBlocks } from "@/components/page-blocks"
 import { cn } from "@/lib/utils"
 
 const EMOJI_OPTIONS = [
@@ -226,7 +227,8 @@ export default function PageView({ params }: { params: { id: string } }) {
 
           {/* Content */}
           <textarea
-            className="mt-6 min-h-[60vh] w-full resize-none bg-transparent text-sm leading-relaxed text-foreground/90 outline-none placeholder:text-muted-foreground/30 disabled:cursor-default"
+            className="mt-4 w-full resize-none bg-transparent text-sm leading-relaxed text-foreground/90 outline-none placeholder:text-muted-foreground/30 disabled:cursor-default"
+            rows={3}
             placeholder={canEdit ? "Fange an zu schreiben… Ziele, Notizen, Ideen" : ""}
             value={content}
             disabled={!canEdit}
@@ -236,6 +238,9 @@ export default function PageView({ params }: { params: { id: string } }) {
               saveContent(e.target.value)
             }}
           />
+
+          {/* Blocks */}
+          <PageBlocks pageId={params.id} canEdit={canEdit} />
         </div>
       </div>
     </div>
