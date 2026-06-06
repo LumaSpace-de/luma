@@ -40,17 +40,29 @@ function MiniSelect<T extends string>({
   renderItem: (o: { value: T; label: string }) => React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  const [rect, setRect] = useState<{ top: number; left: number } | null>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+
+  function handleOpen() {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setRect({ top: r.bottom + 4, left: r.left })
+    }
+    setOpen(o => !o)
+  }
+
   if (disabled) return <>{renderTrigger(value)}</>
   return (
     <div className="relative">
-      <button onClick={() => setOpen(o => !o)} className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-accent/60 transition-colors">
+      <button ref={btnRef} onClick={handleOpen} className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-accent/60 transition-colors">
         {renderTrigger(value)}
         <ChevronDown className="h-3 w-3 opacity-40" />
       </button>
-      {open && (
+      {open && rect && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-50 mt-0.5 min-w-[120px] overflow-hidden rounded-lg border bg-popover shadow-lg">
+          <div className="fixed z-50 min-w-[120px] overflow-hidden rounded-lg border bg-popover shadow-lg"
+            style={{ top: rect.top, left: rect.left }}>
             {options.map(o => (
               <button key={o.value} onClick={() => { onChange(o.value); setOpen(false) }}
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent transition-colors">
