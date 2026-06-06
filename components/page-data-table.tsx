@@ -350,9 +350,11 @@ export function PageDataTable({ pageId, blockId, canEdit, blockData, onBlockData
                       <div className="group flex items-center gap-1">
                         {canEdit && <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/30 active:cursor-grabbing" />}
                         <EditableLabel value={col.label} canEdit={canEdit} onSave={v => renameColumn(col.id, v)} className="text-xs font-medium text-muted-foreground/70" />
-                        <span className="ml-1 shrink-0 rounded bg-muted/60 px-1 py-px text-[9px] text-muted-foreground/40 hidden group-hover:inline">
-                          {COL_TYPE_LABELS[col.type]}
-                        </span>
+                        {col.type !== "text" && (
+                          <span className="ml-1 shrink-0 rounded bg-muted/60 px-1 py-px text-[9px] text-muted-foreground/40">
+                            {COL_TYPE_LABELS[col.type]}
+                          </span>
+                        )}
                         {canEdit && <button onClick={() => removeColumn(col.id)} className="ml-auto shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
                           <X className="h-3 w-3 text-muted-foreground/40 hover:text-destructive" />
                         </button>}
