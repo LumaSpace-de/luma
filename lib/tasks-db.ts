@@ -13,6 +13,7 @@ export interface PageTask {
 
 // Required SQL (run once in Supabase):
 // ALTER TABLE page_tasks ADD COLUMN IF NOT EXISTS row_data JSONB DEFAULT '{}';
+// ALTER TABLE page_tasks ADD COLUMN IF NOT EXISTS block_id UUID;
 
 function rowToTask(r: Record<string, unknown>): PageTask {
   return {
@@ -27,12 +28,10 @@ function rowToTask(r: Record<string, unknown>): PageTask {
   }
 }
 
-export async function getTasksByPage(pageId: string): Promise<PageTask[]> {
-  const { data, error } = await supabase
-    .from("page_tasks")
-    .select("*")
-    .eq("page_id", pageId)
-    .order("created_at", { ascending: true })
+export async function getTasksByPage(pageId: string, blockId?: string): Promise<PageTask[]> {
+  let q = supabase.from("page_tasks").select("*").eq("page_id", pageId)
+  if (blockId) q = q.eq("block_id", blockId)
+  const { data, error } = await q.order("created_at", { ascending: true })
   if (error || !data) return []
   return data.map(rowToTask)
 }
@@ -40,11 +39,12 @@ export async function getTasksByPage(pageId: string): Promise<PageTask[]> {
 export async function createTask(
   pageId: string,
   title: string,
-  rowData: Record<string, string> = {}
+  rowData: Record<string, string> = {},
+  blockId?: string
 ): Promise<PageTask | null> {
   const { data, error } = await supabase
     .from("page_tasks")
-    .insert({ page_id: pageId, title, row_data: rowData })
+    .insert({ page_id: pageId, title, row_data: rowData, block_id: blockId ?? null })
     .select()
     .single()
   if (error || !data) return null

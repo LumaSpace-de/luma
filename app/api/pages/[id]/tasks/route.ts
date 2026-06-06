@@ -6,7 +6,7 @@ import { getPageById } from "@/lib/pages-db"
 import { getUserRoleInWorkspace } from "@/lib/workspaces-db"
 import { createTask, getTasksByPage } from "@/lib/tasks-db"
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
 
@@ -16,7 +16,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const role = await getUserRoleInWorkspace(session.user.id, page.workspaceId)
   if (!role) return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 })
 
-  const tasks = await getTasksByPage(params.id)
+  const blockId = req.nextUrl.searchParams.get("blockId") ?? undefined
+  const tasks = await getTasksByPage(params.id, blockId)
   return NextResponse.json(tasks)
 }
 
@@ -30,8 +31,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const role = await getUserRoleInWorkspace(session.user.id, page.workspaceId)
   if (!role || role === "viewer") return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 })
 
-  const { title, rowData } = await req.json()
-  const task = await createTask(params.id, title ?? "", rowData ?? {})
+  const { title, rowData, blockId } = await req.json()
+  const task = await createTask(params.id, title ?? "", rowData ?? {}, blockId ?? undefined)
   if (!task) return NextResponse.json({ error: "Fehler beim Erstellen" }, { status: 500 })
   return NextResponse.json(task, { status: 201 })
 }
