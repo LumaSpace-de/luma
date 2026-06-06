@@ -42,6 +42,15 @@ export default function PageView({ params }: { params: { id: string } }) {
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-resize textarea on content change
+  useEffect(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.style.height = "auto"
+    ta.style.height = `${ta.scrollHeight}px`
+  }, [content])
 
   useEffect(() => {
     fetch(`/api/pages/${params.id}`)

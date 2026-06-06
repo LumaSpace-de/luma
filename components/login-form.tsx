@@ -37,7 +37,7 @@ export function LoginForm({
       setError("Ungültige E-Mail oder falsches Passwort")
       setLoading(false)
     } else {
-      window.location.href = "/calendar"
+      window.location.href = "/dashboard"
     }
   }
 
