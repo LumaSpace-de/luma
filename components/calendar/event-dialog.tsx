@@ -2,7 +2,7 @@
 
 import { format } from "date-fns"
 import { de } from "date-fns/locale"
-import { MapPin, Plus, Trash2, X } from "lucide-react"
+import { Bell, FileText, MapPin, Plus, Repeat, Trash2, X } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -14,8 +14,31 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CalendarEvent, CalendarLabel, EventColor } from "@/types/calendar"
+import { CalendarEvent, CalendarLabel, EventColor, RecurrenceFrequency } from "@/types/calendar"
 import { cn } from "@/lib/utils"
+
+interface PageOption {
+  id: string
+  title: string
+  workspaceName: string
+}
+
+const RECURRENCE_OPTIONS: { value: RecurrenceFrequency; label: string }[] = [
+  { value: "none",    label: "Einmalig" },
+  { value: "daily",   label: "Täglich" },
+  { value: "weekly",  label: "Wöchentlich" },
+  { value: "monthly", label: "Monatlich" },
+  { value: "yearly",  label: "Jährlich" },
+]
+
+const REMINDER_OPTIONS: { value: number; label: string }[] = [
+  { value: 0,    label: "Keine Erinnerung" },
+  { value: 5,    label: "5 Minuten vorher" },
+  { value: 15,   label: "15 Minuten vorher" },
+  { value: 30,   label: "30 Minuten vorher" },
+  { value: 60,   label: "1 Stunde vorher" },
+  { value: 1440, label: "1 Tag vorher" },
+]
 
 const COLORS: { value: EventColor; label: string; bg: string }[] = [
   { value: "blue",   label: "Blau",  bg: "bg-blue-600" },
@@ -53,6 +76,10 @@ interface EventDialogProps {
     color: EventColor
     description?: string
     labelId?: string
+    recurrence?: RecurrenceFrequency
+    pageId?: string
+    pageTitle?: string
+    reminderMinutes?: number
   }) => void
   onUpdate: (id: string, data: Partial<Omit<CalendarEvent, "id">>) => void
   onDelete: (id: string) => void
@@ -69,6 +96,14 @@ export function EventDialog({
   const [description, setDescription] = useState("")
   const [labelId, setLabelId]       = useState<string | undefined>(undefined)
   const [geoLoading, setGeoLoading] = useState(false)
+  const [recurrence, setRecurrence] = useState<RecurrenceFrequency>("none")
+  const [reminderMinutes, setReminderMinutes] = useState(0)
+  const [pageId, setPageId]         = useState<string | undefined>(undefined)
+  const [pageTitle, setPageTitle]   = useState<string | undefined>(undefined)
+  const [showPagePicker, setShowPagePicker] = useState(false)
+  const [pageOptions, setPageOptions] = useState<PageOption[]>([])
+  const [pagesLoading, setPagesLoading] = useState(false)
+  const [pageSearch, setPageSearch] = useState("")
 
   // New label creation state
   const [showNewLabel, setShowNewLabel] = useState(false)
@@ -84,6 +119,10 @@ export function EventDialog({
       setLocation(event.location ?? "")
       setDescription(event.description ?? "")
       setLabelId(event.labelId)
+      setRecurrence(event.recurrence ?? "none")
+      setReminderMinutes(event.reminderMinutes ?? 0)
+      setPageId(event.pageId)
+      setPageTitle(event.pageTitle)
     } else {
       setTitle("")
       setColor("blue")
@@ -92,11 +131,40 @@ export function EventDialog({
       setLocation("")
       setDescription("")
       setLabelId(undefined)
+      setRecurrence("none")
+      setReminderMinutes(0)
+      setPageId(undefined)
+      setPageTitle(undefined)
     }
     setShowNewLabel(false)
     setNewLabelName("")
     setNewLabelColor(LABEL_COLORS[0])
+    setShowPagePicker(false)
+    setPageSearch("")
   }, [event, open])
+
+  useEffect(() => {
+    if (!showPagePicker || pageOptions.length > 0 || pagesLoading) return
+    setPagesLoading(true)
+    ;(async () => {
+      try {
+        const wsRes = await fetch("/api/workspaces")
+        const workspaces: { id: string; name: string }[] = wsRes.ok ? await wsRes.json() : []
+        const lists = await Promise.all(
+          workspaces.map(async (ws) => {
+            const r = await fetch(`/api/pages?workspaceId=${ws.id}`)
+            if (!r.ok) return []
+            const pages: { id: string; title: string }[] = await r.json()
+            return pages.map((p) => ({ id: p.id, title: p.title || "Ohne Titel", workspaceName: ws.name }))
+          })
+        )
+        setPageOptions(lists.flat())
+      } catch {
+        setPageOptions([])
+      }
+      setPagesLoading(false)
+    })()
+  }, [showPagePicker, pageOptions.length, pagesLoading])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -110,6 +178,10 @@ export function EventDialog({
       location:    location.trim() || undefined,
       description: description.trim() || undefined,
       labelId:     labelId || undefined,
+      recurrence:  recurrence,
+      reminderMinutes: reminderMinutes || undefined,
+      pageId:      pageId || undefined,
+      pageTitle:   pageId ? pageTitle : undefined,
     }
 
     if (event) {
@@ -359,6 +431,109 @@ export function EventDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Kurze Notiz…"
             />
+          </div>
+
+          {/* Recurrence + Reminder */}
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="event-recurrence" className="flex items-center gap-1.5">
+                <Repeat className="h-3.5 w-3.5" />
+                Wiederholung
+              </Label>
+              <select
+                id="event-recurrence"
+                value={recurrence}
+                onChange={(e) => setRecurrence(e.target.value as RecurrenceFrequency)}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {RECURRENCE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="event-reminder" className="flex items-center gap-1.5">
+                <Bell className="h-3.5 w-3.5" />
+                Erinnerung
+              </Label>
+              <select
+                id="event-reminder"
+                value={reminderMinutes}
+                onChange={(e) => setReminderMinutes(Number(e.target.value))}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {REMINDER_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Linked page */}
+          <div className="flex flex-col gap-1.5">
+            <Label className="flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              Verknüpfte Seite (optional)
+            </Label>
+            {pageId && pageTitle ? (
+              <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                <span className="truncate">{pageTitle}</span>
+                <button
+                  type="button"
+                  onClick={() => { setPageId(undefined); setPageTitle(undefined) }}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowPagePicker((v) => !v)}
+                className="flex items-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Seite verknüpfen…
+              </button>
+            )}
+
+            {showPagePicker && !pageId && (
+              <div className="mt-1 flex flex-col gap-2 rounded-lg border bg-muted/30 p-2">
+                <Input
+                  value={pageSearch}
+                  onChange={(e) => setPageSearch(e.target.value)}
+                  placeholder="Seite suchen…"
+                  className="h-8 text-xs"
+                  autoFocus
+                />
+                <div className="max-h-40 overflow-auto">
+                  {pagesLoading ? (
+                    <p className="px-2 py-2 text-xs text-muted-foreground">Lädt…</p>
+                  ) : (
+                    pageOptions
+                      .filter((p) => p.title.toLowerCase().includes(pageSearch.toLowerCase()))
+                      .map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setPageId(p.id)
+                            setPageTitle(p.title)
+                            setShowPagePicker(false)
+                          }}
+                          className="flex w-full flex-col items-start rounded px-2 py-1.5 text-left text-xs hover:bg-accent"
+                        >
+                          <span className="truncate font-medium">{p.title}</span>
+                          <span className="truncate text-[10px] text-muted-foreground">{p.workspaceName}</span>
+                        </button>
+                      ))
+                  )}
+                  {!pagesLoading && pageOptions.length === 0 && (
+                    <p className="px-2 py-2 text-xs text-muted-foreground">Keine Seiten gefunden.</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-between gap-2 pt-2">

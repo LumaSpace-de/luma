@@ -1,5 +1,7 @@
 export type EventColor = "blue" | "green" | "red" | "yellow" | "purple"
 
+export type RecurrenceFrequency = "none" | "daily" | "weekly" | "monthly" | "yearly"
+
 export interface CalendarLabel {
   id: string
   name: string
@@ -17,4 +19,9 @@ export interface CalendarEvent {
   description?: string
   allDay?: boolean
   labelId?: string
+  recurrence?: RecurrenceFrequency
+  recurrenceParentId?: string
+  pageId?: string
+  pageTitle?: string
+  reminderMinutes?: number
 }

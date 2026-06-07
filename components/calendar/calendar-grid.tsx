@@ -25,6 +25,7 @@ interface CalendarGridProps {
   selectedDate: Date | null
   onDayClick: (date: Date) => void
   onEventClick: (event: CalendarEvent) => void
+  onEventDrop?: (eventId: string, newDate: Date) => void
 }
 
 export function CalendarGrid({
@@ -35,6 +36,7 @@ export function CalendarGrid({
   selectedDate,
   onDayClick,
   onEventClick,
+  onEventDrop,
 }: CalendarGridProps) {
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
@@ -87,6 +89,7 @@ export function CalendarGrid({
             isSelected={selectedDate ? isSameDay(day, selectedDate) : false}
             onClick={() => onDayClick(day)}
             onEventClick={onEventClick}
+            onEventDrop={onEventDrop}
           />
         ))}
       </div>

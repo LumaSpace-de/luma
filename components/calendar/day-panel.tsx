@@ -2,7 +2,8 @@
 
 import { format, isToday, addDays, subDays } from "date-fns"
 import { de } from "date-fns/locale"
-import { ChevronLeft, ChevronRight, Clock, MapPin, Plus, Tag, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, FileText, MapPin, Plus, Repeat, X } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import { CalendarEvent, CalendarLabel } from "@/types/calendar"
 import { cn } from "@/lib/utils"
@@ -49,6 +50,7 @@ export function DayPanel({
   onEventClick,
   onNewEvent,
 }: DayPanelProps) {
+  const router = useRouter()
   const today = isToday(date)
 
   const dayEvents = events
@@ -118,7 +120,7 @@ export function DayPanel({
             <div className="mb-2 text-3xl opacity-30">📅</div>
             <p className="text-sm font-medium text-muted-foreground">Keine Events</p>
             <p className="mt-0.5 text-xs text-muted-foreground/60">
-              Klick auf „Neues Event" um loszulegen.
+              Klick auf „Neues Event&rdquo; um loszulegen.
             </p>
           </div>
         ) : (
@@ -179,6 +181,29 @@ export function DayPanel({
                         />
                         <span className="text-[10px] text-muted-foreground">{label.name}</span>
                       </div>
+                    )}
+
+                    {/* Recurrence */}
+                    {event.recurrence && event.recurrence !== "none" && (
+                      <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Repeat className="h-3 w-3 shrink-0" />
+                        <span>
+                          {{ daily: "Täglich", weekly: "Wöchentlich", monthly: "Monatlich", yearly: "Jährlich" }[event.recurrence]}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Linked page */}
+                    {event.pageId && event.pageTitle && (
+                      <span
+                        role="link"
+                        tabIndex={0}
+                        onClick={(e) => { e.stopPropagation(); router.push(`/pages/${event.pageId}`) }}
+                        className="mt-1 flex items-center gap-1 text-[10px] text-primary hover:underline"
+                      >
+                        <FileText className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{event.pageTitle}</span>
+                      </span>
                     )}
 
                     {/* Description */}

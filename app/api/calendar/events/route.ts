@@ -41,6 +41,10 @@ export async function POST(req: NextRequest) {
     description: body.description ?? undefined,
     allDay: body.allDay ?? false,
     labelId: body.labelId ?? undefined,
+    recurrence: body.recurrence ?? undefined,
+    pageId: body.pageId ?? undefined,
+    pageTitle: body.pageTitle ?? undefined,
+    reminderMinutes: body.reminderMinutes ?? undefined,
   }
 
   const created = await createCalendarEvent(session.user.id, event)

@@ -1,6 +1,7 @@
 "use client"
 
 import { format, isToday } from "date-fns"
+import { useState } from "react"
 
 import { cn } from "@/lib/utils"
 import { CalendarEvent, CalendarLabel, EventColor } from "@/types/calendar"
@@ -21,6 +22,7 @@ interface CalendarDayProps {
   isSelected: boolean
   onClick: () => void
   onEventClick: (event: CalendarEvent) => void
+  onEventDrop?: (eventId: string, newDate: Date) => void
 }
 
 export function CalendarDay({
@@ -31,10 +33,12 @@ export function CalendarDay({
   isSelected,
   onClick,
   onEventClick,
+  onEventDrop,
 }: CalendarDayProps) {
   const today = isToday(date)
   const visible = events.slice(0, 3)
   const overflow = events.length - visible.length
+  const [dragOver, setDragOver] = useState(false)
 
   return (
     <div
@@ -42,10 +46,24 @@ export function CalendarDay({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => e.key === "Enter" && onClick()}
+      onDragOver={(e) => {
+        if (!onEventDrop) return
+        e.preventDefault()
+        setDragOver(true)
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        if (!onEventDrop) return
+        e.preventDefault()
+        setDragOver(false)
+        const eventId = e.dataTransfer.getData("text/plain")
+        if (eventId) onEventDrop(eventId, date)
+      }}
       className={cn(
         "flex h-full min-h-[90px] w-full cursor-pointer flex-col gap-1 p-1 transition-colors hover:bg-accent/20",
         !isCurrentMonth && "opacity-35",
-        isSelected && "bg-accent/30"
+        isSelected && "bg-accent/30",
+        dragOver && "bg-primary/10 ring-1 ring-inset ring-primary/40"
       )}
     >
       <span
@@ -64,9 +82,16 @@ export function CalendarDay({
           return (
             <button
               key={event.id}
+              draggable={!!onEventDrop && !event.recurrenceParentId}
+              onDragStart={(e) => {
+                e.stopPropagation()
+                e.dataTransfer.setData("text/plain", event.recurrenceParentId ?? event.id)
+                e.dataTransfer.effectAllowed = "move"
+              }}
               onClick={(e) => { e.stopPropagation(); onEventClick(event) }}
               className={cn(
                 "flex w-full flex-col rounded-md px-1.5 py-0.5 text-left text-xs text-white transition-opacity hover:opacity-90",
+                onEventDrop && !event.recurrenceParentId && "cursor-grab active:cursor-grabbing",
                 colorMap[event.color]
               )}
             >

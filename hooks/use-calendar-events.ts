@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 
-import { CalendarEvent, EventColor } from "@/types/calendar"
+import { CalendarEvent, EventColor, RecurrenceFrequency } from "@/types/calendar"
 
 const LEGACY_KEY = "luma-calendar-events"
 
@@ -59,6 +59,10 @@ export function useCalendarEvents() {
     description?: string
     allDay?: boolean
     labelId?: string
+    recurrence?: RecurrenceFrequency
+    pageId?: string
+    pageTitle?: string
+    reminderMinutes?: number
   }) {
     const optimistic: CalendarEvent = { id: crypto.randomUUID(), ...data }
     setEvents((prev) => [...prev, optimistic])

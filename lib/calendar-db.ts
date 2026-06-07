@@ -1,5 +1,5 @@
 import { supabase } from "./supabase"
-import { CalendarEvent, EventColor } from "@/types/calendar"
+import { CalendarEvent, EventColor, RecurrenceFrequency } from "@/types/calendar"
 
 // Required SQL (run once in Supabase SQL editor):
 // CREATE TABLE IF NOT EXISTS calendar_events (
@@ -17,6 +17,11 @@ import { CalendarEvent, EventColor } from "@/types/calendar"
 //   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 // );
 // ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS label_id TEXT;
+// ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS recurrence TEXT;
+// ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS page_id UUID REFERENCES pages(id) ON DELETE SET NULL;
+// ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS page_title TEXT;
+// ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS reminder_minutes INTEGER;
+// ALTER TABLE users ADD COLUMN IF NOT EXISTS calendar_ics_token TEXT;
 
 function rowToEvent(row: Record<string, unknown>): CalendarEvent {
   return {
@@ -30,6 +35,10 @@ function rowToEvent(row: Record<string, unknown>): CalendarEvent {
     description: (row.description as string | null) ?? undefined,
     allDay: (row.all_day as boolean | null) ?? false,
     labelId: (row.label_id as string | null) ?? undefined,
+    recurrence: ((row.recurrence as string | null) ?? "none") as RecurrenceFrequency,
+    pageId: (row.page_id as string | null) ?? undefined,
+    pageTitle: (row.page_title as string | null) ?? undefined,
+    reminderMinutes: (row.reminder_minutes as number | null) ?? undefined,
   }
 }
 
@@ -62,6 +71,10 @@ export async function createCalendarEvent(
       description: event.description ?? null,
       all_day: event.allDay ?? false,
       label_id: event.labelId ?? null,
+      recurrence: event.recurrence && event.recurrence !== "none" ? event.recurrence : null,
+      page_id: event.pageId ?? null,
+      page_title: event.pageTitle ?? null,
+      reminder_minutes: event.reminderMinutes ?? null,
     })
     .select()
     .single()
@@ -85,6 +98,10 @@ export async function updateCalendarEvent(
   if (patch.description !== undefined) update.description = patch.description ?? null
   if (patch.allDay !== undefined) update.all_day = patch.allDay
   if ("labelId" in patch) update.label_id = patch.labelId ?? null
+  if ("recurrence" in patch) update.recurrence = patch.recurrence && patch.recurrence !== "none" ? patch.recurrence : null
+  if ("pageId" in patch) update.page_id = patch.pageId ?? null
+  if ("pageTitle" in patch) update.page_title = patch.pageTitle ?? null
+  if ("reminderMinutes" in patch) update.reminder_minutes = patch.reminderMinutes ?? null
 
   const { error } = await supabase
     .from("calendar_events")
@@ -103,4 +120,33 @@ export async function deleteCalendarEvent(id: string, userId: string): Promise<v
     .eq("user_id", userId)
 
   if (error) throw new Error(error.message)
+}
+
+export async function getOrCreateCalendarToken(userId: string): Promise<string> {
+  const { data } = await supabase
+    .from("users")
+    .select("calendar_ics_token")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (data?.calendar_ics_token) return data.calendar_ics_token as string
+
+  const token = crypto.randomUUID().replace(/-/g, "")
+  const { error } = await supabase
+    .from("users")
+    .update({ calendar_ics_token: token })
+    .eq("id", userId)
+
+  if (error) throw new Error(error.message)
+  return token
+}
+
+export async function getUserIdByCalendarToken(token: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("users")
+    .select("id")
+    .eq("calendar_ics_token", token)
+    .maybeSingle()
+
+  return (data?.id as string | undefined) ?? null
 }
