@@ -24,8 +24,14 @@ interface SelectOption {
 interface CustomColumn {
   id: string
   label: string
-  type: "text" | "number" | "date" | "select"
+  type: "text" | "number" | "date" | "select" | "user" | "percent"
   options?: SelectOption[]
+}
+
+interface WorkspaceMemberOption {
+  userId: string
+  name: string
+  avatarUrl: string | null
 }
 
 // ── Color palette ──────────────────────────────────────────────────────────
@@ -66,7 +72,7 @@ const PRIORITY_OPTS = [
 ]
 
 const COL_TYPE_LABELS: Record<CustomColumn["type"], string> = {
-  text: "Text", number: "Zahl", date: "Datum", select: "Auswahl",
+  text: "Text", number: "Zahl", date: "Datum", select: "Auswahl", user: "User", percent: "Fortschritt",
 }
 
 // ── Generic MiniSelect (status / priority) ─────────────────────────────────
@@ -179,6 +185,115 @@ function ColoredSelectCell({ options, value, onChange, disabled }: {
   )
 }
 
+// ── Avatar helper ──────────────────────────────────────────────────────────
+
+function MemberAvatar({ member, size = "h-5 w-5" }: { member: WorkspaceMemberOption; size?: string }) {
+  if (member.avatarUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={member.avatarUrl} alt={member.name} className={cn(size, "shrink-0 rounded-full object-cover")} />
+  }
+  const initial = (member.name || "?").trim().charAt(0).toUpperCase()
+  return (
+    <span className={cn(size, "flex shrink-0 items-center justify-center rounded-full bg-primary/20 text-[9px] font-medium text-primary")}>
+      {initial}
+    </span>
+  )
+}
+
+// ── User select cell (assignee picker) ─────────────────────────────────────
+
+function UserSelectCell({ members, value, onChange, disabled }: {
+  members: WorkspaceMemberOption[]
+  value: string
+  onChange: (userId: string) => void
+  disabled: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [rect, setRect] = useState<{ top: number; left: number } | null>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const current = members.find(m => m.userId === value)
+
+  function handleOpen() {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setRect({ top: r.bottom + 4, left: r.left })
+    }
+    setOpen(o => !o)
+  }
+
+  if (disabled) return current ? (
+    <span className="flex items-center gap-1.5 text-xs">
+      <MemberAvatar member={current} />
+      <span className="truncate">{current.name}</span>
+    </span>
+  ) : <span className="text-xs text-muted-foreground/30">—</span>
+
+  return (
+    <div className="relative">
+      <button ref={btnRef} onClick={handleOpen} className="flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs hover:bg-accent/60 transition-colors">
+        {current ? (
+          <>
+            <MemberAvatar member={current} />
+            <span className="truncate">{current.name}</span>
+          </>
+        ) : <span className="text-muted-foreground/40">—</span>}
+        <ChevronDown className="h-3 w-3 opacity-40" />
+      </button>
+      {open && rect && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed z-50 min-w-[170px] overflow-hidden rounded-lg border bg-popover shadow-lg" style={{ top: rect.top, left: rect.left }}>
+            <button onClick={() => { onChange(""); setOpen(false) }} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground/50 hover:bg-accent transition-colors">
+              <span className="h-5 w-5 rounded-full border border-dashed border-border/60" />
+              <span>Niemand</span>
+              {!current && <Check className="ml-auto h-3 w-3" />}
+            </button>
+            {members.map(m => (
+              <button key={m.userId} onClick={() => { onChange(m.userId); setOpen(false) }} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent transition-colors">
+                <MemberAvatar member={m} />
+                <span className="truncate">{m.name}</span>
+                {m.userId === value && <Check className="ml-auto h-3 w-3" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Percent / progress cell ─────────────────────────────────────────────────
+
+function PercentCell({ value, onChange, onCommit, disabled }: {
+  value: string
+  onChange: (v: string) => void
+  onCommit: (v: string) => void
+  disabled: boolean
+}) {
+  const num = Math.max(0, Math.min(100, Number(value) || 0))
+  const barColor = num >= 100 ? "bg-green-500" : num >= 50 ? "bg-blue-400" : "bg-yellow-400"
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-muted/50">
+        <div className={cn("h-full rounded-full transition-all", barColor)} style={{ width: `${num}%` }} />
+      </div>
+      <input
+        disabled={disabled}
+        type="number"
+        min={0}
+        max={100}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onBlur={e => { if (!disabled) onCommit(e.target.value) }}
+        placeholder="0"
+        className="w-10 shrink-0 bg-transparent text-xs outline-none placeholder:text-muted-foreground/20 disabled:cursor-default"
+      />
+      <span className="shrink-0 text-[10px] text-muted-foreground/50">%</span>
+    </div>
+  )
+}
+
 // ── Color dot picker ───────────────────────────────────────────────────────
 
 function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
@@ -265,6 +380,8 @@ export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockData
   const [calSaving, setCalSaving]   = useState(false)
   const [calRect, setCalRect]       = useState<{ top: number; left: number } | null>(null)
 
+  const [members, setMembers] = useState<WorkspaceMemberOption[]>([])
+
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -275,6 +392,22 @@ export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockData
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [pageId, blockId])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const page = await fetch(`/api/pages/${pageId}`).then(r => r.ok ? r.json() : null)
+        if (!page?.workspaceId || cancelled) return
+        const ms = await fetch(`/api/workspaces/${page.workspaceId}/members`).then(r => r.ok ? r.json() : [])
+        if (cancelled || !Array.isArray(ms)) return
+        setMembers(ms.map((m: { userId: string; name: string; avatarUrl: string | null }) => ({
+          userId: m.userId, name: m.name, avatarUrl: m.avatarUrl ?? null,
+        })))
+      } catch { /* ignore */ }
+    })()
+    return () => { cancelled = true }
+  }, [pageId])
 
   // ── Block data helpers ─────────────────────────────────────────────────
 
@@ -555,6 +688,36 @@ export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockData
       )
     }
 
+    if (col.type === "user") {
+      return (
+        <td key={col.id} className="min-w-[140px] px-3 py-1.5">
+          <UserSelectCell
+            members={members}
+            value={(task.rowData?.[col.id]) ?? ""}
+            onChange={v => {
+              const rd = { ...(task.rowData ?? {}), [col.id]: v }
+              opt(task.id, { rowData: rd })
+              patch(task.id, { rowData: rd })
+            }}
+            disabled={!canEdit}
+          />
+        </td>
+      )
+    }
+
+    if (col.type === "percent") {
+      return (
+        <td key={col.id} className="min-w-[140px] px-3 py-1.5">
+          <PercentCell
+            value={(task.rowData?.[col.id]) ?? ""}
+            onChange={v => opt(task.id, { rowData: { ...(task.rowData ?? {}), [col.id]: v } })}
+            onCommit={v => patch(task.id, { rowData: { ...(task.rowData ?? {}), [col.id]: v } })}
+            disabled={!canEdit}
+          />
+        </td>
+      )
+    }
+
     return (
       <td key={col.id} className="min-w-[120px] px-3 py-1.5">
         <input disabled={!canEdit}
@@ -630,6 +793,8 @@ export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockData
                         <option value="number">Zahl</option>
                         <option value="date">Datum</option>
                         <option value="select">Auswahl (Dropdown)</option>
+                        <option value="user">User</option>
+                        <option value="percent">Fortschritt (%)</option>
                       </select>
 
                       {newColType === "select" && (
