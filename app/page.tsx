@@ -5,6 +5,7 @@ import { ArrowRight, Bell, Check, Clock, Copy, FileText, GripVertical, LayoutGri
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FaqSection } from "@/components/faq-section"
+import { cn } from "@/lib/utils"
 
 export default function IndexPage() {
   return (
@@ -98,43 +99,59 @@ export default function IndexPage() {
             <div className="border-b border-border/40 bg-card/60 p-4">
               <div className="rounded-lg border border-border/50 bg-background/90 p-2 overflow-hidden">
                 {/* View toggle */}
-                <div className="mb-2 flex items-center gap-1">
+                <div className="mb-1.5 flex items-center gap-1">
                   <div className="flex items-center gap-0.5 rounded bg-muted/60 p-0.5">
                     <div className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[7px] text-muted-foreground">
                       <span>▦</span> Monat
                     </div>
                     <div className="flex items-center gap-0.5 rounded bg-primary px-1.5 py-0.5 text-[7px] text-primary-foreground">
-                      <span>⏱</span> Zeitstrahl
+                      <span>⏱</span> Woche
                     </div>
                   </div>
                   <div className="ml-auto rounded border border-border/50 bg-muted/40 px-1.5 py-0.5 text-[7px] text-muted-foreground">
-                    3 Tage ▾
+                    KW 24 · Juni 2026
                   </div>
                 </div>
-                {/* Timeline grid */}
-                <div className="grid gap-px" style={{ gridTemplateColumns: "1.5rem 1fr 1fr 1fr" }}>
+                {/* Day pills */}
+                <div className="grid gap-px" style={{ gridTemplateColumns: "1.4rem 1fr 1fr 1fr" }}>
                   <div />
-                  {["Mo", "Di", "Mi"].map((d) => (
-                    <div key={d} className="py-0.5 text-center text-[7px] font-medium text-muted-foreground">{d}</div>
+                  {[{ d: "Mo 8" }, { d: "Di 9", today: true }, { d: "Mi 10" }].map(({ d, today }) => (
+                    <div key={d} className="pb-0.5 text-center">
+                      <span className={`inline-block rounded-full px-1 py-px text-[6px] font-medium ${today ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{d}</span>
+                    </div>
                   ))}
+                </div>
+                {/* Timeline grid */}
+                <div className="grid gap-px" style={{ gridTemplateColumns: "1.4rem 1fr 1fr 1fr" }}>
+                  <div />
+                  {["c0", "c1", "c2"].map((c) => <div key={c} />)}
                   {[8, 9, 10, 11, 12].map((h) => (
                     <>
                       <div key={`h${h}`} className="pt-0.5 text-right text-[6px] text-muted-foreground/60 pr-0.5">{h}:00</div>
                       {[0, 1, 2].map((col) => (
-                        <div key={col} className="min-h-[10px] border-t border-border/20 relative">
+                        <div key={col} className="min-h-[12px] border-t border-border/20 relative">
                           {h === 9 && col === 0 && (
-                            <div className="absolute inset-x-0.5 top-0 h-[14px] rounded bg-blue-600/80 px-0.5">
-                              <span className="text-[5px] text-white leading-none">Meeting</span>
+                            <div className="absolute inset-x-0.5 top-0 h-[13px] rounded-sm border-l-2 border-blue-500 bg-blue-600/15 px-1">
+                              <span className="text-[5px] leading-[7px] text-blue-300">Meeting</span>
                             </div>
                           )}
                           {h === 10 && col === 1 && (
-                            <div className="absolute inset-x-0.5 top-0 h-[20px] rounded bg-green-700/80 px-0.5">
-                              <span className="text-[5px] text-white leading-none">Sprint</span>
+                            <div className="absolute inset-x-0.5 top-0 h-[24px] rounded-sm border-l-2 border-green-600 bg-green-700/15 px-1 pt-px">
+                              <span className="block text-[5px] leading-[7px] text-green-300">Sprint Planning</span>
+                              <span className="flex items-center gap-0.5 text-[4px] leading-[6px] text-green-300/70">
+                                <MapPin className="h-[5px] w-[5px]" /> Büro
+                              </span>
                             </div>
                           )}
                           {h === 11 && col === 2 && (
-                            <div className="absolute inset-x-0.5 top-0 h-[14px] rounded bg-purple-600/80 px-0.5">
-                              <span className="text-[5px] text-white leading-none">Call</span>
+                            <div className="absolute inset-x-0.5 top-0 h-[13px] rounded-sm border-l-2 border-purple-500 bg-purple-600/15 px-1">
+                              <span className="text-[5px] leading-[7px] text-purple-300">Call</span>
+                            </div>
+                          )}
+                          {/* "Jetzt"-Indikator */}
+                          {h === 11 && col === 0 && (
+                            <div className="absolute inset-x-0 top-1/2 h-px bg-red-500/70">
+                              <span className="absolute -left-px -top-[1.5px] h-1 w-1 rounded-full bg-red-500" />
                             </div>
                           )}
                         </div>
@@ -150,7 +167,7 @@ export default function IndexPage() {
                 <h3 className="font-semibold">Timeline & Monatsraster</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Wechsle zwischen Monatsraster (1–6 Spalten) und Zeitstrahl (1–7 Tage).
+                Wechsle zwischen Monatsraster (1–6 Spalten), Wochenansicht und Zeitstrahl mit Live-Indikator für „Jetzt&rdquo;.
               </p>
             </div>
           </div>
@@ -213,13 +230,13 @@ export default function IndexPage() {
             <div className="border-b border-border/40 bg-card/60 p-4">
               <div className="rounded-lg border border-border/50 bg-background/90 p-2">
                 {/* Column picker */}
-                <div className="mb-2 flex items-center gap-1">
+                <div className="mb-2 flex items-center justify-between">
                   <span className="text-[7px] text-muted-foreground">Spalten</span>
-                  <div className="flex gap-0.5 ml-1">
+                  <div className="flex gap-0.5 rounded-md bg-muted/50 p-0.5">
                     {[1, 2, 3, 4, 5, 6].map((n) => (
                       <div
                         key={n}
-                        className={`flex h-4 w-4 items-center justify-center rounded text-[8px] font-medium ${
+                        className={`flex h-3.5 w-3.5 items-center justify-center rounded text-[7px] font-medium ${
                           n === 4 ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                         }`}
                       >
@@ -228,19 +245,31 @@ export default function IndexPage() {
                     ))}
                   </div>
                 </div>
-                {/* 4-column grid */}
-                <div className="grid grid-cols-4 gap-px border-t border-border/40">
+                {/* 4-column grid with event chips */}
+                <div className="grid grid-cols-4 gap-px overflow-hidden rounded-md border border-border/30 bg-border/20">
                   {["Mo", "Di", "Mi", "Do"].map((d) => (
-                    <div key={d} className="py-0.5 text-center text-[7px] text-muted-foreground">{d}</div>
+                    <div key={d} className="bg-muted/30 py-0.5 text-center text-[6px] font-medium text-muted-foreground">{d}</div>
                   ))}
                   {[
-                    { d: "1", ev: null }, { d: "2", ev: "bg-blue-600" }, { d: "3", ev: null }, { d: "4", today: true },
-                    { d: "8", ev: "bg-green-700" }, { d: "9", ev: null }, { d: "10", ev: null }, { d: "11", ev: "bg-yellow-600" },
-                    { d: "15", ev: null }, { d: "16", ev: "bg-purple-600" }, { d: "17", ev: null }, { d: "18", ev: null },
-                  ].map(({ d, ev, today }: { d: string; ev?: string | null; today?: boolean }, i) => (
-                    <div key={i} className="min-h-[18px] rounded-sm border border-border/20 p-0.5">
-                      <span className={`flex h-3 w-3 items-center justify-center rounded-full text-[7px] mx-auto ${today ? "bg-primary text-primary-foreground" : "text-foreground/50"}`}>{d}</span>
-                      {ev && <div className={`mt-0.5 h-0.5 w-full rounded-full ${ev}`} />}
+                    { d: "1", evs: [] as { c: string; t: string }[] },
+                    { d: "2", evs: [{ c: "bg-blue-500", t: "Standup" }] },
+                    { d: "3", evs: [] },
+                    { d: "4", today: true, evs: [{ c: "bg-green-600", t: "Review" }, { c: "bg-purple-500", t: "1:1" }] },
+                    { d: "8", evs: [{ c: "bg-green-700", t: "Sprint" }] },
+                    { d: "9", evs: [] },
+                    { d: "10", evs: [{ c: "bg-yellow-500", t: "Demo" }] },
+                    { d: "11", evs: [{ c: "bg-yellow-600", t: "Retro" }, { c: "bg-blue-500", t: "Sync" }, { c: "bg-red-500", t: "Deadline" }] },
+                  ].map(({ d, evs, today }, i) => (
+                    <div key={i} className={cn("min-h-[28px] bg-background/90 p-0.5", today && "bg-primary/5")}>
+                      <span className={`mx-auto flex h-3 w-3 items-center justify-center rounded-full text-[6px] ${today ? "bg-primary text-primary-foreground" : "text-foreground/50"}`}>{d}</span>
+                      <div className="mt-0.5 space-y-px">
+                        {evs.slice(0, 2).map((ev, j) => (
+                          <div key={j} className={`truncate rounded-[2px] px-0.5 text-[5px] leading-[6px] text-white ${ev.c}`}>{ev.t}</div>
+                        ))}
+                        {evs.length > 2 && (
+                          <div className="truncate text-[5px] leading-[6px] text-muted-foreground">+{evs.length - 2} weitere</div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -252,7 +281,7 @@ export default function IndexPage() {
                 <h3 className="font-semibold">Flexible Spaltenansicht</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                1 bis 6 Spalten im Monatsraster – passe die Dichte an deinen Workflow an.
+                1 bis 6 Spalten im Monatsraster – mit Event-Vorschau, Überlauf-Anzeige und Live-Highlight für heute.
               </p>
             </div>
           </div>
