@@ -27,6 +27,7 @@ import {
   Sparkles,
   Star,
   Trash2,
+  Users,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -78,6 +79,7 @@ const navigationItems = [
   { icon: Mail, label: "Inbox", href: "/inbox" },
   { icon: BarChart2, label: "Statistiken", href: "/statistics" },
   { icon: Compass, label: "Entdecken", href: "/discover" },
+  { icon: Users, label: "Freunde", href: "/friends" },
 ]
 
 const planLabel: Record<WorkspacePlan, string> = {
@@ -306,6 +308,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
 
   const [favorites, setFavorites] = useState<FavoritePage[]>([])
   const [inboxCount, setInboxCount] = useState(0)
+  const [friendRequestCount, setFriendRequestCount] = useState(0)
   const [aiOpen, setAiOpen] = useState(false)
 
   const [templatesOpen, setTemplatesOpen] = useState(false)
@@ -338,6 +341,11 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
     fetch("/api/inbox?count=1")
       .then((r) => r.json())
       .then((d) => { if (typeof d.count === "number") setInboxCount(d.count) })
+      .catch(() => {})
+
+    fetch("/api/friends?count=1")
+      .then((r) => r.json())
+      .then((d) => { if (typeof d.count === "number") setFriendRequestCount(d.count) })
       .catch(() => {})
 
     fetch("/api/workspaces/private")
@@ -509,7 +517,12 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
           {navigationItems.map((item) => {
             const Icon = item.icon
             const active = pathname === item.href
-            const badge = item.href === "/inbox" && inboxCount > 0 ? inboxCount : null
+            const badge =
+              item.href === "/inbox" && inboxCount > 0
+                ? inboxCount
+                : item.href === "/friends" && friendRequestCount > 0
+                ? friendRequestCount
+                : null
             return (
               <Link
                 key={item.href}

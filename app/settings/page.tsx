@@ -7,6 +7,7 @@ import { Building2, Camera, PanelLeft } from "lucide-react"
 
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
+import { ProfileBadges } from "@/components/profile-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -227,6 +228,20 @@ export default function SettingsPage() {
             className="hidden"
             onChange={handleAvatarChange}
           />
+        </section>
+
+        <Separator />
+
+        {/* Badges */}
+        <section>
+          <h2 className="text-base font-semibold">Abzeichen</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Status- und Erfolgs-Abzeichen, die du freigeschaltet hast.
+          </p>
+
+          <div className="mt-4">
+            <ProfileBadges />
+          </div>
         </section>
 
         <Separator />
