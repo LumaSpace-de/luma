@@ -116,8 +116,8 @@ export default function IndexPage() {
                 <div className="grid gap-px" style={{ gridTemplateColumns: "1.4rem 1fr 1fr 1fr" }}>
                   <div />
                   {[{ d: "Mo 8" }, { d: "Di 9", today: true }, { d: "Mi 10" }].map(({ d, today }) => (
-                    <div key={d} className="pb-0.5 text-center">
-                      <span className={`inline-block rounded-full px-1 py-px text-[6px] font-medium ${today ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{d}</span>
+                    <div key={d} className="pb-1 text-center">
+                      <span className={`inline-block rounded-full px-1.5 py-0.5 text-[8px] font-medium leading-none ${today ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{d}</span>
                     </div>
                   ))}
                 </div>
@@ -127,25 +127,25 @@ export default function IndexPage() {
                   {["c0", "c1", "c2"].map((c) => <div key={c} />)}
                   {[8, 9, 10, 11, 12].map((h) => (
                     <>
-                      <div key={`h${h}`} className="pt-0.5 text-right text-[6px] text-muted-foreground/60 pr-0.5">{h}:00</div>
+                      <div key={`h${h}`} className="pt-1 text-right text-[7px] leading-none text-muted-foreground/60 pr-0.5">{h}:00</div>
                       {[0, 1, 2].map((col) => (
-                        <div key={col} className="min-h-[12px] border-t border-border/20 relative">
+                        <div key={col} className="min-h-[18px] border-t border-border/20 relative">
                           {h === 9 && col === 0 && (
-                            <div className="absolute inset-x-0.5 top-0 h-[13px] rounded-sm border-l-2 border-blue-500 bg-blue-600/15 px-1">
-                              <span className="text-[5px] leading-[7px] text-blue-300">Meeting</span>
+                            <div className="absolute inset-x-0.5 top-0 flex h-[20px] items-center overflow-hidden rounded-sm border-l-2 border-blue-500 bg-blue-600/15 px-1.5">
+                              <span className="truncate text-[7px] leading-none text-blue-300">Meeting</span>
                             </div>
                           )}
                           {h === 10 && col === 1 && (
-                            <div className="absolute inset-x-0.5 top-0 h-[24px] rounded-sm border-l-2 border-green-600 bg-green-700/15 px-1 pt-px">
-                              <span className="block text-[5px] leading-[7px] text-green-300">Sprint Planning</span>
-                              <span className="flex items-center gap-0.5 text-[4px] leading-[6px] text-green-300/70">
-                                <MapPin className="h-[5px] w-[5px]" /> Büro
+                            <div className="absolute inset-x-0.5 top-0 flex h-[34px] flex-col justify-center gap-1 overflow-hidden rounded-sm border-l-2 border-green-600 bg-green-700/15 px-1.5">
+                              <span className="truncate text-[7px] leading-none text-green-300">Sprint Planning</span>
+                              <span className="flex items-center gap-0.5 truncate text-[6px] leading-none text-green-300/70">
+                                <MapPin className="h-[6px] w-[6px] shrink-0" /> Büro
                               </span>
                             </div>
                           )}
                           {h === 11 && col === 2 && (
-                            <div className="absolute inset-x-0.5 top-0 h-[13px] rounded-sm border-l-2 border-purple-500 bg-purple-600/15 px-1">
-                              <span className="text-[5px] leading-[7px] text-purple-300">Call</span>
+                            <div className="absolute inset-x-0.5 top-0 flex h-[20px] items-center overflow-hidden rounded-sm border-l-2 border-purple-500 bg-purple-600/15 px-1.5">
+                              <span className="truncate text-[7px] leading-none text-purple-300">Call</span>
                             </div>
                           )}
                           {/* "Jetzt"-Indikator */}
