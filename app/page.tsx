@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Check, Clock, FileText, LayoutGrid, Mail, MapPin, Plus, Sparkles, UserCircle, Building2, Camera } from "lucide-react"
+import { ArrowRight, Bell, Check, Clock, Copy, FileText, GripVertical, LayoutGrid, Link as LinkIcon, Mail, MapPin, Plus, Repeat, Search, Smartphone, Sparkles, UserCircle, Building2, Camera } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -376,6 +376,122 @@ export default function IndexPage() {
               </div>
               <p className="text-sm text-muted-foreground">
                 Profilbild hochladen, Name, @Benutzername und Passwort jederzeit ändern.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── Third row ── */}
+        <div className="mt-5 grid gap-5 sm:grid-cols-3">
+
+          {/* ── Card 7: Apple Kalender Sync ── */}
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
+            <div className="border-b border-border/40 bg-card/60 p-4">
+              <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Smartphone className="h-2.5 w-2.5 text-muted-foreground/60" />
+                  <span className="text-[9px] font-semibold text-foreground/80">Mit Apple Kalender verbinden</span>
+                </div>
+                <p className="text-[7px] leading-snug text-muted-foreground">
+                  Abonniere deinen LumaSpace-Kalender – neue & geänderte Events werden automatisch übernommen.
+                </p>
+                <div className="flex items-center gap-1 rounded-md border border-border/50 bg-muted/40 px-1.5 py-1">
+                  <LinkIcon className="h-2 w-2 shrink-0 text-muted-foreground/60" />
+                  <span className="flex-1 truncate text-[7px] text-foreground/70">webcal://lumaspace.de/api/calendar/ics/a1b2…</span>
+                  <Copy className="h-2 w-2 shrink-0 text-muted-foreground/60" />
+                </div>
+                <div className="flex items-center justify-center rounded-md bg-primary px-2 py-1 text-[8px] font-medium text-primary-foreground">
+                  In Apple Kalender öffnen
+                </div>
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-blue-400" />
+                <h3 className="font-semibold">Apple Kalender Sync</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Abonniere deinen Kalender per ICS-Link – Events erscheinen automatisch in Apple Kalender & Co.
+              </p>
+            </div>
+          </div>
+
+          {/* ── Card 8: Wiederkehrende Events & Erinnerungen ── */}
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
+            <div className="border-b border-border/40 bg-card/60 p-4">
+              <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Repeat className="h-2.5 w-2.5 text-muted-foreground/60" />
+                  <span className="text-[9px] font-semibold text-foreground/80">Wiederholung & Erinnerung</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  <div className="rounded-md border border-border/50 bg-muted/40 px-1.5 py-1">
+                    <p className="text-[6px] text-muted-foreground">Wiederholt sich</p>
+                    <p className="text-[8px] font-medium">Wöchentlich ▾</p>
+                  </div>
+                  <div className="rounded-md border border-border/50 bg-muted/40 px-1.5 py-1">
+                    <p className="text-[6px] text-muted-foreground">Erinnerung</p>
+                    <p className="text-[8px] font-medium">30 Min. vorher ▾</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 rounded-md border border-border/50 bg-muted/40 px-1.5 py-1">
+                  <Bell className="h-2 w-2 shrink-0 text-muted-foreground/60" />
+                  <span className="text-[8px] text-foreground/70">Browser-Benachrichtigung aktiv</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[7px] text-muted-foreground">
+                  <Repeat className="h-2.5 w-2.5 text-green-500" />
+                  Jeden Montag · 09:00 Uhr
+                </div>
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <Repeat className="h-4 w-4 text-green-400" />
+                <h3 className="font-semibold">Wiederkehrende Events</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Täglich, wöchentlich, monatlich oder jährlich – inklusive Browser-Erinnerungen.
+              </p>
+            </div>
+          </div>
+
+          {/* ── Card 9: Suche, Filter & Drag and Drop ── */}
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
+            <div className="border-b border-border/40 bg-card/60 p-4">
+              <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-1.5">
+                <div className="flex items-center gap-1 rounded-md border border-border/50 bg-muted/40 px-1.5 py-1">
+                  <Search className="h-2 w-2 shrink-0 text-muted-foreground/60" />
+                  <span className="text-[8px] text-foreground/40">Events durchsuchen…</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {[
+                    { l: "Arbeit", c: "bg-blue-500", active: true },
+                    { l: "Privat", c: "bg-green-600", active: false },
+                    { l: "Sport", c: "bg-purple-500", active: false },
+                  ].map(({ l, c, active }, i) => (
+                    <div key={i} className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[7px] ${active ? "border-primary/50 bg-primary/10 text-primary" : "border-border/40 text-muted-foreground"}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${c}`} />
+                      {l}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5 rounded-md border border-dashed border-primary/50 bg-primary/5 px-1.5 py-1">
+                  <GripVertical className="h-2.5 w-2.5 shrink-0 text-primary/60" />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                  <span className="flex-1 truncate text-[8px] text-foreground/70">Team-Meeting</span>
+                  <ArrowRight className="h-2.5 w-2.5 shrink-0 text-muted-foreground/40" />
+                  <span className="shrink-0 text-[7px] text-muted-foreground/50">Mi 10. Juni</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <Search className="h-4 w-4 text-purple-400" />
+                <h3 className="font-semibold">Suche, Filter & Drag and Drop</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Events durchsuchen, nach Labels filtern und per Drag and Drop auf neue Tage verschieben.
               </p>
             </div>
           </div>
