@@ -55,6 +55,7 @@ interface Workspace {
   plan: WorkspacePlan
   ownerId: string
   imageUrl: string | null
+  communityEnabled?: boolean
   userRole: WorkspaceRole
 }
 
@@ -661,6 +662,24 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         </div>
 
       </div>
+
+      {/* Community link — only when enabled for the active workspace */}
+      {activeWorkspace?.communityEnabled && (
+        <div className="px-3 pt-1">
+          <Link
+            href={`/community/${activeWorkspace.id}`}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+              pathname === `/community/${activeWorkspace.id}`
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+            )}
+          >
+            <Users className="h-4 w-4 shrink-0" />
+            <span className="truncate">Community</span>
+          </Link>
+        </div>
+      )}
 
       {/* Workspace pages — fixed at bottom above user footer */}
       {activeWorkspace && (

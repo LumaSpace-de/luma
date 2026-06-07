@@ -3,6 +3,7 @@ import { supabase } from "./supabase"
 // Required SQL (run once in Supabase SQL editor):
 // ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS image_url TEXT;
 // ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS is_private BOOLEAN NOT NULL DEFAULT false;
+// ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS community_enabled BOOLEAN NOT NULL DEFAULT false;
 // ALTER TABLE pages ADD COLUMN IF NOT EXISTS icon TEXT;
 // CREATE TABLE IF NOT EXISTS workspace_members (
 //   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -23,6 +24,7 @@ export interface Workspace {
   plan: WorkspacePlan
   ownerId: string
   imageUrl: string | null
+  communityEnabled: boolean
   createdAt: string
   userRole: WorkspaceRole
 }
@@ -65,7 +67,7 @@ export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> 
   // 1. Owned workspaces (excluding private)
   const { data: owned } = await supabase
     .from("workspaces")
-    .select("id, name, plan, owner_id, image_url, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .eq("owner_id", userId)
     .eq("is_private", false)
     .order("created_at", { ascending: true })
@@ -87,7 +89,7 @@ export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> 
   if (memberIds.length > 0) {
     const { data: mws } = await supabase
       .from("workspaces")
-      .select("id, name, plan, owner_id, image_url, created_at")
+      .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
       .in("id", memberIds)
       .eq("is_private", false)
     memberWorkspaces = (mws ?? []).map((w) =>
@@ -111,6 +113,7 @@ function toWorkspace(w: Record<string, unknown>, role: WorkspaceRole = "member")
     plan: w.plan as WorkspacePlan,
     ownerId: w.owner_id as string,
     imageUrl: (w.image_url as string | null) ?? null,
+    communityEnabled: !!w.community_enabled,
     createdAt: w.created_at as string,
     userRole: role,
   }
@@ -119,7 +122,7 @@ function toWorkspace(w: Record<string, unknown>, role: WorkspaceRole = "member")
 export async function getWorkspaceById(id: string, ownerId: string): Promise<Workspace | null> {
   const { data, error } = await supabase
     .from("workspaces")
-    .select("id, name, plan, owner_id, image_url, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .eq("id", id)
     .eq("owner_id", ownerId)
     .single()
@@ -136,7 +139,7 @@ export async function createWorkspace(
   const { data, error } = await supabase
     .from("workspaces")
     .insert({ name, plan, owner_id: ownerId })
-    .select("id, name, plan, owner_id, image_url, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .single()
 
   if (error) throw new Error(error.message)
@@ -147,6 +150,7 @@ export async function createWorkspace(
     plan: data.plan as WorkspacePlan,
     ownerId: data.owner_id,
     imageUrl: data.image_url ?? null,
+    communityEnabled: !!data.community_enabled,
     createdAt: data.created_at,
     userRole: "owner" as WorkspaceRole,
   }
@@ -235,7 +239,7 @@ export async function removeWorkspaceMember(workspaceId: string, userId: string)
 export async function getOrCreatePrivateWorkspace(userId: string): Promise<Workspace> {
   const { data: existing } = await supabase
     .from("workspaces")
-    .select("id, name, plan, owner_id, image_url, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .eq("owner_id", userId)
     .eq("is_private", true)
     .maybeSingle()
@@ -245,7 +249,7 @@ export async function getOrCreatePrivateWorkspace(userId: string): Promise<Works
   const { data, error } = await supabase
     .from("workspaces")
     .insert({ name: "Privat", plan: "free", owner_id: userId, is_private: true })
-    .select("id, name, plan, owner_id, image_url, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .single()
 
   if (error) throw new Error(error.message)
