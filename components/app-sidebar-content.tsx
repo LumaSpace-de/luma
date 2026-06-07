@@ -513,39 +513,56 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Navigation
         </p>
-        <nav className="flex flex-col gap-0.5">
-          {navigationItems.map((item) => {
-            const Icon = item.icon
-            const active = pathname === item.href
-            const badge =
-              item.href === "/inbox" && inboxCount > 0
-                ? inboxCount
-                : item.href === "/friends" && friendRequestCount > 0
-                ? friendRequestCount
-                : null
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                  active
-                    ? "bg-accent font-medium text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="flex-1">{item.label}</span>
-                {badge !== null && (
-                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-                    {badge}
-                  </span>
-                )}
-              </Link>
-            )
-          })}
-        </nav>
+        {(() => {
+          const totalBadge = inboxCount + friendRequestCount
+          const activeItem = navigationItems.find((item) => pathname === item.href) ?? navigationItems[0]
+          const ActiveIcon = activeItem.icon
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent">
+                  <ActiveIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="flex-1 truncate text-left font-medium">{activeItem.label}</span>
+                  {totalBadge > 0 && (
+                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                      {totalBadge}
+                    </span>
+                  )}
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="start">
+                {navigationItems.map((item) => {
+                  const Icon = item.icon
+                  const active = pathname === item.href
+                  const badge =
+                    item.href === "/inbox" && inboxCount > 0
+                      ? inboxCount
+                      : item.href === "/friends" && friendRequestCount > 0
+                      ? friendRequestCount
+                      : null
+                  return (
+                    <DropdownMenuItem key={item.href} asChild className="gap-2 p-2">
+                      <Link
+                        href={item.href}
+                        onClick={onClose}
+                        className={cn(active && "bg-accent text-accent-foreground")}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="flex-1">{item.label}</span>
+                        {badge !== null && (
+                          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                            {badge}
+                          </span>
+                        )}
+                      </Link>
+                    </DropdownMenuItem>
+                  )
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        })()}
 
         {/* Privat Bereich */}
         <div className="mt-4">
