@@ -643,7 +643,7 @@ export default function IndexPage() {
           <span>·</span>
           <span>
             Powered by{" "}
-            <span className="font-semibold text-muted-foreground">Flux Network</span>
+            <span href="https://flux0.dev" className="font-semibold text-muted-foreground">Flux Network</span>
           </span>
         </div>
       </footer>
