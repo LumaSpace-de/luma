@@ -8,12 +8,20 @@ import { supabase } from "./supabase"
 //   label TEXT,
 //   label_icon TEXT,
 //   label_color TEXT,
+//   embed_title TEXT,
+//   embed_description TEXT,
+//   embed_color TEXT,
+//   embed_footer TEXT,
 //   created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 //   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 // );
 // ALTER TABLE announcements ADD COLUMN IF NOT EXISTS label TEXT;
 // ALTER TABLE announcements ADD COLUMN IF NOT EXISTS label_icon TEXT;
 // ALTER TABLE announcements ADD COLUMN IF NOT EXISTS label_color TEXT;
+// ALTER TABLE announcements ADD COLUMN IF NOT EXISTS embed_title TEXT;
+// ALTER TABLE announcements ADD COLUMN IF NOT EXISTS embed_description TEXT;
+// ALTER TABLE announcements ADD COLUMN IF NOT EXISTS embed_color TEXT;
+// ALTER TABLE announcements ADD COLUMN IF NOT EXISTS embed_footer TEXT;
 // CREATE TABLE IF NOT EXISTS announcement_reads (
 //   announcement_id UUID NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
 //   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -27,11 +35,19 @@ export interface AnnouncementLabel {
   color: string
 }
 
+export interface AnnouncementEmbed {
+  title: string | null
+  description: string | null
+  color: string | null
+  footer: string | null
+}
+
 export interface Announcement {
   id: string
   title: string
   body: string
   label: AnnouncementLabel | null
+  embed: AnnouncementEmbed | null
   createdAt: string
   read: boolean
 }
@@ -42,6 +58,10 @@ export interface CreateAnnouncementInput {
   label?: string | null
   labelIcon?: string | null
   labelColor?: string | null
+  embedTitle?: string | null
+  embedDescription?: string | null
+  embedColor?: string | null
+  embedFooter?: string | null
 }
 
 export async function createAnnouncement(createdBy: string, input: CreateAnnouncementInput): Promise<void> {
@@ -52,6 +72,10 @@ export async function createAnnouncement(createdBy: string, input: CreateAnnounc
     label: input.label ?? null,
     label_icon: input.labelIcon ?? null,
     label_color: input.labelColor ?? null,
+    embed_title: input.embedTitle ?? null,
+    embed_description: input.embedDescription ?? null,
+    embed_color: input.embedColor ?? null,
+    embed_footer: input.embedFooter ?? null,
   })
   if (error) throw new Error(error.message)
 }
@@ -61,10 +85,25 @@ function toLabel(row: { label: string | null; label_icon: string | null; label_c
   return { text: row.label, icon: row.label_icon ?? "Megaphone", color: row.label_color ?? "blue" }
 }
 
+function toEmbed(row: {
+  embed_title: string | null
+  embed_description: string | null
+  embed_color: string | null
+  embed_footer: string | null
+}): AnnouncementEmbed | null {
+  if (!row.embed_title && !row.embed_description) return null
+  return {
+    title: row.embed_title ?? null,
+    description: row.embed_description ?? null,
+    color: row.embed_color ?? null,
+    footer: row.embed_footer ?? null,
+  }
+}
+
 export async function getAnnouncementsForUser(userId: string): Promise<Announcement[]> {
   const { data, error } = await supabase
     .from("announcements")
-    .select("id, title, body, label, label_icon, label_color, created_at")
+    .select("id, title, body, label, label_icon, label_color, embed_title, embed_description, embed_color, embed_footer, created_at")
     .order("created_at", { ascending: false })
 
   if (error || !data || data.length === 0) return []
@@ -81,6 +120,7 @@ export async function getAnnouncementsForUser(userId: string): Promise<Announcem
     title: a.title as string,
     body: a.body as string,
     label: toLabel(a as { label: string | null; label_icon: string | null; label_color: string | null }),
+    embed: toEmbed(a as { embed_title: string | null; embed_description: string | null; embed_color: string | null; embed_footer: string | null }),
     createdAt: a.created_at as string,
     read: readSet.has(a.id as string),
   }))

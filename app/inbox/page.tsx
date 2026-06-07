@@ -4,6 +4,7 @@ import { Building2, Check, Megaphone, PanelLeft, Plus, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
+import { AnnouncementEmbedCard, EMBED_COLOR_PRESETS } from "@/components/announcement-embed"
 import {
   AnnouncementLabelBadge,
   LABEL_COLOR_OPTIONS,
@@ -34,11 +35,19 @@ interface AnnouncementLabel {
   color: string
 }
 
+interface AnnouncementEmbed {
+  title: string | null
+  description: string | null
+  color: string | null
+  footer: string | null
+}
+
 interface Announcement {
   id: string
   title: string
   body: string
   label: AnnouncementLabel | null
+  embed: AnnouncementEmbed | null
   createdAt: string
   read: boolean
 }
@@ -75,6 +84,11 @@ export default function InboxPage() {
   const [labelText, setLabelText] = useState("")
   const [labelIcon, setLabelIcon] = useState<string>(LABEL_ICON_OPTIONS[0])
   const [labelColor, setLabelColor] = useState<string>(LABEL_COLOR_OPTIONS[0])
+  const [embedOpen, setEmbedOpen] = useState(false)
+  const [embedTitle, setEmbedTitle] = useState("")
+  const [embedDescription, setEmbedDescription] = useState("")
+  const [embedColor, setEmbedColor] = useState(EMBED_COLOR_PRESETS[0])
+  const [embedFooter, setEmbedFooter] = useState("")
   const [composeError, setComposeError] = useState("")
   const [composing, setComposing] = useState(false)
 
@@ -138,6 +152,10 @@ export default function InboxPage() {
         label: labelText.trim(),
         labelIcon,
         labelColor,
+        embedTitle: embedTitle.trim(),
+        embedDescription: embedDescription.trim(),
+        embedColor,
+        embedFooter: embedFooter.trim(),
       }),
     })
     const data = await res.json()
@@ -149,6 +167,11 @@ export default function InboxPage() {
       setLabelText("")
       setLabelIcon(LABEL_ICON_OPTIONS[0])
       setLabelColor(LABEL_COLOR_OPTIONS[0])
+      setEmbedOpen(false)
+      setEmbedTitle("")
+      setEmbedDescription("")
+      setEmbedColor(EMBED_COLOR_PRESETS[0])
+      setEmbedFooter("")
       setComposerOpen(false)
       load()
     }
@@ -284,6 +307,97 @@ export default function InboxPage() {
                   </div>
                 )}
 
+                <div className="flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEmbedOpen((o) => !o)}
+                    className="flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <Plus className={cn("h-3.5 w-3.5 transition-transform", embedOpen && "rotate-45")} />
+                    Embed hinzufügen (optional)
+                  </button>
+                  <p className="text-xs text-muted-foreground">
+                    Erstelle eine Rich-Card mit Titel, Beschreibung, Randfarbe und Footer – wie ein Discord-Embed.
+                  </p>
+                </div>
+
+                {embedOpen && (
+                  <div className="flex flex-col gap-3 rounded-lg border border-dashed p-3">
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="embed-title">Embed-Titel</Label>
+                      <Input
+                        id="embed-title"
+                        placeholder="z. B. Version 2.4 ist da"
+                        value={embedTitle}
+                        onChange={(e) => setEmbedTitle(e.target.value)}
+                        maxLength={120}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="embed-description">Embed-Beschreibung</Label>
+                      <textarea
+                        id="embed-description"
+                        placeholder="Details zur Ankündigung…"
+                        value={embedDescription}
+                        onChange={(e) => setEmbedDescription(e.target.value)}
+                        rows={3}
+                        maxLength={1000}
+                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="embed-footer">Footer</Label>
+                      <Input
+                        id="embed-footer"
+                        placeholder="z. B. LumaSpace Team"
+                        value={embedFooter}
+                        onChange={(e) => setEmbedFooter(e.target.value)}
+                        maxLength={100}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs text-muted-foreground">Randfarbe</Label>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {EMBED_COLOR_PRESETS.map((preset) => {
+                          const selected = embedColor.toLowerCase() === preset.toLowerCase()
+                          return (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setEmbedColor(preset)}
+                              title={preset}
+                              className={cn(
+                                "flex h-8 w-8 items-center justify-center rounded-md border transition-colors",
+                                selected ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : "opacity-60 hover:opacity-100"
+                              )}
+                              style={{ backgroundColor: preset }}
+                            />
+                          )
+                        })}
+                        <input
+                          type="color"
+                          value={embedColor}
+                          onChange={(e) => setEmbedColor(e.target.value)}
+                          className="h-8 w-8 cursor-pointer rounded-md border border-input bg-transparent p-0.5"
+                          title="Eigene Farbe wählen"
+                        />
+                      </div>
+                    </div>
+
+                    {(embedTitle.trim() || embedDescription.trim()) && (
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-xs text-muted-foreground">Vorschau</Label>
+                        <AnnouncementEmbedCard
+                          title={embedTitle.trim() || null}
+                          description={embedDescription.trim() || null}
+                          color={embedColor}
+                          footer={embedFooter.trim() || null}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {composeError && (
                   <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{composeError}</p>
                 )}
@@ -344,6 +458,14 @@ export default function InboxPage() {
                             )}
                           </div>
                           <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{ann.body}</p>
+                          {ann.embed && (
+                            <AnnouncementEmbedCard
+                              title={ann.embed.title}
+                              description={ann.embed.description}
+                              color={ann.embed.color}
+                              footer={ann.embed.footer}
+                            />
+                          )}
                           <p className="mt-2 text-xs text-muted-foreground/60">{formatDate(ann.createdAt)}</p>
                         </div>
                       </div>
