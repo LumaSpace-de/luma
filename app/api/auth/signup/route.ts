@@ -4,7 +4,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { createUser, findUserByEmail } from "@/lib/users-db"
 
 export async function POST(req: NextRequest) {
-  const { email, password } = await req.json()
+  const { email, password, betaCode } = await req.json()
+
+  const validCode = process.env.BETA_CODE
+  if (validCode && betaCode !== validCode) {
+    return NextResponse.json(
+      { error: "Ungültiger Beta-Code. Bitte wende dich an das LumaSpace-Team." },
+      { status: 403 }
+    )
+  }
 
   if (!email || !password) {
     return NextResponse.json(

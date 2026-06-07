@@ -15,6 +15,7 @@ export function SignupForm({
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
+  const [betaCode, setBetaCode] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
@@ -35,7 +36,7 @@ export function SignupForm({
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, betaCode }),
     })
 
     if (!res.ok) {
@@ -74,6 +75,19 @@ export function SignupForm({
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="betaCode">Beta-Code</Label>
+          <Input
+            id="betaCode"
+            type="text"
+            placeholder="Dein Beta-Zugangscode"
+            value={betaCode}
+            onChange={(e) => setBetaCode(e.target.value)}
+            required
+            autoComplete="off"
+          />
+        </div>
+
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email">E-Mail</Label>
           <Input
