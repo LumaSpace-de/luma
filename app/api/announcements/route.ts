@@ -30,13 +30,22 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null)
   const title = typeof body?.title === "string" ? body.title.trim() : ""
   const text = typeof body?.body === "string" ? body.body.trim() : ""
+  const label = typeof body?.label === "string" ? body.label.trim().slice(0, 30) : ""
+  const labelIcon = typeof body?.labelIcon === "string" ? body.labelIcon : ""
+  const labelColor = typeof body?.labelColor === "string" ? body.labelColor : ""
 
   if (!title || !text) {
     return NextResponse.json({ error: "Titel und Inhalt erforderlich" }, { status: 400 })
   }
 
   try {
-    await createAnnouncement(session.user.id, title, text)
+    await createAnnouncement(session.user.id, {
+      title,
+      body: text,
+      label: label || null,
+      labelIcon: label ? labelIcon || null : null,
+      labelColor: label ? labelColor || null : null,
+    })
     return NextResponse.json({ success: true })
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Fehler"

@@ -4,6 +4,13 @@ import { Building2, Check, Megaphone, PanelLeft, Plus, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
+import {
+  AnnouncementLabelBadge,
+  LABEL_COLOR_OPTIONS,
+  LABEL_COLORS,
+  LABEL_ICON_OPTIONS,
+  LABEL_ICONS,
+} from "@/components/announcement-label"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,10 +28,17 @@ interface Invitation {
   createdAt: string
 }
 
+interface AnnouncementLabel {
+  text: string
+  icon: string
+  color: string
+}
+
 interface Announcement {
   id: string
   title: string
   body: string
+  label: AnnouncementLabel | null
   createdAt: string
   read: boolean
 }
@@ -58,6 +72,9 @@ export default function InboxPage() {
   const [composerOpen, setComposerOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
+  const [labelText, setLabelText] = useState("")
+  const [labelIcon, setLabelIcon] = useState<string>(LABEL_ICON_OPTIONS[0])
+  const [labelColor, setLabelColor] = useState<string>(LABEL_COLOR_OPTIONS[0])
   const [composeError, setComposeError] = useState("")
   const [composing, setComposing] = useState(false)
 
@@ -115,7 +132,13 @@ export default function InboxPage() {
     const res = await fetch("/api/announcements", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title.trim(), body: body.trim() }),
+      body: JSON.stringify({
+        title: title.trim(),
+        body: body.trim(),
+        label: labelText.trim(),
+        labelIcon,
+        labelColor,
+      }),
     })
     const data = await res.json()
     if (!res.ok) {
@@ -123,6 +146,9 @@ export default function InboxPage() {
     } else {
       setTitle("")
       setBody("")
+      setLabelText("")
+      setLabelIcon(LABEL_ICON_OPTIONS[0])
+      setLabelColor(LABEL_COLOR_OPTIONS[0])
       setComposerOpen(false)
       load()
     }
@@ -185,6 +211,79 @@ export default function InboxPage() {
                     className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   />
                 </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="ann-label">Label (optional)</Label>
+                  <Input
+                    id="ann-label"
+                    placeholder="z. B. Update, Changelog, Wartung…"
+                    value={labelText}
+                    onChange={(e) => setLabelText(e.target.value)}
+                    maxLength={30}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Eigener Text – wähle dazu Icon und Farbe für das Label-Badge.
+                  </p>
+                </div>
+
+                {labelText.trim() && (
+                  <div className="flex flex-col gap-3 rounded-lg border border-dashed p-3">
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs text-muted-foreground">Icon</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {LABEL_ICON_OPTIONS.map((iconKey) => {
+                          const Icon = LABEL_ICONS[iconKey]
+                          const selected = labelIcon === iconKey
+                          return (
+                            <button
+                              key={iconKey}
+                              type="button"
+                              onClick={() => setLabelIcon(iconKey)}
+                              className={cn(
+                                "flex h-8 w-8 items-center justify-center rounded-md border transition-colors",
+                                selected ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-accent"
+                              )}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs text-muted-foreground">Farbe</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {LABEL_COLOR_OPTIONS.map((colorKey) => {
+                          const selected = labelColor === colorKey
+                          return (
+                            <button
+                              key={colorKey}
+                              type="button"
+                              onClick={() => setLabelColor(colorKey)}
+                              title={colorKey}
+                              className={cn(
+                                "flex h-8 w-8 items-center justify-center rounded-md border transition-colors",
+                                LABEL_COLORS[colorKey],
+                                selected ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : "opacity-60 hover:opacity-100"
+                              )}
+                            >
+                              <span className="h-3 w-3 rounded-full bg-current" />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs text-muted-foreground">Vorschau</Label>
+                      <div>
+                        <AnnouncementLabelBadge text={labelText.trim()} icon={labelIcon} color={labelColor} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {composeError && (
                   <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{composeError}</p>
                 )}
@@ -237,6 +336,9 @@ export default function InboxPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <p className="truncate font-semibold">{ann.title}</p>
+                            {ann.label && (
+                              <AnnouncementLabelBadge text={ann.label.text} icon={ann.label.icon} color={ann.label.color} />
+                            )}
                             {!ann.read && (
                               <span className="h-2 w-2 shrink-0 rounded-full bg-primary" title="Ungelesen" />
                             )}

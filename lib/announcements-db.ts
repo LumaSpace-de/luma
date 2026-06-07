@@ -5,9 +5,15 @@ import { supabase } from "./supabase"
 //   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 //   title TEXT NOT NULL,
 //   body TEXT NOT NULL,
+//   label TEXT,
+//   label_icon TEXT,
+//   label_color TEXT,
 //   created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 //   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 // );
+// ALTER TABLE announcements ADD COLUMN IF NOT EXISTS label TEXT;
+// ALTER TABLE announcements ADD COLUMN IF NOT EXISTS label_icon TEXT;
+// ALTER TABLE announcements ADD COLUMN IF NOT EXISTS label_color TEXT;
 // CREATE TABLE IF NOT EXISTS announcement_reads (
 //   announcement_id UUID NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
 //   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -15,25 +21,50 @@ import { supabase } from "./supabase"
 //   PRIMARY KEY (announcement_id, user_id)
 // );
 
+export interface AnnouncementLabel {
+  text: string
+  icon: string
+  color: string
+}
+
 export interface Announcement {
   id: string
   title: string
   body: string
+  label: AnnouncementLabel | null
   createdAt: string
   read: boolean
 }
 
-export async function createAnnouncement(createdBy: string, title: string, body: string): Promise<void> {
-  const { error } = await supabase
-    .from("announcements")
-    .insert({ created_by: createdBy, title, body })
+export interface CreateAnnouncementInput {
+  title: string
+  body: string
+  label?: string | null
+  labelIcon?: string | null
+  labelColor?: string | null
+}
+
+export async function createAnnouncement(createdBy: string, input: CreateAnnouncementInput): Promise<void> {
+  const { error } = await supabase.from("announcements").insert({
+    created_by: createdBy,
+    title: input.title,
+    body: input.body,
+    label: input.label ?? null,
+    label_icon: input.labelIcon ?? null,
+    label_color: input.labelColor ?? null,
+  })
   if (error) throw new Error(error.message)
+}
+
+function toLabel(row: { label: string | null; label_icon: string | null; label_color: string | null }): AnnouncementLabel | null {
+  if (!row.label) return null
+  return { text: row.label, icon: row.label_icon ?? "Megaphone", color: row.label_color ?? "blue" }
 }
 
 export async function getAnnouncementsForUser(userId: string): Promise<Announcement[]> {
   const { data, error } = await supabase
     .from("announcements")
-    .select("id, title, body, created_at")
+    .select("id, title, body, label, label_icon, label_color, created_at")
     .order("created_at", { ascending: false })
 
   if (error || !data || data.length === 0) return []
@@ -49,6 +80,7 @@ export async function getAnnouncementsForUser(userId: string): Promise<Announcem
     id: a.id as string,
     title: a.title as string,
     body: a.body as string,
+    label: toLabel(a as { label: string | null; label_icon: string | null; label_color: string | null }),
     createdAt: a.created_at as string,
     read: readSet.has(a.id as string),
   }))
