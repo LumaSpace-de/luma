@@ -308,6 +308,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
 
   const [favorites, setFavorites] = useState<FavoritePage[]>([])
   const [inboxCount, setInboxCount] = useState(0)
+  const [announcementCount, setAnnouncementCount] = useState(0)
   const [friendRequestCount, setFriendRequestCount] = useState(0)
   const [aiOpen, setAiOpen] = useState(false)
 
@@ -341,6 +342,11 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
     fetch("/api/inbox?count=1")
       .then((r) => r.json())
       .then((d) => { if (typeof d.count === "number") setInboxCount(d.count) })
+      .catch(() => {})
+
+    fetch("/api/announcements?count=1")
+      .then((r) => r.json())
+      .then((d) => { if (typeof d.count === "number") setAnnouncementCount(d.count) })
       .catch(() => {})
 
     fetch("/api/friends?count=1")
@@ -514,7 +520,8 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
           Navigation
         </p>
         {(() => {
-          const totalBadge = inboxCount + friendRequestCount
+          const inboxBadgeCount = inboxCount + announcementCount
+          const totalBadge = inboxBadgeCount + friendRequestCount
           const activeItem = navigationItems.find((item) => pathname === item.href) ?? navigationItems[0]
           const ActiveIcon = activeItem.icon
           return (
@@ -536,8 +543,8 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
                   const Icon = item.icon
                   const active = pathname === item.href
                   const badge =
-                    item.href === "/inbox" && inboxCount > 0
-                      ? inboxCount
+                    item.href === "/inbox" && inboxBadgeCount > 0
+                      ? inboxBadgeCount
                       : item.href === "/friends" && friendRequestCount > 0
                       ? friendRequestCount
                       : null
