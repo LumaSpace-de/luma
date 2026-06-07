@@ -439,6 +439,7 @@ export default function IndexPage() {
               <div className="mb-2 flex items-center gap-2">
                 <Smartphone className="h-4 w-4 text-blue-400" />
                 <h3 className="font-semibold">Apple Kalender Sync</h3>
+                <Badge className="rounded-full bg-blue-500/15 px-2 py-0 text-[10px] font-medium text-blue-400 hover:bg-blue-500/15">Neu</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
                 Abonniere deinen Kalender per ICS-Link – Events erscheinen automatisch in Apple Kalender & Co.
@@ -478,6 +479,7 @@ export default function IndexPage() {
               <div className="mb-2 flex items-center gap-2">
                 <Repeat className="h-4 w-4 text-green-400" />
                 <h3 className="font-semibold">Wiederkehrende Events</h3>
+                <Badge className="rounded-full bg-green-500/15 px-2 py-0 text-[10px] font-medium text-green-400 hover:bg-green-500/15">Neu</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
                 Täglich, wöchentlich, monatlich oder jährlich – inklusive Browser-Erinnerungen.
@@ -518,6 +520,7 @@ export default function IndexPage() {
               <div className="mb-2 flex items-center gap-2">
                 <Search className="h-4 w-4 text-purple-400" />
                 <h3 className="font-semibold">Suche, Filter & Drag and Drop</h3>
+                <Badge className="rounded-full bg-purple-500/15 px-2 py-0 text-[10px] font-medium text-purple-400 hover:bg-purple-500/15">Neu</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
                 Events durchsuchen, nach Labels filtern und per Drag and Drop auf neue Tage verschieben.
