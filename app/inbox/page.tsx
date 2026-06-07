@@ -13,6 +13,7 @@ import {
   LABEL_ICONS,
 } from "@/components/announcement-label"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
@@ -78,6 +79,8 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
 
+  const [openAnnouncement, setOpenAnnouncement] = useState<Announcement | null>(null)
+
   const [composerOpen, setComposerOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
@@ -132,6 +135,11 @@ export default function InboxPage() {
     if (ann.read) return
     setAnnouncements((prev) => prev.map((a) => (a.id === ann.id ? { ...a, read: true } : a)))
     await fetch(`/api/announcements/${ann.id}`, { method: "PATCH" })
+  }
+
+  function handleOpenAnnouncement(ann: Announcement) {
+    setOpenAnnouncement(ann)
+    handleMarkRead(ann)
   }
 
   async function handleCreateAnnouncement(e: React.FormEvent) {
@@ -438,10 +446,10 @@ export default function InboxPage() {
                     {announcements.map((ann) => (
                       <div
                         key={ann.id}
-                        onClick={() => handleMarkRead(ann)}
+                        onClick={() => handleOpenAnnouncement(ann)}
                         className={cn(
-                          "flex gap-4 rounded-xl border bg-card p-4 transition-colors",
-                          !ann.read && "cursor-pointer border-primary/40 bg-primary/[0.03] hover:bg-primary/[0.06]"
+                          "flex cursor-pointer gap-4 rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40",
+                          !ann.read && "border-primary/40 bg-primary/[0.03] hover:bg-primary/[0.06]"
                         )}
                       >
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10">
@@ -552,6 +560,47 @@ export default function InboxPage() {
           )}
         </div>
       </div>
+
+      <Dialog open={!!openAnnouncement} onOpenChange={(open) => !open && setOpenAnnouncement(null)}>
+        <DialogContent className="max-w-xl">
+          {openAnnouncement && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <DialogTitle>{openAnnouncement.title}</DialogTitle>
+                      {openAnnouncement.label && (
+                        <AnnouncementLabelBadge
+                          text={openAnnouncement.label.text}
+                          icon={openAnnouncement.label.icon}
+                          color={openAnnouncement.label.color}
+                        />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground/60">{formatDate(openAnnouncement.createdAt)}</p>
+                  </div>
+                </div>
+              </DialogHeader>
+              <div className="max-h-[60vh] overflow-auto">
+                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{openAnnouncement.body}</p>
+                {openAnnouncement.embed && (
+                  <AnnouncementEmbedCard
+                    title={openAnnouncement.embed.title}
+                    description={openAnnouncement.embed.description}
+                    color={openAnnouncement.embed.color}
+                    footer={openAnnouncement.embed.footer}
+                    large
+                  />
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
