@@ -1,12 +1,19 @@
 "use client"
 
-import { Loader2, MessageSquare, PanelLeft, Send, Trash2, Users } from "lucide-react"
+import { Hash, Loader2, MessageSquare, PanelLeft, Plus, Send, Trash2, X } from "lucide-react"
 import { useSession } from "next-auth/react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 import { cn } from "@/lib/utils"
+
+interface Channel {
+  id: string
+  workspaceId: string
+  name: string
+  createdAt: string
+}
 
 interface Author {
   id: string
@@ -17,6 +24,7 @@ interface Author {
 
 interface Post {
   id: string
+  channelId: string
   body: string
   author: Author
   commentCount: number
@@ -57,9 +65,19 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
   const workspaceId = params.id
   const currentUserId = (session?.user as { id?: string } | undefined)?.id ?? null
 
+  const [channels, setChannels] = useState<Channel[]>([])
+  const [channelsLoading, setChannelsLoading] = useState(true)
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
+
+  const [newChannelName, setNewChannelName] = useState("")
+  const [channelSaving, setChannelSaving] = useState(false)
+  const [channelError, setChannelError] = useState("")
+  const [showChannelForm, setShowChannelForm] = useState(false)
+  const channelInputRef = useRef<HTMLInputElement>(null)
+
   const [posts, setPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [postsLoading, setPostsLoading] = useState(false)
+  const [postsError, setPostsError] = useState("")
 
   const [newPost, setNewPost] = useState("")
   const [posting, setPosting] = useState(false)
@@ -70,51 +88,99 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
   const [commentSending, setCommentSending] = useState<Set<string>>(new Set())
 
-  function load() {
-    setLoading(true)
-    setError("")
-    fetch(`/api/workspaces/${workspaceId}/community/posts`)
+  function loadChannels() {
+    setChannelsLoading(true)
+    fetch(`/api/workspaces/${workspaceId}/community/channels`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data?.channels)) {
+          setChannels(data.channels)
+          if (data.channels.length > 0) {
+            setActiveChannelId((prev) => prev ?? data.channels[0].id)
+          }
+        }
+        setChannelsLoading(false)
+      })
+      .catch(() => setChannelsLoading(false))
+  }
+
+  function loadPosts(channelId: string) {
+    setPostsLoading(true)
+    setPostsError("")
+    setOpenComments(new Set())
+    fetch(`/api/workspaces/${workspaceId}/community/channels/${channelId}/posts`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data?.posts)) setPosts(data.posts)
-        else if (data?.error) setError(data.error)
-        setLoading(false)
+        else if (data?.error) setPostsError(data.error)
+        setPostsLoading(false)
       })
       .catch(() => {
-        setError("Fehler beim Laden")
-        setLoading(false)
+        setPostsError("Fehler beim Laden")
+        setPostsLoading(false)
       })
   }
 
+  useEffect(() => { loadChannels() }, [workspaceId])
+
   useEffect(() => {
-    load()
+    if (activeChannelId) loadPosts(activeChannelId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId])
+  }, [activeChannelId])
+
+  useEffect(() => {
+    if (showChannelForm) channelInputRef.current?.focus()
+  }, [showChannelForm])
+
+  async function handleCreateChannel(e: React.FormEvent) {
+    e.preventDefault()
+    const name = newChannelName.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 40)
+    if (!name) return
+    setChannelSaving(true)
+    setChannelError("")
+    const res = await fetch(`/api/workspaces/${workspaceId}/community/channels`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    })
+    const data = await res.json()
+    if (res.ok && data.channel) {
+      setChannels((prev) => [...prev, data.channel])
+      setActiveChannelId(data.channel.id)
+      setNewChannelName("")
+      setShowChannelForm(false)
+    } else {
+      setChannelError(data.error ?? "Fehler")
+    }
+    setChannelSaving(false)
+  }
 
   async function handleCreatePost(e: React.FormEvent) {
     e.preventDefault()
-    if (!newPost.trim()) return
+    if (!newPost.trim() || !activeChannelId) return
     setPosting(true)
-    const res = await fetch(`/api/workspaces/${workspaceId}/community/posts`, {
+    const res = await fetch(`/api/workspaces/${workspaceId}/community/channels/${activeChannelId}/posts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body: newPost.trim() }),
     })
     if (res.ok) {
       setNewPost("")
-      load()
+      loadPosts(activeChannelId)
     }
     setPosting(false)
   }
 
   async function handleDeletePost(id: string) {
+    if (!activeChannelId) return
     setPosts((prev) => prev.filter((p) => p.id !== id))
-    await fetch(`/api/workspaces/${workspaceId}/community/posts/${id}`, { method: "DELETE" })
+    await fetch(`/api/workspaces/${workspaceId}/community/channels/${activeChannelId}/posts/${id}`, { method: "DELETE" })
   }
 
   async function loadComments(postId: string) {
+    if (!activeChannelId) return
     setCommentsLoading((prev) => new Set(prev).add(postId))
-    const res = await fetch(`/api/workspaces/${workspaceId}/community/posts/${postId}/comments`)
+    const res = await fetch(`/api/workspaces/${workspaceId}/community/channels/${activeChannelId}/posts/${postId}/comments`)
     const data = await res.json()
     if (Array.isArray(data?.comments)) {
       setComments((prev) => ({ ...prev, [postId]: data.comments }))
@@ -140,10 +206,11 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
   }
 
   async function handleSendComment(postId: string) {
+    if (!activeChannelId) return
     const text = (commentDrafts[postId] ?? "").trim()
     if (!text) return
     setCommentSending((prev) => new Set(prev).add(postId))
-    const res = await fetch(`/api/workspaces/${workspaceId}/community/posts/${postId}/comments`, {
+    const res = await fetch(`/api/workspaces/${workspaceId}/community/channels/${activeChannelId}/posts/${postId}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body: text }),
@@ -161,161 +228,256 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
   }
 
   async function handleDeleteComment(postId: string, commentId: string) {
+    if (!activeChannelId) return
     setComments((prev) => ({ ...prev, [postId]: (prev[postId] ?? []).filter((c) => c.id !== commentId) }))
     setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentCount: Math.max(0, p.commentCount - 1) } : p)))
-    await fetch(`/api/workspaces/${workspaceId}/community/posts/${postId}/comments/${commentId}`, { method: "DELETE" })
+    await fetch(`/api/workspaces/${workspaceId}/community/channels/${activeChannelId}/posts/${postId}/comments/${commentId}`, { method: "DELETE" })
   }
 
+  const activeChannel = channels.find((c) => c.id === activeChannelId)
+
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
-          <PanelLeft className="h-4 w-4" />
-        </Button>
-        <Users className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-lg font-semibold tracking-tight">Community</h1>
-      </div>
+    <div className="flex h-full overflow-hidden">
+      {/* Channel sidebar */}
+      <div className="flex w-52 shrink-0 flex-col border-r bg-sidebar">
+        <div className="flex h-12 items-center gap-2 border-b px-3">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
+            <PanelLeft className="h-4 w-4" />
+          </Button>
+          <span className="truncate text-sm font-semibold">Community</span>
+        </div>
 
-      <div className="flex-1 overflow-auto p-6">
-        <div className="mx-auto flex max-w-2xl flex-col gap-4">
-          <form onSubmit={handleCreatePost} className="flex flex-col gap-2 rounded-xl border bg-card p-4">
-            <textarea
-              placeholder="Was möchtest du mit dem Workspace teilen?"
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              rows={3}
-              maxLength={2000}
-              className="flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            />
-            <div className="flex justify-end">
-              <Button type="submit" size="sm" disabled={posting || !newPost.trim()} className="gap-1.5">
-                {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                Posten
-              </Button>
-            </div>
-          </form>
+        <div className="flex-1 overflow-y-auto py-2">
+          <div className="mb-1 flex items-center justify-between px-3 pb-0.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kanäle</span>
+            <button
+              type="button"
+              title="Kanal erstellen"
+              onClick={() => setShowChannelForm((v) => !v)}
+              className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
 
-          {error && (
-            <div className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">{error}</div>
+          {showChannelForm && (
+            <form onSubmit={handleCreateChannel} className="px-2 pb-2">
+              <div className="flex gap-1">
+                <input
+                  ref={channelInputRef}
+                  type="text"
+                  placeholder="kanal-name"
+                  value={newChannelName}
+                  onChange={(e) => setNewChannelName(e.target.value)}
+                  maxLength={40}
+                  className="h-7 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+                <Button type="submit" size="icon" className="h-7 w-7 shrink-0" disabled={channelSaving}>
+                  {channelSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => { setShowChannelForm(false); setChannelError("") }}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+              {channelError && <p className="mt-1 px-1 text-[11px] text-destructive">{channelError}</p>}
+            </form>
           )}
 
-          {loading ? (
-            <div className="flex flex-col gap-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-28 animate-pulse rounded-xl border bg-muted/20" />
-              ))}
+          {channelsLoading ? (
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Lädt…
             </div>
-          ) : !error && posts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
-              <Users className="mb-3 h-8 w-8 text-muted-foreground/30" />
-              <p className="text-sm font-medium">Noch keine Beiträge</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Sei der Erste, der etwas mit dem Workspace teilt.</p>
-            </div>
+          ) : channels.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-muted-foreground">Noch keine Kanäle</p>
           ) : (
-            <div className="flex flex-col gap-3">
-              {posts.map((post) => {
-                const isOpen = openComments.has(post.id)
-                const postComments = comments[post.id] ?? []
-                const draft = commentDrafts[post.id] ?? ""
-                return (
-                  <div key={post.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4">
-                    <div className="flex gap-3">
-                      <AuthorAvatar author={post.author} className="h-9 w-9 text-sm" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-semibold">{post.author.name || post.author.username || "Unbekannt"}</p>
-                          <p className="shrink-0 text-xs text-muted-foreground/60">{formatDate(post.createdAt)}</p>
-                        </div>
-                        <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{post.body}</p>
-                      </div>
-                      {currentUserId === post.author.id && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDeletePost(post.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => toggleComments(post.id)}
-                      className="flex w-fit items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      {post.commentCount > 0 ? `${post.commentCount} Kommentare` : "Kommentieren"}
-                    </button>
-
-                    {isOpen && (
-                      <div className="flex flex-col gap-3 border-t pt-3">
-                        {commentsLoading.has(post.id) ? (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Lädt…
-                          </div>
-                        ) : postComments.length === 0 ? (
-                          <p className="text-xs text-muted-foreground/60">Noch keine Kommentare.</p>
-                        ) : (
-                          <div className="flex flex-col gap-2.5">
-                            {postComments.map((c) => (
-                              <div key={c.id} className="flex gap-2.5">
-                                <AuthorAvatar author={c.author} className="h-7 w-7 text-[11px]" />
-                                <div className="min-w-0 flex-1 rounded-lg bg-muted/40 px-3 py-1.5">
-                                  <div className="flex items-center gap-2">
-                                    <p className="truncate text-xs font-semibold">{c.author.name || c.author.username || "Unbekannt"}</p>
-                                    <p className="shrink-0 text-[11px] text-muted-foreground/60">{formatDate(c.createdAt)}</p>
-                                  </div>
-                                  <p className="whitespace-pre-wrap text-xs text-muted-foreground">{c.body}</p>
-                                </div>
-                                {currentUserId === c.author.id && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
-                                    onClick={() => handleDeleteComment(post.id, c.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            placeholder="Kommentar schreiben…"
-                            value={draft}
-                            onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault()
-                                handleSendComment(post.id)
-                              }
-                            }}
-                            maxLength={1000}
-                            className="flex h-8 w-full rounded-md border border-input bg-background px-3 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          />
-                          <Button
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            disabled={commentSending.has(post.id) || !draft.trim()}
-                            onClick={() => handleSendComment(post.id)}
-                          >
-                            {commentSending.has(post.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+            channels.map((ch) => (
+              <button
+                key={ch.id}
+                type="button"
+                onClick={() => setActiveChannelId(ch.id)}
+                className={cn(
+                  "flex w-full items-center gap-1.5 rounded-md px-2 py-1 mx-1 text-sm transition-colors",
+                  ch.id === activeChannelId
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                )}
+                style={{ width: "calc(100% - 8px)" }}
+              >
+                <Hash className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{ch.name}</span>
+              </button>
+            ))
           )}
         </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+          {activeChannel ? (
+            <>
+              <Hash className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <h1 className="text-base font-semibold tracking-tight">{activeChannel.name}</h1>
+            </>
+          ) : (
+            <h1 className="text-base font-semibold text-muted-foreground">Kein Kanal ausgewählt</h1>
+          )}
+        </div>
+
+        {!activeChannel ? (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            Wähle einen Kanal aus oder erstelle einen neuen.
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex-1 overflow-auto p-6">
+              <div className="mx-auto flex max-w-2xl flex-col gap-4">
+                {postsError && (
+                  <div className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">{postsError}</div>
+                )}
+
+                {postsLoading ? (
+                  <div className="flex flex-col gap-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-28 animate-pulse rounded-xl border bg-muted/20" />
+                    ))}
+                  </div>
+                ) : !postsError && posts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
+                    <Hash className="mb-3 h-8 w-8 text-muted-foreground/30" />
+                    <p className="text-sm font-medium">#{activeChannel.name} ist noch leer</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">Schreib die erste Nachricht in diesem Kanal.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {posts.map((post) => {
+                      const isOpen = openComments.has(post.id)
+                      const postComments = comments[post.id] ?? []
+                      const draft = commentDrafts[post.id] ?? ""
+                      return (
+                        <div key={post.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+                          <div className="flex gap-3">
+                            <AuthorAvatar author={post.author} className="h-9 w-9 text-sm" />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="truncate text-sm font-semibold">{post.author.name || post.author.username || "Unbekannt"}</p>
+                                <p className="shrink-0 text-xs text-muted-foreground/60">{formatDate(post.createdAt)}</p>
+                              </div>
+                              <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{post.body}</p>
+                            </div>
+                            {currentUserId === post.author.id && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleDeletePost(post.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleComments(post.id)}
+                            className="flex w-fit items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            {post.commentCount > 0 ? `${post.commentCount} Kommentare` : "Kommentieren"}
+                          </button>
+
+                          {isOpen && (
+                            <div className="flex flex-col gap-3 border-t pt-3">
+                              {commentsLoading.has(post.id) ? (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Lädt…
+                                </div>
+                              ) : postComments.length === 0 ? (
+                                <p className="text-xs text-muted-foreground/60">Noch keine Kommentare.</p>
+                              ) : (
+                                <div className="flex flex-col gap-2.5">
+                                  {postComments.map((c) => (
+                                    <div key={c.id} className="flex gap-2.5">
+                                      <AuthorAvatar author={c.author} className="h-7 w-7 text-[11px]" />
+                                      <div className="min-w-0 flex-1 rounded-lg bg-muted/40 px-3 py-1.5">
+                                        <div className="flex items-center gap-2">
+                                          <p className="truncate text-xs font-semibold">{c.author.name || c.author.username || "Unbekannt"}</p>
+                                          <p className="shrink-0 text-[11px] text-muted-foreground/60">{formatDate(c.createdAt)}</p>
+                                        </div>
+                                        <p className="whitespace-pre-wrap text-xs text-muted-foreground">{c.body}</p>
+                                      </div>
+                                      {currentUserId === c.author.id && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                                          onClick={() => handleDeleteComment(post.id, c.id)}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Kommentar schreiben…"
+                                  value={draft}
+                                  onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault()
+                                      handleSendComment(post.id)
+                                    }
+                                  }}
+                                  maxLength={1000}
+                                  className="flex h-8 w-full rounded-md border border-input bg-background px-3 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                />
+                                <Button
+                                  size="icon"
+                                  className="h-8 w-8 shrink-0"
+                                  disabled={commentSending.has(post.id) || !draft.trim()}
+                                  onClick={() => handleSendComment(post.id)}
+                                >
+                                  {commentSending.has(post.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Post composer at bottom */}
+            <div className="shrink-0 border-t p-4">
+              <form onSubmit={handleCreatePost} className="mx-auto flex max-w-2xl gap-2">
+                <input
+                  type="text"
+                  placeholder={`Nachricht in #${activeChannel.name}…`}
+                  value={newPost}
+                  onChange={(e) => setNewPost(e.target.value)}
+                  maxLength={2000}
+                  className="flex h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+                <Button type="submit" size="sm" disabled={posting || !newPost.trim()} className="h-9 gap-1.5 px-3">
+                  {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  Senden
+                </Button>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
