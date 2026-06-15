@@ -1,6 +1,6 @@
 "use client"
 
-import { Camera, Loader2, Mail, Trash2, UserMinus, Users } from "lucide-react"
+import { Camera, Globe, Loader2, Mail, Trash2, UserMinus, Users } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ interface Workspace {
   plan: WorkspacePlan
   imageUrl: string | null
   communityEnabled?: boolean
+  slug?: string | null
 }
 
 interface Member {
@@ -96,6 +97,11 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
   const [communityEnabled, setCommunityEnabled] = useState(false)
   const [communityLoading, setCommunityLoading] = useState(false)
 
+  const [slug, setSlug] = useState("")
+  const [slugLoading, setSlugLoading] = useState(false)
+  const [slugError, setSlugError] = useState("")
+  const [slugSuccess, setSlugSuccess] = useState(false)
+
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
@@ -103,6 +109,9 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
     setName(workspace.name)
     setImageUrl(workspace.imageUrl)
     setCommunityEnabled(!!workspace.communityEnabled)
+    setSlug(workspace.slug ?? "")
+    setSlugError("")
+    setSlugSuccess(false)
     setNameError("")
     setNameSuccess(false)
     setAddEmail("")
@@ -175,6 +184,28 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
       onUpdated({ ...workspace, imageUrl: null, name })
     }
     setImageLoading(false)
+  }
+
+  async function handleSlugSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!workspace) return
+    setSlugError("")
+    setSlugSuccess(false)
+    setSlugLoading(true)
+    const res = await fetch(`/api/workspaces/${workspace.id}/slug`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setSlugError(data.error || "Fehler beim Speichern")
+    } else {
+      setSlugSuccess(true)
+      setSlug(data.slug ?? "")
+      onUpdated({ ...workspace, slug: data.slug ?? null })
+    }
+    setSlugLoading(false)
   }
 
   async function handleCommunityToggle(enabled: boolean) {
@@ -440,6 +471,66 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
               </form>
             )}
           </section>
+
+          {/* ── Enterprise: Workspace-Link ── */}
+          {isOwner && workspace?.plan === "enterprise" && (
+            <>
+              <Separator />
+              <section>
+                <div className="mb-4 flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+                    <Globe className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold">Öffentliche Workspace-URL</h3>
+                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400">Enterprise</span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Erstelle eine öffentliche Landing Page für deinen Workspace mit Login für Mitglieder.
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSlugSave} className="flex flex-col gap-2">
+                  <Label htmlFor="ws-slug">Workspace-Slug</Label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 select-none text-sm text-muted-foreground">
+                        lumaspace.de/workspace/
+                      </span>
+                      <Input
+                        id="ws-slug"
+                        value={slug}
+                        onChange={(e) => {
+                          setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""))
+                          setSlugSuccess(false)
+                          setSlugError("")
+                        }}
+                        maxLength={60}
+                        placeholder="mein-workspace"
+                        className="pl-[calc(0.75rem+178px)]"
+                      />
+                    </div>
+                    <Button type="submit" disabled={slugLoading} className="shrink-0">
+                      {slugLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
+                    </Button>
+                  </div>
+                  {slugError && <p className="text-xs text-destructive">{slugError}</p>}
+                  {slugSuccess && (
+                    <p className="text-xs text-green-500">
+                      Gespeichert ✓ — {slug ? `lumaspace.de/workspace/${slug}` : "Link entfernt"}
+                    </p>
+                  )}
+                  {slug && !slugSuccess && (
+                    <p className="text-xs text-muted-foreground">
+                      Vorschau: <span className="font-mono">lumaspace.de/workspace/{slug}</span>
+                    </p>
+                  )}
+                </form>
+              </section>
+            </>
+          )}
 
           {/* ── Community ── */}
           {isOwner && (
