@@ -2,7 +2,20 @@ import { getServerSession } from "next-auth"
 import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
-import { setWorkspaceSlug } from "@/lib/workspaces-db"
+import { getWorkspaceSlug, setWorkspaceSlug } from "@/lib/workspaces-db"
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
+  }
+
+  const slug = await getWorkspaceSlug(params.id, session.user.id)
+  return NextResponse.json({ slug })
+}
 
 export async function PATCH(
   req: NextRequest,

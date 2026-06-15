@@ -77,7 +77,7 @@ export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> 
   // 1. Owned workspaces (excluding private)
   const { data: owned } = await supabase
     .from("workspaces")
-    .select("id, name, plan, owner_id, image_url, community_enabled, slug, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .eq("owner_id", userId)
     .eq("is_private", false)
     .order("created_at", { ascending: true })
@@ -99,7 +99,7 @@ export async function getWorkspacesByUser(userId: string): Promise<Workspace[]> 
   if (memberIds.length > 0) {
     const { data: mws } = await supabase
       .from("workspaces")
-      .select("id, name, plan, owner_id, image_url, community_enabled, slug, created_at")
+      .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
       .in("id", memberIds)
       .eq("is_private", false)
     memberWorkspaces = (mws ?? []).map((w) =>
@@ -124,7 +124,7 @@ function toWorkspace(w: Record<string, unknown>, role: WorkspaceRole = "member")
     ownerId: w.owner_id as string,
     imageUrl: (w.image_url as string | null) ?? null,
     communityEnabled: !!w.community_enabled,
-    slug: (w.slug as string | null) ?? null,
+    slug: null,
     createdAt: w.created_at as string,
     userRole: role,
   }
@@ -133,7 +133,7 @@ function toWorkspace(w: Record<string, unknown>, role: WorkspaceRole = "member")
 export async function getWorkspaceById(id: string, ownerId: string): Promise<Workspace | null> {
   const { data, error } = await supabase
     .from("workspaces")
-    .select("id, name, plan, owner_id, image_url, community_enabled, slug, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .eq("id", id)
     .eq("owner_id", ownerId)
     .single()
@@ -150,7 +150,7 @@ export async function createWorkspace(
   const { data, error } = await supabase
     .from("workspaces")
     .insert({ name, plan, owner_id: ownerId })
-    .select("id, name, plan, owner_id, image_url, community_enabled, slug, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .single()
 
   if (error) throw new Error(error.message)
@@ -162,7 +162,7 @@ export async function createWorkspace(
     ownerId: data.owner_id,
     imageUrl: data.image_url ?? null,
     communityEnabled: !!data.community_enabled,
-    slug: data.slug ?? null,
+    slug: null,
     createdAt: data.created_at,
     userRole: "owner" as WorkspaceRole,
   }
@@ -248,6 +248,16 @@ export async function removeWorkspaceMember(workspaceId: string, userId: string)
   if (error) throw new Error(error.message)
 }
 
+export async function getWorkspaceSlug(workspaceId: string, ownerId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("workspaces")
+    .select("slug")
+    .eq("id", workspaceId)
+    .eq("owner_id", ownerId)
+    .maybeSingle()
+  return (data?.slug as string | null) ?? null
+}
+
 export async function setWorkspaceSlug(workspaceId: string, ownerId: string, slug: string | null): Promise<void> {
   const { error } = await supabase
     .from("workspaces")
@@ -280,7 +290,7 @@ export async function getWorkspaceBySlug(slug: string): Promise<PublicWorkspace 
 export async function getOrCreatePrivateWorkspace(userId: string): Promise<Workspace> {
   const { data: existing } = await supabase
     .from("workspaces")
-    .select("id, name, plan, owner_id, image_url, community_enabled, slug, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .eq("owner_id", userId)
     .eq("is_private", true)
     .maybeSingle()
@@ -290,7 +300,7 @@ export async function getOrCreatePrivateWorkspace(userId: string): Promise<Works
   const { data, error } = await supabase
     .from("workspaces")
     .insert({ name: "Privat", plan: "free", owner_id: userId, is_private: true })
-    .select("id, name, plan, owner_id, image_url, community_enabled, slug, created_at")
+    .select("id, name, plan, owner_id, image_url, community_enabled, created_at")
     .single()
 
   if (error) throw new Error(error.message)

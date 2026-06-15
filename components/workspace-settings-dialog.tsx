@@ -109,9 +109,14 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
     setName(workspace.name)
     setImageUrl(workspace.imageUrl)
     setCommunityEnabled(!!workspace.communityEnabled)
-    setSlug(workspace.slug ?? "")
     setSlugError("")
     setSlugSuccess(false)
+    if (workspace.plan === "enterprise" && isOwner) {
+      fetch(`/api/workspaces/${workspace.id}/slug`)
+        .then((r) => r.json())
+        .then((d) => { if (typeof d.slug === "string" || d.slug === null) setSlug(d.slug ?? "") })
+        .catch(() => {})
+    }
     setNameError("")
     setNameSuccess(false)
     setAddEmail("")
