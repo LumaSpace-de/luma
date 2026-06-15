@@ -2,6 +2,7 @@
 
 import { Hash, Loader2, MessageSquare, PanelLeft, Plus, Send, Trash2, X } from "lucide-react"
 import { useSession } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -62,12 +63,13 @@ function AuthorAvatar({ author, className }: { author: Author; className?: strin
 export default function CommunityPage({ params }: { params: { id: string } }) {
   const { toggle } = useInlineSidebar()
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
   const workspaceId = params.id
   const currentUserId = (session?.user as { id?: string } | undefined)?.id ?? null
 
   const [channels, setChannels] = useState<Channel[]>([])
   const [channelsLoading, setChannelsLoading] = useState(true)
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(searchParams.get("c"))
 
   const [newChannelName, setNewChannelName] = useState("")
   const [channelSaving, setChannelSaving] = useState(false)
@@ -96,7 +98,10 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
         if (Array.isArray(data?.channels)) {
           setChannels(data.channels)
           if (data.channels.length > 0) {
-            setActiveChannelId((prev) => prev ?? data.channels[0].id)
+            setActiveChannelId((prev) => {
+              if (prev && data.channels.some((c: Channel) => c.id === prev)) return prev
+              return data.channels[0].id
+            })
           }
         }
         setChannelsLoading(false)
