@@ -27,6 +27,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Nicht berechtigt" }, { status: 403 })
   }
 
-  await deleteAnnouncement(params.id, session.user.id)
+  await deleteAnnouncement(params.id)
   return NextResponse.json({ success: true })
 }

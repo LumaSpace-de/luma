@@ -4,7 +4,7 @@ import { getToken } from "next-auth/jwt"
 
 const PROTECTED = [
   "/calendar", "/dashboard", "/settings", "/pages",
-  "/inbox", "/statistics", "/discover",
+  "/inbox", "/statistics", "/discover", "/admin",
 ]
 
 export async function middleware(request: NextRequest) {
@@ -56,5 +56,6 @@ export const config = {
     "/inbox/:path*",
     "/statistics/:path*",
     "/discover/:path*",
+    "/admin/:path*", "/admin",
   ],
 }
