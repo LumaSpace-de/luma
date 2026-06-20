@@ -247,9 +247,11 @@ export function EventDialog({
           )
           const data = await res.json()
           const addr = data.address
-          const place = addr.city ?? addr.town ?? addr.village ?? addr.county ?? ""
           const road = addr.road ? `${addr.road}${addr.house_number ? " " + addr.house_number : ""}` : ""
-          setLocation([road, place].filter(Boolean).join(", ") || `${lat.toFixed(4)}, ${lon.toFixed(4)}`)
+          const plz = addr.postcode ?? ""
+          const place = addr.city ?? addr.town ?? addr.village ?? addr.county ?? ""
+          const cityPart = [plz, place].filter(Boolean).join(" ")
+          setLocation([road, cityPart].filter(Boolean).join(", ") || `${lat.toFixed(4)}, ${lon.toFixed(4)}`)
         } catch {
           setLocation(`${lat.toFixed(4)}, ${lon.toFixed(4)}`)
         }
