@@ -82,6 +82,77 @@ export default function IndexPage() {
         </p>
       </main>
 
+      {/* ── Calendar Hero Image ────────────────────────────── */}
+      <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-20">
+        <div className="overflow-hidden rounded-2xl border border-border/60 bg-card/60 shadow-2xl shadow-primary/5 backdrop-blur-sm">
+          {/* Title bar */}
+          <div className="flex items-center gap-2 border-b border-border/40 bg-muted/40 px-4 py-2.5">
+            <div className="flex gap-1.5">
+              <div className="h-3 w-3 rounded-full bg-red-400/60" />
+              <div className="h-3 w-3 rounded-full bg-yellow-400/60" />
+              <div className="h-3 w-3 rounded-full bg-green-400/60" />
+            </div>
+            <span className="ml-2 text-xs text-muted-foreground">LumaSpace — Kalender</span>
+          </div>
+
+          {/* Calendar mockup */}
+          <div className="p-4 sm:p-6">
+            {/* Header */}
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold sm:text-xl">Juni 2026</h3>
+              <div className="flex gap-1">
+                <div className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">Monat</div>
+                <div className="rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground">Woche</div>
+              </div>
+            </div>
+
+            {/* Day headers */}
+            <div className="grid grid-cols-7 gap-px text-center text-xs font-medium text-muted-foreground">
+              {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(d => (
+                <div key={d} className="py-2">{d}</div>
+              ))}
+            </div>
+
+            {/* Calendar grid */}
+            <div className="grid grid-cols-7 gap-px">
+              {/* Row 1: Jun 1-7 (Mon June 1) */}
+              {[1,2,3,4,5,6,7].map(day => (
+                <div key={day} className={cn("min-h-[60px] rounded-lg border border-transparent p-1.5 sm:min-h-[72px]", day === 3 && "border-blue-500/30 bg-blue-500/5")}>
+                  <span className={cn("text-xs", day === 3 ? "font-bold text-blue-400" : "text-muted-foreground/70")}>{day}</span>
+                  {day === 1 && <div className="mt-1 rounded bg-purple-500/20 px-1 py-0.5 text-[10px] text-purple-400 sm:text-[11px]">Sprint Start</div>}
+                  {day === 3 && <div className="mt-1 rounded bg-blue-500/20 px-1 py-0.5 text-[10px] text-blue-400 sm:text-[11px]">Team-Meeting</div>}
+                  {day === 5 && <div className="mt-1 rounded bg-green-500/20 px-1 py-0.5 text-[10px] text-green-400 sm:text-[11px]">Release v2.0</div>}
+                </div>
+              ))}
+              {/* Row 2: Jun 8-14 */}
+              {[8,9,10,11,12,13,14].map(day => (
+                <div key={day} className="min-h-[60px] rounded-lg p-1.5 sm:min-h-[72px]">
+                  <span className="text-xs text-muted-foreground/70">{day}</span>
+                  {day === 10 && <div className="mt-1 rounded bg-amber-500/20 px-1 py-0.5 text-[10px] text-amber-400 sm:text-[11px]">Design Review</div>}
+                  {day === 12 && <div className="mt-1 rounded bg-red-500/20 px-1 py-0.5 text-[10px] text-red-400 sm:text-[11px]">Deadline</div>}
+                </div>
+              ))}
+              {/* Row 3: Jun 15-21 */}
+              {[15,16,17,18,19,20,21].map(day => (
+                <div key={day} className={cn("min-h-[60px] rounded-lg p-1.5 sm:min-h-[72px]", day === 20 && "ring-2 ring-primary/40")}>
+                  <span className={cn("text-xs", day === 20 ? "font-bold text-primary" : "text-muted-foreground/70")}>{day}</span>
+                  {day === 15 && <div className="mt-1 rounded bg-blue-500/20 px-1 py-0.5 text-[10px] text-blue-400 sm:text-[11px]">Standup</div>}
+                  {day === 18 && <div className="mt-1 rounded bg-green-500/20 px-1 py-0.5 text-[10px] text-green-400 sm:text-[11px]">Launch</div>}
+                  {day === 20 && <div className="mt-1 rounded bg-primary/20 px-1 py-0.5 text-[10px] text-primary sm:text-[11px]">Heute</div>}
+                </div>
+              ))}
+              {/* Row 4: Jun 22-28 */}
+              {[22,23,24,25,26,27,28].map(day => (
+                <div key={day} className="min-h-[60px] rounded-lg p-1.5 sm:min-h-[72px]">
+                  <span className="text-xs text-muted-foreground/70">{day}</span>
+                  {day === 24 && <div className="mt-1 rounded bg-purple-500/20 px-1 py-0.5 text-[10px] text-purple-400 sm:text-[11px]">Retrospektive</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Features ───────────────────────────────────────── */}
       <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-28">
         <div className="mb-12 text-center">

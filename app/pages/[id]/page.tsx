@@ -27,6 +27,7 @@ interface PageData {
   title: string
   content: string | null
   icon: string | null
+  workspaceId: string
   canEdit: boolean
 }
 
@@ -249,7 +250,7 @@ export default function PageView({ params }: { params: { id: string } }) {
           />
 
           {/* Blocks */}
-          <PageBlocks pageId={params.id} canEdit={canEdit} />
+          <PageBlocks pageId={params.id} canEdit={canEdit} workspaceId={page.workspaceId} />
         </div>
       </div>
     </div>

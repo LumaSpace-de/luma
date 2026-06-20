@@ -1,10 +1,13 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import {
   AlertCircle,
   CheckSquare,
   Code2,
+  ExternalLink,
+  FileText,
   GripVertical,
   Heading1,
   Minus,
@@ -61,6 +64,12 @@ const BLOCK_TYPES: {
     label: "Code-Block",
     description: "Formatierter Code",
     icon: <Code2 className="h-4 w-4 text-orange-400" />,
+  },
+  {
+    type: "page_link",
+    label: "Seitenvorschau",
+    description: "Vorschau einer anderen Seite",
+    icon: <ExternalLink className="h-4 w-4 text-cyan-400" />,
   },
   {
     type: "divider",
@@ -194,6 +203,86 @@ function CodeBlock({
   )
 }
 
+function PageLinkBlock({
+  data, canEdit, onChange, workspaceId,
+}: {
+  data: Record<string, unknown>
+  canEdit: boolean
+  onChange: (d: Record<string, unknown>) => void
+  workspaceId?: string
+}) {
+  const linkedPageId = (data.pageId as string) ?? ""
+  const [pages, setPages] = useState<{ id: string; title: string; icon: string | null }[]>([])
+  const [preview, setPreview] = useState<{ title: string; icon: string | null; content: string | null } | null>(null)
+  const [loadingPages, setLoadingPages] = useState(false)
+
+  useEffect(() => {
+    if (!linkedPageId) { setPreview(null); return }
+    fetch(`/api/pages/${linkedPageId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.title) setPreview({ title: d.title, icon: d.icon ?? null, content: d.content ?? null }) })
+      .catch(() => {})
+  }, [linkedPageId])
+
+  function loadPages() {
+    if (!workspaceId || pages.length > 0) return
+    setLoadingPages(true)
+    fetch(`/api/pages?workspaceId=${workspaceId}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { if (Array.isArray(d)) setPages(d) })
+      .catch(() => {})
+      .finally(() => setLoadingPages(false))
+  }
+
+  if (!linkedPageId && canEdit) {
+    return (
+      <div className="rounded-xl border border-dashed border-border/60 p-4">
+        <p className="mb-2 text-xs font-medium text-muted-foreground">Seite auswählen:</p>
+        <select
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          value=""
+          onFocus={loadPages}
+          onChange={e => { if (e.target.value) onChange({ ...data, pageId: e.target.value }) }}
+        >
+          <option value="">{loadingPages ? "Lädt…" : "— Seite wählen —"}</option>
+          {pages.map(p => (
+            <option key={p.id} value={p.id}>{p.icon ? `${p.icon} ` : ""}{p.title}</option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
+  if (!preview) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+        <FileText className="h-4 w-4" />
+        {linkedPageId ? "Seite wird geladen…" : "Keine Seite verknüpft"}
+      </div>
+    )
+  }
+
+  const snippet = preview.content ? preview.content.slice(0, 120) + (preview.content.length > 120 ? "…" : "") : ""
+
+  return (
+    <Link
+      href={`/pages/${linkedPageId}`}
+      className="group flex items-start gap-3 rounded-xl border bg-card/60 p-4 transition-colors hover:bg-accent/40"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-lg">
+        {preview.icon ?? <FileText className="h-5 w-5 text-muted-foreground" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="truncate text-sm font-semibold">{preview.title}</p>
+          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+        </div>
+        {snippet && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{snippet}</p>}
+      </div>
+    </Link>
+  )
+}
+
 // ── Block wrapper with drag handle + delete ────────────────────────────────
 
 function BlockWrapper({
@@ -239,9 +328,10 @@ function BlockWrapper({
 interface PageBlocksProps {
   pageId: string
   canEdit: boolean
+  workspaceId?: string
 }
 
-export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
+export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
   const [blocks, setBlocks]             = useState<PageBlock[]>([])
   const [menuOpen, setMenuOpen]         = useState(false)
   const [dragIndex, setDragIndex]       = useState<number | null>(null)
@@ -271,6 +361,7 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
       : type === "callout" ? { variant: "info", text: "" }
       : type === "code"    ? { lang: "", code: "" }
       : type === "quote"   ? { text: "" }
+      : type === "page_link" ? { pageId: "" }
       : {}
 
     const optimistic: PageBlock = { id: crypto.randomUUID(), pageId, type, data: defaultData, position }
@@ -382,6 +473,9 @@ export function PageBlocks({ pageId, canEdit }: PageBlocksProps) {
               )}
               {block.type === "code" && (
                 <CodeBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
+              )}
+              {block.type === "page_link" && (
+                <PageLinkBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} workspaceId={workspaceId} />
               )}
             </BlockWrapper>
           ))}
