@@ -390,39 +390,52 @@ export function EventDialog({
           </div>
 
           {/* Time range */}
-          <div className="flex gap-3">
-            <div className="flex flex-1 flex-col gap-1.5">
-              <Label htmlFor="event-time">Von</Label>
-              <select
-                id="event-time"
-                value={time}
-                onChange={(e) => {
-                  setTime(e.target.value)
-                  if (e.target.value >= endTime) {
-                    const idx = TIME_OPTIONS.indexOf(e.target.value)
-                    setEndTime(TIME_OPTIONS[Math.min(idx + 2, TIME_OPTIONS.length - 1)])
-                  }
-                }}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              >
-                {TIME_OPTIONS.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex gap-3">
+              <div className="flex flex-1 flex-col gap-1.5">
+                <Label htmlFor="event-time">Von</Label>
+                <select
+                  id="event-time"
+                  value={time}
+                  onChange={(e) => {
+                    setTime(e.target.value)
+                    if (e.target.value >= endTime) {
+                      const idx = TIME_OPTIONS.indexOf(e.target.value)
+                      setEndTime(TIME_OPTIONS[Math.min(idx + 2, TIME_OPTIONS.length - 1)])
+                    }
+                  }}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5">
+                <Label htmlFor="event-endtime">Bis</Label>
+                <select
+                  id="event-endtime"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {TIME_OPTIONS.filter((t) => t > time).map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="flex flex-1 flex-col gap-1.5">
-              <Label htmlFor="event-endtime">Bis</Label>
-              <select
-                id="event-endtime"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              >
-                {TIME_OPTIONS.filter((t) => t > time).map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
+            {time && endTime && endTime > time && (() => {
+              const [sh, sm] = time.split(":").map(Number)
+              const [eh, em] = endTime.split(":").map(Number)
+              const diff = (eh * 60 + em - sh * 60 - sm) / 60
+              const label = diff % 1 === 0 ? `${diff}h` : `${diff.toFixed(1).replace(".", ",")}h`
+              return (
+                <span className="mt-1 text-xs text-muted-foreground">
+                  = {label} Dauer
+                </span>
+              )
+            })()}
           </div>
 
           {/* Location */}
