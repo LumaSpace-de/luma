@@ -44,7 +44,36 @@ export async function GET(
     return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
   }
 
+  const { data: ws } = await supabase
+    .from("workspaces")
+    .select("owner_id")
+    .eq("id", params.id)
+    .maybeSingle()
+
   const members = await getWorkspaceMembers(params.id)
+
+  if (ws?.owner_id) {
+    const { data: owner } = await supabase
+      .from("users")
+      .select("id, name, email, username, avatar_url")
+      .eq("id", ws.owner_id)
+      .maybeSingle()
+
+    if (owner) {
+      members.unshift({
+        id: "owner",
+        workspaceId: params.id,
+        userId: owner.id,
+        role: "owner",
+        addedAt: "",
+        name: owner.name ?? "",
+        email: owner.email ?? "",
+        username: owner.username ?? null,
+        avatarUrl: owner.avatar_url ?? null,
+      })
+    }
+  }
+
   return NextResponse.json(members)
 }
 

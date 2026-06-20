@@ -43,6 +43,12 @@ interface Props {
 
 const ROLES: { value: string; label: string; description: string; badge: string }[] = [
   {
+    value: "owner",
+    label: "Inhaber",
+    description: "Volle Kontrolle über den Workspace",
+    badge: "bg-amber-500/20 text-amber-400",
+  },
+  {
     value: "admin",
     label: "Admin",
     description: "Kann Mitglieder & Einstellungen verwalten",
@@ -400,8 +406,10 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
                       <p className="truncate text-xs text-muted-foreground">{m.email}</p>
                     </div>
 
-                    {/* Role: dropdown for owner, badge-only for members */}
-                    {isOwner ? (
+                    {/* Role: dropdown for non-owner members, badge-only for the owner entry */}
+                    {m.role === "owner" ? (
+                      <RoleBadge role="owner" />
+                    ) : isOwner ? (
                       <div className="relative shrink-0">
                         <button
                           type="button"
@@ -413,7 +421,7 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
                         </button>
                         {roleMenuFor === m.userId && (
                           <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-lg border bg-popover shadow-lg">
-                            {ROLES.map((r) => (
+                            {ROLES.filter((r) => r.value !== "owner").map((r) => (
                               <button
                                 key={r.value}
                                 type="button"
@@ -437,8 +445,8 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
                       <RoleBadge role={m.role} />
                     )}
 
-                    {/* Remove — only for owner */}
-                    {isOwner && (
+                    {/* Remove — only for owner, and not for the owner entry itself */}
+                    {isOwner && m.role !== "owner" && (
                       <Button
                         variant="ghost"
                         size="icon"
