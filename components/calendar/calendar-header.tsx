@@ -235,29 +235,6 @@ export function CalendarHeader({
           )}
         </div>
 
-        {/* Column picker — only in month view */}
-        {viewMode === "month" && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
-                {columns} Spalte{columns === 1 ? "" : "n"}
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-32">
-              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                <DropdownMenuItem
-                  key={n}
-                  onClick={() => onColumnsChange(n)}
-                  className={cn("text-xs", columns === n && "font-semibold text-primary")}
-                >
-                  {n} Spalte{n === 1 ? "" : "n"}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-
         {/* Mobile prev/next */}
         <div className="flex items-center gap-0.5 sm:hidden">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onPrev}>
