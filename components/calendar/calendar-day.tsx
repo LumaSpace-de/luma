@@ -14,6 +14,14 @@ const colorMap: Record<EventColor, string> = {
   purple: "bg-purple-600",
 }
 
+const colorHex: Record<EventColor, string> = {
+  blue: "#2563eb",
+  green: "#15803d",
+  red: "#dc2626",
+  yellow: "#ca8a04",
+  purple: "#9333ea",
+}
+
 interface CalendarDayProps {
   date: Date
   events: CalendarEvent[]
@@ -40,6 +48,10 @@ export function CalendarDay({
   const overflow = events.length - visible.length
   const [dragOver, setDragOver] = useState(false)
 
+  const firstEvent = events[0]
+  const firstLabel = firstEvent?.labelId ? labels.find((l) => l.id === firstEvent.labelId) : null
+  const tintColor = firstLabel ? firstLabel.color : firstEvent ? colorHex[firstEvent.color] : null
+
   return (
     <div
       role="button"
@@ -60,11 +72,16 @@ export function CalendarDay({
         if (eventId) onEventDrop(eventId, date)
       }}
       className={cn(
-        "flex h-full min-h-[90px] w-full cursor-pointer flex-col gap-1 p-1 transition-colors hover:bg-accent/20",
+        "flex h-full min-h-[90px] w-full cursor-pointer flex-col gap-1 rounded-lg border p-1 transition-colors hover:bg-accent/20",
         !isCurrentMonth && "opacity-35",
         isSelected && "bg-accent/30",
-        dragOver && "bg-primary/10 ring-1 ring-inset ring-primary/40"
+        dragOver && "bg-primary/10 ring-1 ring-inset ring-primary/40",
+        !tintColor && "border-transparent"
       )}
+      style={tintColor ? {
+        borderColor: `${tintColor}4D`,
+        backgroundColor: isSelected ? undefined : `${tintColor}0D`,
+      } : undefined}
     >
       <span
         className={cn(
