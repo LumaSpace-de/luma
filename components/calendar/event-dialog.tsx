@@ -3,7 +3,7 @@
 import { format } from "date-fns"
 import { de } from "date-fns/locale"
 import { Bell, FileText, MapPin, Plus, Repeat, Trash2, X } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -112,6 +112,35 @@ export function EventDialog({
   const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[0])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false)
+  const [addressResults, setAddressResults] = useState<string[]>([])
+  const [addressLoading, setAddressLoading] = useState(false)
+  const addressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const searchAddress = useCallback((query: string) => {
+    if (addressTimer.current) clearTimeout(addressTimer.current)
+    if (query.trim().length < 3) { setAddressResults([]); return }
+    setAddressLoading(true)
+    addressTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5&countrycodes=de`,
+          { headers: { "Accept-Language": "de" } }
+        )
+        const data = await res.json()
+        const results = (data as { address: Record<string, string> }[]).map((item) => {
+          const a = item.address
+          const road = a.road ? `${a.road}${a.house_number ? " " + a.house_number : ""}` : ""
+          const plz = a.postcode ?? ""
+          const place = a.city ?? a.town ?? a.village ?? a.county ?? ""
+          return [road, [plz, place].filter(Boolean).join(" ")].filter(Boolean).join(", ")
+        }).filter((v, i, arr) => v && arr.indexOf(v) === i)
+        setAddressResults(results)
+      } catch {
+        setAddressResults([])
+      }
+      setAddressLoading(false)
+    }, 350)
+  }, [])
 
   const titleSuggestions = useMemo(() => {
     if (!allEvents?.length || !title.trim()) return []
@@ -127,23 +156,6 @@ export function EventDialog({
       .map((e) => ({ title: e.title, color: e.color, labelId: e.labelId, time: e.time, endTime: e.endTime, location: e.location }))
       .slice(0, 5)
   }, [allEvents, title])
-
-  const locationSuggestions = useMemo(() => {
-    if (!allEvents?.length) return []
-    const q = location.trim().toLowerCase()
-    const seen = new Set<string>()
-    return allEvents
-      .filter((e) => {
-        if (!e.location) return false
-        const loc = e.location.toLowerCase()
-        if (seen.has(loc) || loc === q) return false
-        if (q && !loc.includes(q)) return false
-        seen.add(loc)
-        return true
-      })
-      .map((e) => e.location!)
-      .slice(0, 8)
-  }, [allEvents, location])
 
   useEffect(() => {
     if (event) {
@@ -458,17 +470,17 @@ export function EventDialog({
             })()}
           </div>
 
-          {/* Location with autocomplete */}
+          {/* Location with address search */}
           <div className="relative flex flex-col gap-1.5">
             <Label htmlFor="event-location">Standort (optional)</Label>
             <div className="flex gap-2">
               <Input
                 id="event-location"
                 value={location}
-                onChange={(e) => { setLocation(e.target.value); setShowLocationSuggestions(true) }}
+                onChange={(e) => { setLocation(e.target.value); searchAddress(e.target.value); setShowLocationSuggestions(true) }}
                 onFocus={() => setShowLocationSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 150)}
-                placeholder="Ort oder Adresse"
+                onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
+                placeholder="Adresse suchen…"
                 autoComplete="off"
                 className="flex-1"
               />
@@ -483,21 +495,25 @@ export function EventDialog({
                 <MapPin className={`h-4 w-4 ${geoLoading ? "animate-pulse" : ""}`} />
               </Button>
             </div>
-            {showLocationSuggestions && locationSuggestions.length > 0 && (
+            {showLocationSuggestions && (addressResults.length > 0 || addressLoading) && (
               <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-md border bg-popover shadow-lg">
-                {locationSuggestions.map((loc) => (
+                {addressLoading && addressResults.length === 0 && (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">Suche…</div>
+                )}
+                {addressResults.map((addr) => (
                   <button
-                    key={loc}
+                    key={addr}
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
-                      setLocation(loc)
+                      setLocation(addr)
                       setShowLocationSuggestions(false)
+                      setAddressResults([])
                     }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
                   >
                     <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{loc}</span>
+                    <span className="truncate">{addr}</span>
                   </button>
                 ))}
               </div>
