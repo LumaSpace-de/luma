@@ -146,6 +146,8 @@ export async function markAnnouncementRead(announcementId: string, userId: strin
   if (error) throw new Error(error.message)
 }
 
-export async function deleteAnnouncement(id: string, createdBy: string): Promise<void> {
-  await supabase.from("announcements").delete().eq("id", id).eq("created_by", createdBy)
+export async function deleteAnnouncement(id: string, createdBy?: string): Promise<void> {
+  let query = supabase.from("announcements").delete().eq("id", id)
+  if (createdBy) query = query.eq("created_by", createdBy)
+  await query
 }

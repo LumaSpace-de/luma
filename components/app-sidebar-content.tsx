@@ -24,6 +24,7 @@ import {
   Plus,
   Search,
   Settings,
+  Shield,
   Smile,
   Sparkles,
   Star,
@@ -320,6 +321,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
   const [aiOpen, setAiOpen] = useState(false)
 
   const [channels, setChannels] = useState<CommunityChannel[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [templatesParentId, setTemplatesParentId] = useState<string | null>(null)
@@ -361,6 +363,11 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
     fetch("/api/friends?count=1")
       .then((r) => r.json())
       .then((d) => { if (typeof d.count === "number") setFriendRequestCount(d.count) })
+      .catch(() => {})
+
+    fetch("/api/admin")
+      .then((r) => r.json())
+      .then((d) => { if (d.isAdmin) setIsAdmin(true) })
       .catch(() => {})
 
     fetch("/api/workspaces/private")
@@ -802,6 +809,13 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
             <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
+            {isAdmin && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Admin">
+                <Link href="/admin">
+                  <Shield className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            )}
             <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Einstellungen">
               <Link href="/settings">
                 <Settings className="h-3.5 w-3.5" />
