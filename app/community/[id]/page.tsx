@@ -83,6 +83,7 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
 
   const [newPost, setNewPost] = useState("")
   const [posting, setPosting] = useState(false)
+  const [postError, setPostError] = useState("")
 
   const [openComments, setOpenComments] = useState<Set<string>>(new Set())
   const [comments, setComments] = useState<Record<string, Comment[]>>({})
@@ -164,14 +165,22 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
     e.preventDefault()
     if (!newPost.trim() || !activeChannelId) return
     setPosting(true)
-    const res = await fetch(`/api/workspaces/${workspaceId}/community/channels/${activeChannelId}/posts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: newPost.trim() }),
-    })
-    if (res.ok) {
-      setNewPost("")
-      loadPosts(activeChannelId)
+    setPostError("")
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/community/channels/${activeChannelId}/posts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: newPost.trim() }),
+      })
+      if (res.ok) {
+        setNewPost("")
+        loadPosts(activeChannelId)
+      } else {
+        const data = await res.json().catch(() => null)
+        setPostError(data?.error ?? `Fehler (${res.status})`)
+      }
+    } catch {
+      setPostError("Netzwerkfehler")
     }
     setPosting(false)
   }
@@ -466,20 +475,23 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
 
             {/* Post composer at bottom */}
             <div className="shrink-0 border-t p-4">
-              <form onSubmit={handleCreatePost} className="mx-auto flex max-w-2xl gap-2">
-                <input
-                  type="text"
-                  placeholder={`Nachricht in #${activeChannel.name}…`}
-                  value={newPost}
-                  onChange={(e) => setNewPost(e.target.value)}
-                  maxLength={2000}
-                  className="flex h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                />
-                <Button type="submit" size="sm" disabled={posting || !newPost.trim()} className="h-9 gap-1.5 px-3">
-                  {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                  Senden
-                </Button>
-              </form>
+              <div className="mx-auto max-w-2xl">
+                <form onSubmit={handleCreatePost} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder={`Nachricht in #${activeChannel.name}…`}
+                    value={newPost}
+                    onChange={(e) => { setNewPost(e.target.value); setPostError("") }}
+                    maxLength={2000}
+                    className="flex h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                  <Button type="submit" size="sm" disabled={posting || !newPost.trim()} className="h-9 gap-1.5 px-3">
+                    {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                    Senden
+                  </Button>
+                </form>
+                {postError && <p className="mt-1.5 text-xs text-destructive">{postError}</p>}
+              </div>
             </div>
           </div>
         )}
