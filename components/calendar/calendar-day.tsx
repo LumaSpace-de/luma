@@ -72,15 +72,14 @@ export function CalendarDay({
         if (eventId) onEventDrop(eventId, date)
       }}
       className={cn(
-        "flex h-full min-h-[90px] w-full cursor-pointer flex-col gap-1 rounded-lg border p-1 transition-colors hover:bg-accent/20",
+        "flex h-full min-h-[90px] w-full cursor-pointer flex-col gap-1 p-1 transition-colors hover:bg-accent/20",
         !isCurrentMonth && "opacity-35",
         isSelected && "bg-accent/30",
-        dragOver && "bg-primary/10 ring-1 ring-inset ring-primary/40",
-        !tintColor && "border-transparent"
+        dragOver && "bg-primary/10 ring-1 ring-inset ring-primary/40"
       )}
       style={tintColor ? {
-        borderColor: `${tintColor}4D`,
-        backgroundColor: isSelected ? undefined : `${tintColor}0D`,
+        backgroundColor: isSelected ? undefined : `${tintColor}0A`,
+        boxShadow: `inset 0 0 0 1px ${tintColor}26`,
       } : undefined}
     >
       <span
