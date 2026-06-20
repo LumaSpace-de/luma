@@ -129,19 +129,20 @@ export function EventDialog({
   }, [allEvents, title])
 
   const locationSuggestions = useMemo(() => {
-    if (!allEvents?.length || !location.trim()) return []
-    const q = location.toLowerCase()
+    if (!allEvents?.length) return []
+    const q = location.trim().toLowerCase()
     const seen = new Set<string>()
     return allEvents
       .filter((e) => {
         if (!e.location) return false
         const loc = e.location.toLowerCase()
-        if (seen.has(loc) || !loc.includes(q) || loc === q) return false
+        if (seen.has(loc) || loc === q) return false
+        if (q && !loc.includes(q)) return false
         seen.add(loc)
         return true
       })
       .map((e) => e.location!)
-      .slice(0, 5)
+      .slice(0, 8)
   }, [allEvents, location])
 
   useEffect(() => {
