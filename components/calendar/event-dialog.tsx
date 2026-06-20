@@ -3,7 +3,7 @@
 import { format } from "date-fns"
 import { de } from "date-fns/locale"
 import { Bell, FileText, MapPin, Plus, Repeat, Trash2, X } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -65,6 +65,7 @@ interface EventDialogProps {
   onClose: () => void
   selectedDate: Date | null
   event?: CalendarEvent | null
+  allEvents?: CalendarEvent[]
   labels: CalendarLabel[]
   onAddLabel: (name: string, color: string) => CalendarLabel
   onSave: (data: {
@@ -86,7 +87,7 @@ interface EventDialogProps {
 }
 
 export function EventDialog({
-  open, onClose, selectedDate, event, labels, onAddLabel, onSave, onUpdate, onDelete,
+  open, onClose, selectedDate, event, allEvents, labels, onAddLabel, onSave, onUpdate, onDelete,
 }: EventDialogProps) {
   const [title, setTitle]           = useState("")
   const [color, setColor]           = useState<EventColor>("blue")
@@ -109,6 +110,22 @@ export function EventDialog({
   const [showNewLabel, setShowNewLabel] = useState(false)
   const [newLabelName, setNewLabelName] = useState("")
   const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[0])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  const titleSuggestions = useMemo(() => {
+    if (!allEvents?.length || !title.trim()) return []
+    const q = title.toLowerCase()
+    const seen = new Set<string>()
+    return allEvents
+      .filter((e) => {
+        const t = e.title.toLowerCase()
+        if (seen.has(t) || !t.includes(q) || t === q) return false
+        seen.add(t)
+        return true
+      })
+      .map((e) => ({ title: e.title, color: e.color, labelId: e.labelId, time: e.time, endTime: e.endTime, location: e.location }))
+      .slice(0, 5)
+  }, [allEvents, title])
 
   useEffect(() => {
     if (event) {
@@ -238,16 +255,44 @@ export function EventDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* Title */}
-          <div className="flex flex-col gap-1.5">
+          {/* Title with autocomplete */}
+          <div className="relative flex flex-col gap-1.5">
             <Label htmlFor="event-title">Titel</Label>
             <Input
               id="event-title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); setShowSuggestions(true) }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Event-Titel"
+              autoComplete="off"
               autoFocus
             />
+            {showSuggestions && titleSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-md border bg-popover shadow-lg">
+                {titleSuggestions.map((s) => (
+                  <button
+                    key={s.title}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setTitle(s.title)
+                      setColor(s.color)
+                      if (s.labelId) setLabelId(s.labelId)
+                      if (s.time) setTime(s.time)
+                      if (s.endTime) setEndTime(s.endTime)
+                      if (s.location) setLocation(s.location)
+                      setShowSuggestions(false)
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                  >
+                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", COLORS.find((c) => c.value === s.color)?.bg ?? "bg-blue-600")} />
+                    <span className="truncate">{s.title}</span>
+                    {s.time && <span className="ml-auto shrink-0 text-xs text-muted-foreground">{s.time}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Labels */}

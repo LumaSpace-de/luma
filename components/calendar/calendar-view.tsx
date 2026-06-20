@@ -211,6 +211,7 @@ export function CalendarView() {
         onClose={handleClose}
         selectedDate={selectedDate}
         event={editingEvent}
+        allEvents={events}
         labels={labels}
         onAddLabel={addLabel}
         onSave={addEvent}
