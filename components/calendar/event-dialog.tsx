@@ -111,6 +111,7 @@ export function EventDialog({
   const [newLabelName, setNewLabelName] = useState("")
   const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[0])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false)
 
   const titleSuggestions = useMemo(() => {
     if (!allEvents?.length || !title.trim()) return []
@@ -126,6 +127,22 @@ export function EventDialog({
       .map((e) => ({ title: e.title, color: e.color, labelId: e.labelId, time: e.time, endTime: e.endTime, location: e.location }))
       .slice(0, 5)
   }, [allEvents, title])
+
+  const locationSuggestions = useMemo(() => {
+    if (!allEvents?.length || !location.trim()) return []
+    const q = location.toLowerCase()
+    const seen = new Set<string>()
+    return allEvents
+      .filter((e) => {
+        if (!e.location) return false
+        const loc = e.location.toLowerCase()
+        if (seen.has(loc) || !loc.includes(q) || loc === q) return false
+        seen.add(loc)
+        return true
+      })
+      .map((e) => e.location!)
+      .slice(0, 5)
+  }, [allEvents, location])
 
   useEffect(() => {
     if (event) {
@@ -438,15 +455,18 @@ export function EventDialog({
             })()}
           </div>
 
-          {/* Location */}
-          <div className="flex flex-col gap-1.5">
+          {/* Location with autocomplete */}
+          <div className="relative flex flex-col gap-1.5">
             <Label htmlFor="event-location">Standort (optional)</Label>
             <div className="flex gap-2">
               <Input
                 id="event-location"
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => { setLocation(e.target.value); setShowLocationSuggestions(true) }}
+                onFocus={() => setShowLocationSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 150)}
                 placeholder="Ort oder Adresse"
+                autoComplete="off"
                 className="flex-1"
               />
               <Button
@@ -460,6 +480,25 @@ export function EventDialog({
                 <MapPin className={`h-4 w-4 ${geoLoading ? "animate-pulse" : ""}`} />
               </Button>
             </div>
+            {showLocationSuggestions && locationSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-md border bg-popover shadow-lg">
+                {locationSuggestions.map((loc) => (
+                  <button
+                    key={loc}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setLocation(loc)
+                      setShowLocationSuggestions(false)
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                  >
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{loc}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Color */}
