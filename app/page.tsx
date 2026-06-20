@@ -85,16 +85,6 @@ export default function IndexPage() {
       {/* ── Calendar Hero Image ────────────────────────────── */}
       <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-20">
         <div className="overflow-hidden rounded-2xl border border-border/60 bg-card/60 shadow-2xl shadow-primary/5 backdrop-blur-sm">
-          {/* Title bar */}
-          <div className="flex items-center gap-2 border-b border-border/40 bg-muted/40 px-4 py-2.5">
-            <div className="flex gap-1.5">
-              <div className="h-3 w-3 rounded-full bg-red-400/60" />
-              <div className="h-3 w-3 rounded-full bg-yellow-400/60" />
-              <div className="h-3 w-3 rounded-full bg-green-400/60" />
-            </div>
-            <span className="ml-2 text-xs text-muted-foreground">LumaSpace — Kalender</span>
-          </div>
-
           {/* Calendar mockup */}
           <div className="p-4 sm:p-6">
             {/* Header */}
