@@ -163,7 +163,7 @@ export default function PageView({ params }: { params: { id: string } }) {
 
       {/* Editor */}
       <div className="flex-1 overflow-auto" onClick={() => setIconPickerOpen(false)}>
-        <div className="mx-auto max-w-2xl px-6 py-10">
+        <div className="mx-auto max-w-5xl px-6 py-10">
           {/* Icon picker — only for members/admins/owners */}
           {canEdit && <div className="relative mb-3" onClick={(e) => e.stopPropagation()}>
             <button
