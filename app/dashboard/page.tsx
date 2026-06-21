@@ -1,6 +1,6 @@
 "use client"
 
-import { Building2, FileText, Link2, PanelLeft, Plus, Send, Settings, X } from "lucide-react"
+import { Book, Building2, Calendar, CheckSquare, ChevronRight, FileText, LayoutGrid, Link2, Mail, PanelLeft, Plus, Send, Settings, Users, X } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -345,6 +345,9 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* ── LumaSpace Docs ── */}
+        <DocsSection />
+
       </div>
 
       {/* Create workspace dialog */}
@@ -383,6 +386,148 @@ export default function DashboardPage() {
         }}
         onDeleted={(id) => setWorkspaces((prev) => prev.filter((w) => w.id !== id))}
       />
+    </div>
+  )
+}
+
+// ── Docs data ─────────────────────────────────────────────────────────────
+
+interface DocArticle {
+  id: string
+  icon: React.ReactNode
+  title: string
+  summary: string
+  content: string[]
+}
+
+const DOCS: DocArticle[] = [
+  {
+    id: "erste-schritte",
+    icon: <Book className="h-4 w-4" />,
+    title: "Erste Schritte",
+    summary: "Account erstellen, Workspace einrichten und loslegen.",
+    content: [
+      "Willkommen bei LumaSpace! Nach der Registrierung landest du auf dem Dashboard. Hier siehst du deine Workspaces, Schnellnotizen und Schnelllinks.",
+      "Erstelle deinen ersten Workspace über den Button oben rechts. Ein Workspace ist dein Team- oder Projektbereich — alle Seiten, Aufgaben und Mitglieder gehören zu einem Workspace.",
+      "Im Free Plan kannst du unbegrenzt Seiten erstellen und bis zu 5 Mitglieder einladen. Für größere Teams gibt es den Enterprise Plan.",
+    ],
+  },
+  {
+    id: "workspaces",
+    icon: <LayoutGrid className="h-4 w-4" />,
+    title: "Workspaces",
+    summary: "Workspace erstellen, Mitglieder einladen und Rollen verwalten.",
+    content: [
+      "Jeder Workspace hat vier Rollen: Owner (volle Kontrolle), Admin (kann Mitglieder verwalten), Member (kann Inhalte erstellen) und Viewer (nur Lesezugriff).",
+      "Klicke auf einen Workspace im Dashboard um die Einstellungen zu öffnen: Name ändern, Bild hochladen, Mitglieder einladen oder den Workspace löschen.",
+      "Du kannst per Einladungslink neue Mitglieder hinzufügen. Der Link ist 7 Tage gültig und kann jederzeit neu generiert werden.",
+    ],
+  },
+  {
+    id: "seiten-blocks",
+    icon: <FileText className="h-4 w-4" />,
+    title: "Seiten & Blocks",
+    summary: "Seiten erstellen, Blocks einfügen und Inhalte strukturieren.",
+    content: [
+      "Seiten sind das Herzstück von LumaSpace. Jede Seite hat einen Titel, optionalen Text und beliebig viele Blocks.",
+      "Verfügbare Block-Typen: Aufgabentabelle (mit Kanban-Ansicht), Datenbank, Überschrift (H1-H3), Hinweis (Info/Warnung/Erfolg/Fehler), Zitat, Code-Block und Seitenvorschau.",
+      "Blocks können per Drag & Drop umsortiert werden. Klicke auf den + Button am Ende der Seite um neue Blocks hinzuzufügen.",
+      "Seiten können verschachtelt werden — erstelle Unterseiten für eine hierarchische Struktur wie bei einem Wiki.",
+    ],
+  },
+  {
+    id: "aufgaben",
+    icon: <CheckSquare className="h-4 w-4" />,
+    title: "Aufgaben & Kanban",
+    summary: "Tasks erstellen, Status verwalten und Kanban-Board nutzen.",
+    content: [
+      "Aufgabentabellen sind ein spezieller Block-Typ. Jede Aufgabe hat einen Titel, Status (Offen, In Arbeit, Erledigt) und Priorität (Niedrig, Mittel, Hoch).",
+      "Wechsle zwischen Tabellen- und Kanban-Ansicht über die Icons im Tabellen-Header. Im Kanban-Board kannst du Tasks per Drag & Drop zwischen Status-Spalten verschieben.",
+      "Füge eigene Spalten hinzu: Text, Zahl, Datum, Auswahl (mit Farben), User-Zuweisung oder Fortschritt (%). Spalten lassen sich umbenennen, umsortieren und ausblenden.",
+      "Du kannst Aufgaben direkt zum Kalender hinzufügen und Excel/CSV-Dateien importieren.",
+    ],
+  },
+  {
+    id: "kalender",
+    icon: <Calendar className="h-4 w-4" />,
+    title: "Kalender",
+    summary: "Events planen, Ansichten wechseln und Erinnerungen setzen.",
+    content: [
+      "Der Kalender bietet drei Ansichten: Monat, Woche und Zeitstrahl. Wechsle über die Icons im Header.",
+      "Klicke auf einen Tag um ein Event zu erstellen. Jedes Event hat Titel, Farbe, Start-/Endzeit, Standort (mit Adresssuche), Notizen und optionales Label.",
+      "Events können wiederholt werden: täglich, wöchentlich, monatlich oder jährlich. Setze Erinnerungen (5 Min bis 1 Tag vorher) für wichtige Termine.",
+      "Per Drag & Drop kannst du Events in der Monatsansicht auf andere Tage verschieben. Der Kalender lässt sich auch mit Apple Kalender (CalDAV) abonnieren.",
+    ],
+  },
+  {
+    id: "inbox",
+    icon: <Mail className="h-4 w-4" />,
+    title: "Inbox & Ankündigungen",
+    summary: "Nachrichten empfangen und Ankündigungen lesen.",
+    content: [
+      "Die Inbox sammelt alle wichtigen Benachrichtigungen: Workspace-Einladungen, Ankündigungen und System-Nachrichten.",
+      "Ankündigungen werden von Admins erstellt und erscheinen für alle Nutzer. Sie können Labels (z.B. Neu, Update, Wichtig) und Embeds mit Farbakzent enthalten.",
+      "Ungelesene Nachrichten werden als Badge in der Sidebar angezeigt. Klicke auf eine Nachricht um sie als gelesen zu markieren.",
+    ],
+  },
+  {
+    id: "community",
+    icon: <Users className="h-4 w-4" />,
+    title: "Community & Freunde",
+    summary: "Channels nutzen, Freunde hinzufügen und sich vernetzen.",
+    content: [
+      "Aktiviere die Community-Funktion in den Workspace-Einstellungen. Erstelle Channels für verschiedene Themen — ähnlich wie bei Discord oder Slack.",
+      "Über die Freunde-Funktion kannst du andere LumaSpace-Nutzer als Freunde hinzufügen. Sende eine Anfrage per Benutzername.",
+      "In Community-Channels können alle Workspace-Mitglieder Nachrichten austauschen und sich organisieren.",
+    ],
+  },
+]
+
+function DocsSection() {
+  const [openId, setOpenId] = useState<string | null>(null)
+
+  return (
+    <div className="mt-10">
+      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        LumaSpace Docs
+      </h2>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {DOCS.map((doc) => (
+          <button
+            key={doc.id}
+            onClick={() => setOpenId(openId === doc.id ? null : doc.id)}
+            className={cn(
+              "flex flex-col rounded-xl border bg-card p-4 text-left transition-colors hover:bg-accent/30",
+              openId === doc.id && "ring-1 ring-primary/40"
+            )}
+          >
+            <div className="flex items-center gap-2 text-primary">
+              {doc.icon}
+              <span className="text-sm font-semibold">{doc.title}</span>
+              <ChevronRight className={cn("ml-auto h-3.5 w-3.5 text-muted-foreground/50 transition-transform", openId === doc.id && "rotate-90")} />
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{doc.summary}</p>
+          </button>
+        ))}
+      </div>
+
+      {openId && (() => {
+        const doc = DOCS.find(d => d.id === openId)
+        if (!doc) return null
+        return (
+          <div className="mt-3 rounded-xl border bg-card p-5">
+            <div className="mb-4 flex items-center gap-2 text-primary">
+              {doc.icon}
+              <h3 className="text-base font-bold">{doc.title}</h3>
+            </div>
+            <div className="flex flex-col gap-3">
+              {doc.content.map((p, i) => (
+                <p key={i} className="text-sm leading-relaxed text-muted-foreground">{p}</p>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
