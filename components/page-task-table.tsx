@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import * as XLSX from "xlsx"
-import { CalendarPlus, Check, ChevronDown, GripVertical, Plus, Settings2, Trash2, Upload, X } from "lucide-react"
+import { CalendarPlus, Check, ChevronDown, GripVertical, Kanban, List, Plus, Settings2, Trash2, Upload, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -379,6 +379,8 @@ export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockData
   const [calDate, setCalDate]       = useState(new Date().toISOString().slice(0, 10))
   const [calSaving, setCalSaving]   = useState(false)
   const [calRect, setCalRect]       = useState<{ top: number; left: number } | null>(null)
+  const [viewMode, setViewMode]     = useState<"table" | "kanban">((blockData?.viewMode as "table" | "kanban") ?? "table")
+  const [kanbanDrag, setKanbanDrag] = useState<string | null>(null)
 
   const [members, setMembers] = useState<WorkspaceMemberOption[]>([])
 
@@ -744,9 +746,27 @@ export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockData
 
       {/* Header bar */}
       <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
-        <EditableLabel value={tableName} canEdit={canEdit} onSave={v => bd({ name: v })} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <EditableLabel value={tableName} canEdit={canEdit} onSave={v => bd({ name: v })} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" />
+          <div className="flex items-center rounded-md border border-border/40 bg-muted/30 p-0.5">
+            <button
+              onClick={() => { setViewMode("table"); bd({ viewMode: "table" }) }}
+              className={cn("flex h-5 w-5 items-center justify-center rounded transition-colors", viewMode === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground/60 hover:text-muted-foreground")}
+              title="Tabellenansicht"
+            >
+              <List className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => { setViewMode("kanban"); bd({ viewMode: "kanban" }) }}
+              className={cn("flex h-5 w-5 items-center justify-center rounded transition-colors", viewMode === "kanban" ? "bg-primary text-primary-foreground" : "text-muted-foreground/60 hover:text-muted-foreground")}
+              title="Kanban-Board"
+            >
+              <Kanban className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
         <div className="flex items-center gap-1">
-          {canEdit && (
+          {canEdit && viewMode === "table" && (
             <>
               <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
               <button onClick={() => fileRef.current?.click()} disabled={importing} title="Excel / CSV importieren"
@@ -772,6 +792,8 @@ export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockData
         </div>
       </div>
 
+      {viewMode === "table" ? (
+      <>
       {/* Scrollable table */}
       <div className="overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/60 [&::-webkit-scrollbar-track]:bg-transparent">
         <table className="w-full min-w-max border-collapse text-sm">
@@ -886,6 +908,112 @@ export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockData
             <Plus className="h-3.5 w-3.5" />Zeile hinzufügen
           </button>
         </div>
+      )}
+      </>
+      ) : (
+      /* Kanban board */
+      <div className="flex gap-3 overflow-x-auto p-3">
+        {STATUS_OPTS.map(col => {
+          const colTasks = tasks.filter(t => t.status === col.value)
+          return (
+            <div
+              key={col.value}
+              className="flex min-w-[220px] flex-1 flex-col rounded-lg bg-muted/20"
+              onDragOver={e => e.preventDefault()}
+              onDrop={() => {
+                if (kanbanDrag) {
+                  patch(kanbanDrag, { status: col.value })
+                  setKanbanDrag(null)
+                }
+              }}
+            >
+              <div className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className={cn("h-2 w-2 rounded-full",
+                    col.value === "todo" ? "bg-muted-foreground/50" : col.value === "in_progress" ? "bg-blue-400" : "bg-green-500"
+                  )} />
+                  <span className="text-xs font-semibold text-muted-foreground">{col.label}</span>
+                  <span className="text-[10px] text-muted-foreground/50">{colTasks.length}</span>
+                </div>
+                {canEdit && (
+                  <button
+                    onClick={() => addTask().then(() => {
+                      const newest = tasks[tasks.length - 1]
+                      if (newest && col.value !== "todo") patch(newest.id, { status: col.value })
+                    })}
+                    className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-accent hover:text-muted-foreground transition-colors"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5 px-2 pb-2">
+                {colTasks.map(task => {
+                  const prio = PRIORITY_OPTS.find(p => p.value === task.priority)
+                  return (
+                    <div
+                      key={task.id}
+                      draggable={canEdit}
+                      onDragStart={() => setKanbanDrag(task.id)}
+                      onDragEnd={() => setKanbanDrag(null)}
+                      className={cn(
+                        "group rounded-lg border border-border/40 bg-card p-2.5 transition-colors hover:border-border/80",
+                        canEdit && "cursor-grab active:cursor-grabbing",
+                        kanbanDrag === task.id && "opacity-50"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <input
+                          disabled={!canEdit}
+                          value={task.title}
+                          onChange={e => opt(task.id, { title: e.target.value })}
+                          onBlur={e => canEdit && patch(task.id, { title: e.target.value })}
+                          placeholder="Aufgabe…"
+                          className={cn(
+                            "flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground/30 disabled:cursor-default",
+                            task.status === "done" && "line-through text-muted-foreground/50"
+                          )}
+                        />
+                        {canEdit && (
+                          <button onClick={() => remove(task.id)} className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-destructive transition-opacity">
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        {prio && (
+                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                            <span className={cn("h-1.5 w-1.5 rounded-full", prio.dot)} />
+                            {prio.label}
+                          </span>
+                        )}
+                        {canEdit && (
+                          <MiniSelect
+                            value={task.priority}
+                            options={PRIORITY_OPTS}
+                            onChange={v => patch(task.id, { priority: v })}
+                            disabled={false}
+                            renderTrigger={() => <span className="text-[10px] text-muted-foreground/40">Priorität</span>}
+                            renderItem={o => {
+                              const p = PRIORITY_OPTS.find(x => x.value === o.value)!
+                              return <span className="flex items-center gap-1.5 text-xs"><span className={cn("h-1.5 w-1.5 rounded-full", p.dot)} />{o.label}</span>
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+                {colTasks.length === 0 && (
+                  <div className="flex items-center justify-center rounded-lg border border-dashed border-border/30 py-6 text-[10px] text-muted-foreground/30">
+                    Keine Aufgaben
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
       )}
     </div>
 
