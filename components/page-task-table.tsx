@@ -980,26 +980,39 @@ export function PageTaskTable({ pageId, blockId, canEdit, blockData, onBlockData
                           </button>
                         )}
                       </div>
-                      <div className="mt-1.5 flex items-center gap-2">
-                        {prio && (
-                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                            <span className={cn("h-1.5 w-1.5 rounded-full", prio.dot)} />
-                            {prio.label}
-                          </span>
-                        )}
-                        {canEdit && (
-                          <MiniSelect
-                            value={task.priority}
-                            options={PRIORITY_OPTS}
-                            onChange={v => patch(task.id, { priority: v })}
-                            disabled={false}
-                            renderTrigger={() => <span className="text-[10px] text-muted-foreground/40">Priorität</span>}
-                            renderItem={o => {
-                              const p = PRIORITY_OPTS.find(x => x.value === o.value)!
-                              return <span className="flex items-center gap-1.5 text-xs"><span className={cn("h-1.5 w-1.5 rounded-full", p.dot)} />{o.label}</span>
+                      <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {prio && (
+                            <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                              <span className={cn("h-1.5 w-1.5 rounded-full", prio.dot)} />
+                              {prio.label}
+                            </span>
+                          )}
+                          {canEdit && (
+                            <MiniSelect
+                              value={task.priority}
+                              options={PRIORITY_OPTS}
+                              onChange={v => patch(task.id, { priority: v })}
+                              disabled={false}
+                              renderTrigger={() => <span className="text-[10px] text-muted-foreground/40">Priorität</span>}
+                              renderItem={o => {
+                                const p = PRIORITY_OPTS.find(x => x.value === o.value)!
+                                return <span className="flex items-center gap-1.5 text-xs"><span className={cn("h-1.5 w-1.5 rounded-full", p.dot)} />{o.label}</span>
                             }}
                           />
                         )}
+                        </div>
+                        <div className="flex -space-x-1.5">
+                          {customColumns
+                            .filter(c => c.type === "user")
+                            .map(c => {
+                              const userId = task.rowData?.[c.id]
+                              if (!userId) return null
+                              const member = members.find(m => m.userId === userId)
+                              if (!member) return null
+                              return <MemberAvatar key={c.id} member={member} size="h-5 w-5" />
+                            })}
+                        </div>
                       </div>
                     </div>
                   )
