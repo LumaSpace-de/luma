@@ -213,15 +213,37 @@ function PageLinkBlock({
 }) {
   const linkedPageId = (data.pageId as string) ?? ""
   const [pages, setPages] = useState<{ id: string; title: string; icon: string | null }[]>([])
-  const [preview, setPreview] = useState<{ title: string; icon: string | null; content: string | null } | null>(null)
+  const [preview, setPreview] = useState<{
+    title: string; icon: string | null; content: string | null
+    blocks: { type: string; data: Record<string, unknown> }[]
+    taskCount: number
+  } | null>(null)
   const [loadingPages, setLoadingPages] = useState(false)
 
   useEffect(() => {
     if (!linkedPageId) { setPreview(null); return }
-    fetch(`/api/pages/${linkedPageId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.title) setPreview({ title: d.title, icon: d.icon ?? null, content: d.content ?? null }) })
-      .catch(() => {})
+    let cancelled = false
+    ;(async () => {
+      try {
+        const [pageRes, blocksRes, tasksRes] = await Promise.all([
+          fetch(`/api/pages/${linkedPageId}`),
+          fetch(`/api/pages/${linkedPageId}/blocks`),
+          fetch(`/api/pages/${linkedPageId}/tasks`),
+        ])
+        const pageData = pageRes.ok ? await pageRes.json() : null
+        const blocks = blocksRes.ok ? await blocksRes.json() : []
+        const tasks = tasksRes.ok ? await tasksRes.json() : []
+        if (cancelled || !pageData?.title) return
+        setPreview({
+          title: pageData.title,
+          icon: pageData.icon ?? null,
+          content: pageData.content ?? null,
+          blocks: Array.isArray(blocks) ? blocks.slice(0, 4) : [],
+          taskCount: Array.isArray(tasks) ? tasks.length : 0,
+        })
+      } catch { /* ignore */ }
+    })()
+    return () => { cancelled = true }
   }, [linkedPageId])
 
   function loadPages() {
@@ -262,23 +284,100 @@ function PageLinkBlock({
     )
   }
 
-  const snippet = preview.content ? preview.content.slice(0, 120) + (preview.content.length > 120 ? "…" : "") : ""
+  const snippet = preview.content ? preview.content.slice(0, 200) + (preview.content.length > 200 ? "…" : "") : ""
 
   return (
     <Link
       href={`/pages/${linkedPageId}`}
-      className="group flex items-start gap-3 rounded-xl border bg-card/60 p-4 transition-colors hover:bg-accent/40"
+      className="group flex flex-col rounded-xl border bg-card/60 transition-colors hover:bg-accent/40"
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-lg">
-        {preview.icon ?? <FileText className="h-5 w-5 text-muted-foreground" />}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold">{preview.title}</p>
-          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      {/* Header */}
+      <div className="flex items-start gap-3 p-4 pb-2">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-lg">
+          {preview.icon ?? <FileText className="h-5 w-5 text-muted-foreground" />}
         </div>
-        {snippet && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{snippet}</p>}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-sm font-semibold">{preview.title}</p>
+            <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          </div>
+          {snippet && <p className="mt-0.5 line-clamp-3 text-xs leading-relaxed text-muted-foreground">{snippet}</p>}
+        </div>
       </div>
+
+      {/* Block previews */}
+      {preview.blocks.length > 0 && (
+        <div className="flex flex-col gap-1.5 border-t border-border/30 px-4 py-3">
+          {preview.blocks.map((block, i) => {
+            if (block.type === "heading") {
+              const level = (block.data.level as number) ?? 1
+              const text = (block.data.text as string) ?? ""
+              if (!text) return null
+              return (
+                <p key={i} className={cn(
+                  "truncate text-muted-foreground",
+                  level === 1 ? "text-sm font-bold" : level === 2 ? "text-xs font-semibold" : "text-xs font-medium"
+                )}>
+                  {text}
+                </p>
+              )
+            }
+            if (block.type === "callout") {
+              const variant = (block.data.variant as string) ?? "info"
+              const text = (block.data.text as string) ?? ""
+              if (!text) return null
+              const icon = variant === "warning" ? "⚠️" : variant === "success" ? "✅" : variant === "error" ? "❌" : "ℹ️"
+              return (
+                <p key={i} className="flex items-center gap-1.5 truncate text-xs text-muted-foreground/70">
+                  <span className="text-[10px]">{icon}</span>
+                  <span className="truncate">{text}</span>
+                </p>
+              )
+            }
+            if (block.type === "quote") {
+              const text = (block.data.text as string) ?? ""
+              if (!text) return null
+              return (
+                <p key={i} className="truncate border-l-2 border-primary/30 pl-2 text-xs italic text-muted-foreground/60">
+                  {text}
+                </p>
+              )
+            }
+            if (block.type === "task_table") {
+              const name = (block.data.name as string) ?? "Aufgaben"
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <CheckSquare className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{name}</span>
+                  {preview.taskCount > 0 && (
+                    <span className="shrink-0 rounded bg-muted px-1 py-px text-[10px]">{preview.taskCount}</span>
+                  )}
+                </p>
+              )
+            }
+            if (block.type === "data_table") {
+              const name = (block.data.name as string) ?? "Datenbank"
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <Table2 className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{name}</span>
+                </p>
+              )
+            }
+            if (block.type === "code") {
+              const lang = (block.data.lang as string) ?? ""
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <Code2 className="h-3 w-3 shrink-0" />
+                  <span>{lang || "Code"}</span>
+                </p>
+              )
+            }
+            if (block.type === "divider") return null
+            return null
+          })}
+        </div>
+      )}
     </Link>
   )
 }
