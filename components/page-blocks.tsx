@@ -22,7 +22,6 @@ import {
   TrendingUp,
   Wallet,
   RefreshCw,
-  Download,
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react"
@@ -242,15 +241,34 @@ function PnlCalendarBlock({
   canEdit: boolean
   onChange: (d: Record<string, unknown>) => void
 }) {
-  const entries = (data.entries as Record<string, number>) ?? {}
-  const currency = (data.currency as string) ?? "€"
+  const [entries, setEntries] = useState<Record<string, number>>((data.entries as Record<string, number>) ?? {})
+  const currency = "$"
   const [viewDate, setViewDate] = useState(() => new Date())
+  const [loading, setLoading] = useState(false)
   const [editingDay, setEditingDay] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  const [mexcImporting, setMexcImporting] = useState(false)
-  const [mexcSymbol, setMexcSymbol] = useState((data.mexcSymbol as string) ?? "BTCUSDT")
-  const [mexcMarket, setMexcMarket] = useState<"spot" | "futures">((data.mexcMarket as "spot" | "futures") ?? "spot")
   const inputRef = useRef<HTMLInputElement>(null)
+  const lastFetchRef = useRef("")
+
+  useEffect(() => {
+    const monthKey = format(viewDate, "yyyy-MM")
+    if (lastFetchRef.current === monthKey) return
+    lastFetchRef.current = monthKey
+    setLoading(true)
+    fetch(`/api/mexc/pnl?symbol=BTCUSDT&month=${monthKey}&market=futures`)
+      .then(r => r.ok ? r.json() : null)
+      .then(pnl => {
+        if (pnl?.entries && Object.keys(pnl.entries).length > 0) {
+          setEntries(prev => {
+            const merged = { ...prev, ...pnl.entries }
+            onChange({ ...data, entries: merged })
+            return merged
+          })
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [viewDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const monthStart = startOfMonth(viewDate)
   const monthEnd = endOfMonth(viewDate)
@@ -258,10 +276,7 @@ function PnlCalendarBlock({
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
   const days = eachDayOfInterval({ start: calStart, end: calEnd })
 
-  const monthEntries = Object.entries(entries).filter(([k]) => {
-    const d = new Date(k)
-    return isSameMonth(d, viewDate)
-  })
+  const monthEntries = Object.entries(entries).filter(([k]) => isSameMonth(new Date(k), viewDate))
   const monthTotal = monthEntries.reduce((s, [, v]) => s + v, 0)
   const wins = monthEntries.filter(([, v]) => v > 0).length
   const losses = monthEntries.filter(([, v]) => v < 0).length
@@ -286,22 +301,23 @@ function PnlCalendarBlock({
     } else {
       next[editingDay] = Math.round(num * 100) / 100
     }
+    setEntries(next)
     onChange({ ...data, entries: next })
     setEditingDay(null)
   }
 
-  function formatPnl(v: number): string {
+  function fmtPnl(v: number): string {
     const s = Math.abs(v).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     return (v >= 0 ? "+" : "−") + s + currency
   }
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-border/30 px-4 py-3">
         <div className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-emerald-400" />
-          <span className="text-sm font-semibold">PnL Kalender</span>
+          <span className="text-sm font-semibold">Futures PnL</span>
+          {loading && <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />}
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => setViewDate(d => subMonths(d, 1))}
@@ -317,23 +333,18 @@ function PnlCalendarBlock({
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        {canEdit && (
-          <select value={currency} onChange={e => onChange({ ...data, currency: e.target.value })}
-            className="rounded border border-border/40 bg-background px-1.5 py-0.5 text-xs text-muted-foreground">
-            <option value="€">EUR (€)</option>
-            <option value="$">USD ($)</option>
-            <option value="£">GBP (£)</option>
-            <option value="CHF">CHF</option>
-          </select>
-        )}
+        <button onClick={() => { lastFetchRef.current = ""; setViewDate(new Date(viewDate)) }}
+          disabled={loading}
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50">
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+        </button>
       </div>
 
-      {/* Summary stats */}
       <div className="grid grid-cols-4 gap-px border-b border-border/30 bg-border/20">
         <div className="flex flex-col items-center bg-card/60 px-3 py-2">
           <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Gesamt</span>
           <span className={cn("text-sm font-bold", monthTotal > 0 ? "text-emerald-400" : monthTotal < 0 ? "text-red-400" : "text-muted-foreground")}>
-            {formatPnl(monthTotal)}
+            {fmtPnl(monthTotal)}
           </span>
         </div>
         <div className="flex flex-col items-center bg-card/60 px-3 py-2">
@@ -342,17 +353,15 @@ function PnlCalendarBlock({
         </div>
         <div className="flex flex-col items-center bg-card/60 px-3 py-2">
           <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Bester Tag</span>
-          <span className="text-sm font-bold text-emerald-400">{bestDay > 0 ? formatPnl(bestDay) : "—"}</span>
+          <span className="text-sm font-bold text-emerald-400">{bestDay > 0 ? fmtPnl(bestDay) : "—"}</span>
         </div>
         <div className="flex flex-col items-center bg-card/60 px-3 py-2">
           <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Schlechtester</span>
-          <span className="text-sm font-bold text-red-400">{worstDay < 0 ? formatPnl(worstDay) : "—"}</span>
+          <span className="text-sm font-bold text-red-400">{worstDay < 0 ? fmtPnl(worstDay) : "—"}</span>
         </div>
       </div>
 
-      {/* Calendar grid */}
       <div className="p-3">
-        {/* Weekday headers */}
         <div className="mb-1 grid grid-cols-7 gap-1">
           {WEEKDAYS.map(wd => (
             <div key={wd} className="py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
@@ -361,7 +370,6 @@ function PnlCalendarBlock({
           ))}
         </div>
 
-        {/* Day cells */}
         <div className="grid grid-cols-7 gap-1">
           {days.map(day => {
             const dayKey = format(day, "yyyy-MM-dd")
@@ -416,7 +424,6 @@ function PnlCalendarBlock({
         </div>
       </div>
 
-      {/* Footer with trade count + MEXC import */}
       <div className="flex items-center justify-between border-t border-border/30 px-4 py-2">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -429,46 +436,7 @@ function PnlCalendarBlock({
           </span>
           <span>{tradeDays} Tage</span>
         </div>
-        {canEdit && (
-          <div className="flex items-center gap-1.5">
-            <div className="flex overflow-hidden rounded border border-border/40">
-              <button
-                onClick={() => { setMexcMarket("spot"); onChange({ ...data, mexcMarket: "spot" }) }}
-                className={cn("px-1.5 py-0.5 text-[10px] font-medium transition-colors", mexcMarket === "spot" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-accent")}
-              >Spot</button>
-              <button
-                onClick={() => { setMexcMarket("futures"); onChange({ ...data, mexcMarket: "futures" }) }}
-                className={cn("px-1.5 py-0.5 text-[10px] font-medium transition-colors", mexcMarket === "futures" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-accent")}
-              >Futures</button>
-            </div>
-            <input
-              value={mexcSymbol}
-              onChange={e => { setMexcSymbol(e.target.value.toUpperCase()); onChange({ ...data, mexcSymbol: e.target.value.toUpperCase() }) }}
-              className="w-20 rounded border border-border/40 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground outline-none"
-              placeholder="BTCUSDT"
-            />
-            <button
-              onClick={async () => {
-                setMexcImporting(true)
-                try {
-                  const monthKey = format(viewDate, "yyyy-MM")
-                  const res = await fetch(`/api/mexc/pnl?symbol=${mexcSymbol}&month=${monthKey}&market=${mexcMarket}`)
-                  if (res.ok) {
-                    const pnl = await res.json()
-                    const merged = { ...entries, ...pnl.entries }
-                    onChange({ ...data, entries: merged, mexcSymbol, mexcMarket })
-                  }
-                } catch { /* ignore */ }
-                setMexcImporting(false)
-              }}
-              disabled={mexcImporting}
-              className="flex items-center gap-1 rounded-md border border-border/40 bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-            >
-              <Download className="h-3 w-3" />
-              {mexcImporting ? "…" : "Import"}
-            </button>
-          </div>
-        )}
+        <span className="text-[10px] text-muted-foreground/50">MEXC Futures</span>
       </div>
     </div>
   )
