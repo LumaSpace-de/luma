@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Compass,
   FileText,
+  GitBranch,
   Hash,
   Home,
   Lock,
@@ -88,6 +89,7 @@ const navigationItems = [
   { icon: BarChart2, label: "Statistiken", href: "/statistics" },
   { icon: Compass, label: "Entdecken", href: "/discover" },
   { icon: Users, label: "Freunde", href: "/friends" },
+  { icon: GitBranch, label: "GitHub", href: "/github" },
 ]
 
 const planLabel: Record<WorkspacePlan, string> = {

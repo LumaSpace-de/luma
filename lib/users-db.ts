@@ -115,6 +115,37 @@ export async function deleteResetToken(email: string): Promise<void> {
   await supabase.from("password_reset_tokens").delete().ilike("email", email)
 }
 
+// -- GitHub token helpers --
+// Requires columns: github_token (text, nullable), github_username (text, nullable) on users table
+// SQL: ALTER TABLE users ADD COLUMN github_token text, ADD COLUMN github_username text;
+
+export async function getGithubToken(userId: string): Promise<{ token: string; username: string } | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("github_token, github_username")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error || !data?.github_token) return null
+  return { token: data.github_token, username: data.github_username ?? "" }
+}
+
+export async function setGithubToken(userId: string, token: string, username: string): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({ github_token: token, github_username: username })
+    .eq("id", userId)
+  if (error) throw new Error(error.message)
+}
+
+export async function removeGithubToken(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({ github_token: null, github_username: null })
+    .eq("id", userId)
+  if (error) throw new Error(error.message)
+}
+
 export async function createUser(
   email: string,
   hashedPassword: string

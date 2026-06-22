@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react"
 import { useEffect, useRef, useState } from "react"
 
-import { Building2, Camera, PanelLeft } from "lucide-react"
+import { Building2, Camera, GitBranch, PanelLeft } from "lucide-react"
 
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
@@ -38,6 +38,14 @@ export default function SettingsPage() {
   // Workspaces
   const [workspaces, setWorkspaces] = useState<{ id: string; name: string; plan: string; imageUrl: string | null; userRole: string }[]>([])
 
+  // GitHub
+  const [ghConnected, setGhConnected] = useState(false)
+  const [ghUsername, setGhUsername] = useState("")
+  const [ghToken, setGhToken] = useState("")
+  const [ghLoading, setGhLoading] = useState(false)
+  const [ghError, setGhError] = useState("")
+  const [ghSuccess, setGhSuccess] = useState(false)
+
   // Password
   const [current, setCurrent] = useState("")
   const [newPw, setNewPw] = useState("")
@@ -50,6 +58,21 @@ export default function SettingsPage() {
     fetch("/api/workspaces")
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d)) setWorkspaces(d) })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/github/repos")
+      .then((r) => {
+        if (r.ok) return r.json()
+        return null
+      })
+      .then((data) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setGhConnected(true)
+          setGhUsername(data[0]?.owner?.login ?? "")
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -323,6 +346,113 @@ export default function SettingsPage() {
               {usernameLoading ? "Wird gespeichert…" : "Speichern"}
             </Button>
           </form>
+        </section>
+
+        <Separator />
+
+        {/* GitHub */}
+        <section>
+          <h2 className="text-base font-semibold">GitHub Verbindung</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Verbinde deinen GitHub-Account, um Repositories in LumaSpace zu durchsuchen.
+          </p>
+
+          <div className="mt-4">
+            {ghConnected ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3 rounded-lg border bg-card p-3">
+                  <GitBranch className="h-5 w-5 text-green-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Verbunden als @{ghUsername}</p>
+                    <p className="text-xs text-muted-foreground">GitHub-Account ist verknüpft</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-destructive hover:text-destructive"
+                  onClick={async () => {
+                    setGhLoading(true)
+                    await fetch("/api/github/disconnect", { method: "POST" })
+                    setGhConnected(false)
+                    setGhUsername("")
+                    setGhLoading(false)
+                  }}
+                  disabled={ghLoading}
+                >
+                  {ghLoading ? "Wird getrennt…" : "Verbindung trennen"}
+                </Button>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  setGhError("")
+                  setGhSuccess(false)
+                  if (!ghToken.trim()) {
+                    setGhError("Token darf nicht leer sein")
+                    return
+                  }
+                  setGhLoading(true)
+                  const res = await fetch("/api/github/connect", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token: ghToken.trim() }),
+                  })
+                  const data = await res.json()
+                  if (!res.ok) {
+                    setGhError(data.error || "Fehler beim Verbinden")
+                  } else {
+                    setGhConnected(true)
+                    setGhUsername(data.username)
+                    setGhToken("")
+                    setGhSuccess(true)
+                  }
+                  setGhLoading(false)
+                }}
+                className="flex flex-col gap-3"
+              >
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="gh-token">Personal Access Token</Label>
+                  <Input
+                    id="gh-token"
+                    type="password"
+                    placeholder="ghp_xxxxxxxxxxxx"
+                    value={ghToken}
+                    onChange={(e) => setGhToken(e.target.value)}
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Erstelle einen Token unter{" "}
+                    <a
+                      href="https://github.com/settings/tokens"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline-offset-2 hover:underline"
+                    >
+                      GitHub Settings → Tokens
+                    </a>{" "}
+                    mit <span className="font-medium">repo</span>-Berechtigung.
+                  </p>
+                </div>
+
+                {ghError && (
+                  <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    {ghError}
+                  </p>
+                )}
+                {ghSuccess && (
+                  <p className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-500">
+                    GitHub erfolgreich verbunden
+                  </p>
+                )}
+
+                <Button type="submit" className="w-full" disabled={ghLoading}>
+                  {ghLoading ? "Wird verbunden…" : "Verbinden"}
+                </Button>
+              </form>
+            )}
+          </div>
         </section>
 
         <Separator />
