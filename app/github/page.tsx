@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import {
   ArrowLeft,
@@ -24,6 +24,24 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 import { cn } from "@/lib/utils"
+
+function decodeBase64Utf8(base64: string): string {
+  try {
+    const binary = atob(base64.replace(/\n/g, ""))
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    return new TextDecoder("utf-8").decode(bytes)
+  } catch {
+    return base64
+  }
+}
+
+function encodeUtf8Base64(text: string): string {
+  const bytes = new TextEncoder().encode(text)
+  let binary = ""
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary)
+}
 
 export interface GhFavoriteRepo {
   fullName: string
@@ -151,6 +169,10 @@ export default function GitHubPage() {
   const [committing, setCommitting] = useState(false)
   const [commitError, setCommitError] = useState("")
   const [commitSuccess, setCommitSuccess] = useState("")
+  const [cursorLine, setCursorLine] = useState(1)
+  const [cursorCol, setCursorCol] = useState(1)
+  const editorRef = useRef<HTMLTextAreaElement>(null)
+  const lineNumbersRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setGhFavorites(loadGhFavorites())
@@ -290,13 +312,52 @@ export default function GitHubPage() {
 
   function startEditing() {
     if (!fileData) return
-    let decoded = ""
-    try { decoded = atob(fileData.content.replace(/\n/g, "")) } catch { decoded = fileData.content }
-    setEditContent(decoded)
+    setEditContent(decodeBase64Utf8(fileData.content))
     setEditing(true)
+    setCursorLine(1)
+    setCursorCol(1)
     setCommitError("")
     setCommitSuccess("")
   }
+
+  function updateCursorPos(el: HTMLTextAreaElement) {
+    const pos = el.selectionStart
+    const text = el.value.substring(0, pos)
+    const line = text.split("\n").length
+    const col = pos - text.lastIndexOf("\n")
+    setCursorLine(line)
+    setCursorCol(col)
+  }
+
+  function handleEditorKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Tab") {
+      e.preventDefault()
+      const ta = e.currentTarget
+      const start = ta.selectionStart
+      const end = ta.selectionEnd
+      const val = ta.value
+      if (e.shiftKey) {
+        const lineStart = val.lastIndexOf("\n", start - 1) + 1
+        const lineText = val.substring(lineStart, start)
+        const spaces = lineText.match(/^ {1,2}/)?.[0].length ?? 0
+        if (spaces > 0) {
+          const next = val.substring(0, lineStart) + val.substring(lineStart + spaces)
+          setEditContent(next)
+          setTimeout(() => { ta.selectionStart = ta.selectionEnd = start - spaces }, 0)
+        }
+      } else {
+        const next = val.substring(0, start) + "  " + val.substring(end)
+        setEditContent(next)
+        setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 2 }, 0)
+      }
+    }
+  }
+
+  const handleEditorScroll = useCallback(() => {
+    if (editorRef.current && lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = editorRef.current.scrollTop
+    }
+  }, [])
 
   function cancelEditing() {
     setEditing(false)
@@ -330,7 +391,7 @@ export default function GitHubPage() {
       return
     }
 
-    setFileData({ ...fileData, content: btoa(editContent), sha: data.sha })
+    setFileData({ ...fileData, content: encodeUtf8Base64(editContent), sha: data.sha })
     setCommitSuccess("Commit erfolgreich!")
     setEditing(false)
     setCommitDialogOpen(false)
@@ -403,149 +464,215 @@ export default function GitHubPage() {
 
   // --- File viewer / editor ---
   if (activeRepo && fileData) {
-    let decoded = ""
-    try {
-      decoded = atob(fileData.content.replace(/\n/g, ""))
-    } catch {
-      decoded = fileData.content
-    }
+    const decoded = decodeBase64Utf8(fileData.content)
     const ext = getFileExtension(fileData.name)
     const isImage = ["png", "jpg", "jpeg", "gif", "svg", "webp", "ico"].includes(ext)
     const isBinary = isImage || ["pdf", "zip", "tar", "gz", "woff", "woff2", "ttf", "eot", "mp3", "mp4"].includes(ext)
-    const lines = decoded.split("\n")
+    const viewLines = decoded.split("\n")
+    const editLines = editing ? editContent.split("\n") : viewLines
+    const totalLines = editLines.length
 
     return (
-      <div className="flex h-full flex-col">
-        <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
-            <PanelLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { cancelEditing(); navigateUp() }}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex min-w-0 flex-1 items-center gap-1 text-sm text-muted-foreground">
-            <button onClick={() => { cancelEditing(); setActiveRepo(null); setDirItems([]); setFileData(null) }} className="shrink-0 hover:text-foreground">
-              {activeRepo.owner.login}
-            </button>
-            <ChevronRight className="h-3 w-3 shrink-0" />
-            <button onClick={() => { cancelEditing(); setFileData(null); loadDir(activeRepo.fullName, "") }} className="shrink-0 hover:text-foreground">
-              {activeRepo.name}
-            </button>
-            {pathParts.map((part, i) => (
-              <span key={i} className="flex shrink-0 items-center gap-1">
-                <ChevronRight className="h-3 w-3" />
-                {i < pathParts.length - 1 ? (
-                  <button
-                    onClick={() => {
-                      cancelEditing()
-                      setFileData(null)
-                      loadDir(activeRepo.fullName, pathParts.slice(0, i + 1).join("/"))
-                    }}
-                    className="hover:text-foreground"
-                  >
-                    {part}
-                  </button>
-                ) : (
-                  <span className="font-medium text-foreground">{part}</span>
-                )}
-              </span>
-            ))}
+      <div className="flex h-full flex-col bg-[#1e1e2e]">
+        {/* Tab bar */}
+        <div className="flex h-9 shrink-0 items-center border-b border-[#313244] bg-[#181825]">
+          <div className="flex items-center gap-0 overflow-x-auto">
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-none text-[#6c7086] hover:text-[#cdd6f4]" onClick={toggle}>
+              <PanelLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-none text-[#6c7086] hover:text-[#cdd6f4]" onClick={() => { cancelEditing(); navigateUp() }}>
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Button>
+            <div className="flex h-9 items-center gap-1.5 border-b-2 border-[#89b4fa] bg-[#1e1e2e] px-3">
+              <File className="h-3.5 w-3.5 text-[#89b4fa]" />
+              <span className="text-xs font-medium text-[#cdd6f4]">{fileData.name}</span>
+              {editing && <span className="ml-0.5 h-2 w-2 rounded-full bg-[#f9e2af]" title="Ungespeicherte Änderungen" />}
+            </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 px-3">
             {commitSuccess && (
-              <span className="flex items-center gap-1 text-xs text-green-500">
+              <span className="flex items-center gap-1 text-xs text-[#a6e3a1]">
                 <Check className="h-3 w-3" />
                 {commitSuccess}
               </span>
             )}
             {!isBinary && !editing && (
-              <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={startEditing}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 rounded px-2 text-xs text-[#89b4fa] hover:bg-[#313244] hover:text-[#89b4fa]"
+                onClick={startEditing}
+              >
                 <Pencil className="h-3 w-3" />
                 Bearbeiten
               </Button>
             )}
             {editing && (
               <>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={cancelEditing}>
-                  Abbrechen
-                </Button>
-                <Button size="sm" className="h-7 gap-1.5 text-xs" onClick={() => setCommitDialogOpen(true)}>
-                  <Check className="h-3 w-3" />
-                  Commit
-                </Button>
-              </>
-            )}
-            <span className="text-xs text-muted-foreground">{formatBytes(fileData.size)}</span>
-          </div>
-        </div>
-
-        {/* Commit dialog */}
-        {commitDialogOpen && (
-          <div className="border-b bg-card px-4 py-3">
-            <div className="mx-auto flex max-w-2xl flex-col gap-2">
-              <p className="text-sm font-medium">Änderungen committen</p>
-              <input
-                autoFocus
-                className="rounded-md border bg-background px-3 py-1.5 text-sm outline-none ring-ring focus:ring-1"
-                placeholder="Commit-Nachricht…"
-                value={commitMsg}
-                onChange={(e) => setCommitMsg(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && commitMsg.trim()) handleCommit() }}
-              />
-              {commitError && (
-                <p className="text-xs text-destructive">{commitError}</p>
-              )}
-              <div className="flex items-center justify-end gap-2">
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setCommitDialogOpen(false)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 rounded px-2 text-xs text-[#6c7086] hover:bg-[#313244] hover:text-[#cdd6f4]"
+                  onClick={cancelEditing}
+                >
                   Abbrechen
                 </Button>
                 <Button
                   size="sm"
-                  className="h-7 text-xs"
+                  className="h-6 gap-1 rounded bg-[#a6e3a1] px-2 text-xs text-[#1e1e2e] hover:bg-[#a6e3a1]/90"
+                  onClick={() => setCommitDialogOpen(true)}
+                >
+                  <Check className="h-3 w-3" />
+                  Commit & Push
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Breadcrumb */}
+        <div className="flex h-7 shrink-0 items-center gap-1 overflow-x-auto border-b border-[#313244] bg-[#181825] px-3 text-xs text-[#6c7086]">
+          <button onClick={() => { cancelEditing(); setActiveRepo(null); setDirItems([]); setFileData(null) }} className="shrink-0 hover:text-[#cdd6f4]">
+            {activeRepo.owner.login}
+          </button>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          <button onClick={() => { cancelEditing(); setFileData(null); loadDir(activeRepo.fullName, "") }} className="shrink-0 hover:text-[#cdd6f4]">
+            {activeRepo.name}
+          </button>
+          {pathParts.map((part, i) => (
+            <span key={i} className="flex shrink-0 items-center gap-1">
+              <ChevronRight className="h-3 w-3" />
+              {i < pathParts.length - 1 ? (
+                <button
+                  onClick={() => { cancelEditing(); setFileData(null); loadDir(activeRepo.fullName, pathParts.slice(0, i + 1).join("/")) }}
+                  className="hover:text-[#cdd6f4]"
+                >{part}</button>
+              ) : (
+                <span className="text-[#cdd6f4]">{part}</span>
+              )}
+            </span>
+          ))}
+        </div>
+
+        {/* Commit dialog */}
+        {commitDialogOpen && (
+          <div className="border-b border-[#313244] bg-[#181825] px-4 py-3">
+            <div className="mx-auto flex max-w-2xl flex-col gap-2">
+              <p className="text-xs font-medium text-[#cdd6f4]">Commit-Nachricht</p>
+              <input
+                autoFocus
+                className="rounded border border-[#313244] bg-[#1e1e2e] px-3 py-1.5 text-sm text-[#cdd6f4] outline-none ring-[#89b4fa] focus:ring-1"
+                placeholder="Beschreibe deine Änderungen…"
+                value={commitMsg}
+                onChange={(e) => setCommitMsg(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && commitMsg.trim()) handleCommit() }}
+              />
+              {commitError && <p className="text-xs text-[#f38ba8]">{commitError}</p>}
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-[#6c7086] hover:bg-[#313244] hover:text-[#cdd6f4]"
+                  onClick={() => setCommitDialogOpen(false)}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 gap-1 bg-[#a6e3a1] text-xs text-[#1e1e2e] hover:bg-[#a6e3a1]/90"
                   disabled={!commitMsg.trim() || committing}
                   onClick={handleCommit}
                 >
-                  {committing ? "Wird committed…" : "Commit & Push"}
+                  {committing ? "Committing…" : "Commit & Push"}
                 </Button>
               </div>
             </div>
           </div>
         )}
 
-        <div className="flex-1 overflow-auto">
+        {/* Editor / Viewer content */}
+        <div className="relative flex flex-1 overflow-hidden">
           {isImage ? (
-            <div className="flex items-center justify-center p-8">
+            <div className="flex flex-1 items-center justify-center overflow-auto p-8">
               <img
                 src={`data:image/${ext};base64,${fileData.content.replace(/\n/g, "")}`}
                 alt={fileData.name}
-                className="max-h-[70vh] max-w-full rounded-lg border"
+                className="max-h-[70vh] max-w-full rounded-lg border border-[#313244]"
               />
             </div>
           ) : editing ? (
-            <textarea
-              className="h-full w-full resize-none bg-background p-4 font-mono text-sm leading-relaxed outline-none"
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              spellCheck={false}
-            />
+            <>
+              {/* Line numbers */}
+              <div
+                ref={lineNumbersRef}
+                className="flex shrink-0 flex-col overflow-hidden border-r border-[#313244] bg-[#181825] py-1 text-right font-mono text-xs leading-[20px] text-[#6c7086] select-none"
+                style={{ width: `${Math.max(String(totalLines).length * 9 + 24, 48)}px` }}
+              >
+                {editLines.map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn("px-3", cursorLine === i + 1 && "text-[#cdd6f4]")}
+                  >
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+              {/* Textarea editor */}
+              <textarea
+                ref={editorRef}
+                className="flex-1 resize-none overflow-auto bg-[#1e1e2e] py-1 pl-4 pr-4 font-mono text-sm leading-[20px] text-[#cdd6f4] caret-[#f5e0dc] outline-none"
+                value={editContent}
+                onChange={(e) => {
+                  setEditContent(e.target.value)
+                  updateCursorPos(e.target)
+                }}
+                onKeyDown={handleEditorKeyDown}
+                onKeyUp={(e) => updateCursorPos(e.currentTarget)}
+                onClick={(e) => updateCursorPos(e.currentTarget)}
+                onScroll={handleEditorScroll}
+                spellCheck={false}
+                autoCapitalize="off"
+                autoCorrect="off"
+              />
+            </>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse font-mono text-sm">
-                <tbody>
-                  {lines.map((line, i) => (
-                    <tr key={i} className="hover:bg-accent/30">
-                      <td className="select-none border-r px-3 py-0.5 text-right text-xs text-muted-foreground/40">
-                        {i + 1}
-                      </td>
-                      <td className="whitespace-pre px-4 py-0.5">
-                        {line}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex flex-1 overflow-auto">
+              {/* Line numbers */}
+              <div className="sticky left-0 z-10 flex shrink-0 flex-col border-r border-[#313244] bg-[#181825] py-1 text-right font-mono text-xs leading-[20px] text-[#6c7086] select-none"
+                style={{ width: `${Math.max(String(viewLines.length).length * 9 + 24, 48)}px` }}
+              >
+                {viewLines.map((_, i) => (
+                  <div key={i} className="px-3">{i + 1}</div>
+                ))}
+              </div>
+              {/* Code content */}
+              <pre className="flex-1 overflow-x-auto py-1 pl-4 pr-4 font-mono text-sm leading-[20px] text-[#cdd6f4]">
+                {viewLines.map((line, i) => (
+                  <div key={i} className="hover:bg-[#313244]/50">
+                    {line || " "}
+                  </div>
+                ))}
+              </pre>
             </div>
           )}
+        </div>
+
+        {/* Status bar */}
+        <div className="flex h-6 shrink-0 items-center justify-between border-t border-[#313244] bg-[#181825] px-3 text-[11px] text-[#6c7086]">
+          <div className="flex items-center gap-3">
+            {editing && (
+              <span>Zeile {cursorLine}, Spalte {cursorCol}</span>
+            )}
+            <span>{totalLines} Zeilen</span>
+            <span>{formatBytes(fileData.size)}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span>{ext.toUpperCase() || "TXT"}</span>
+            <span>UTF-8</span>
+            {editing && (
+              <span className="text-[#f9e2af]">Tab = 2 Leerzeichen</span>
+            )}
+          </div>
         </div>
       </div>
     )
