@@ -20,11 +20,16 @@ import {
   Trash2,
   TrendingDown,
   TrendingUp,
+  Wallet,
+  RefreshCw,
+  Download,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react"
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, format, addMonths, subMonths,
-  isSameMonth, isToday, isSameDay,
+  isSameMonth, isToday,
 } from "date-fns"
 import { de } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -87,6 +92,12 @@ const BLOCK_TYPES: {
     label: "PnL Kalender",
     description: "Tägliche Gewinn- & Verlustübersicht",
     icon: <CalendarDays className="h-4 w-4 text-emerald-400" />,
+  },
+  {
+    type: "mexc_portfolio",
+    label: "MEXC Portfolio",
+    description: "Live Kontostände von MEXC Exchange",
+    icon: <Wallet className="h-4 w-4 text-amber-400" />,
   },
   {
     type: "divider",
@@ -236,6 +247,8 @@ function PnlCalendarBlock({
   const [viewDate, setViewDate] = useState(() => new Date())
   const [editingDay, setEditingDay] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
+  const [mexcImporting, setMexcImporting] = useState(false)
+  const [mexcSymbol, setMexcSymbol] = useState((data.mexcSymbol as string) ?? "BTCUSDT")
   const inputRef = useRef<HTMLInputElement>(null)
 
   const monthStart = startOfMonth(viewDate)
@@ -402,7 +415,7 @@ function PnlCalendarBlock({
         </div>
       </div>
 
-      {/* Footer with trade count */}
+      {/* Footer with trade count + MEXC import */}
       <div className="flex items-center justify-between border-t border-border/30 px-4 py-2">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -413,9 +426,129 @@ function PnlCalendarBlock({
             <TrendingDown className="h-3 w-3 text-red-400" />
             {losses} Verlust
           </span>
+          <span>{tradeDays} Tage</span>
         </div>
-        <span className="text-xs text-muted-foreground">{tradeDays} Handelstage</span>
+        {canEdit && (
+          <div className="flex items-center gap-1.5">
+            <input
+              value={mexcSymbol}
+              onChange={e => { setMexcSymbol(e.target.value.toUpperCase()); onChange({ ...data, mexcSymbol: e.target.value.toUpperCase() }) }}
+              className="w-20 rounded border border-border/40 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground outline-none"
+              placeholder="BTCUSDT"
+            />
+            <button
+              onClick={async () => {
+                setMexcImporting(true)
+                try {
+                  const monthKey = format(viewDate, "yyyy-MM")
+                  const res = await fetch(`/api/mexc/pnl?symbol=${mexcSymbol}&month=${monthKey}`)
+                  if (res.ok) {
+                    const pnl = await res.json()
+                    const merged = { ...entries, ...pnl.entries }
+                    onChange({ ...data, entries: merged, mexcSymbol })
+                  }
+                } catch { /* ignore */ }
+                setMexcImporting(false)
+              }}
+              disabled={mexcImporting}
+              className="flex items-center gap-1 rounded-md border border-border/40 bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+            >
+              <Download className="h-3 w-3" />
+              {mexcImporting ? "…" : "MEXC Import"}
+            </button>
+          </div>
+        )}
       </div>
+    </div>
+  )
+}
+
+// ── MEXC Portfolio block ──────────────────────────────────────────────────
+
+interface MexcAsset {
+  asset: string
+  free: number
+  locked: number
+  total: number
+  usdValue: number
+}
+
+function MexcPortfolioBlock() {
+  const [assets, setAssets] = useState<MexcAsset[]>([])
+  const [totalUsd, setTotalUsd] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  function loadAssets() {
+    setLoading(true)
+    setError("")
+    fetch("/api/mexc/assets")
+      .then(r => { if (!r.ok) throw new Error("Fehler"); return r.json() })
+      .then(d => { setAssets(d.balances ?? []); setTotalUsd(d.totalUsd ?? 0) })
+      .catch(() => setError("MEXC nicht verbunden oder API-Fehler"))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { loadAssets() }, [])
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
+      <div className="flex items-center justify-between border-b border-border/30 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Wallet className="h-4 w-4 text-amber-400" />
+          <span className="text-sm font-semibold">MEXC Portfolio</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold text-foreground">
+            ${totalUsd.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+          <button onClick={loadAssets} disabled={loading}
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50">
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          </button>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="px-4 py-6 text-center text-sm text-muted-foreground">{error}</div>
+      ) : loading ? (
+        <div className="flex justify-center py-6">
+          <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : assets.length === 0 ? (
+        <div className="px-4 py-6 text-center text-sm text-muted-foreground">Keine Assets gefunden</div>
+      ) : (
+        <div className="divide-y divide-border/20">
+          {assets.slice(0, 15).map(a => {
+            const pct = totalUsd > 0 ? (a.usdValue / totalUsd) * 100 : 0
+            return (
+              <div key={a.asset} className="flex items-center gap-3 px-4 py-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-foreground">
+                  {a.asset.slice(0, 3)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{a.asset}</span>
+                    <span className="text-sm font-semibold">${a.usdValue.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{a.total.toLocaleString("de-DE", { maximumFractionDigits: 8 })} {a.asset}</span>
+                    <span>{pct.toFixed(1)}%</span>
+                  </div>
+                  <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-amber-400/60" style={{ width: `${Math.min(pct, 100)}%` }} />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {assets.length > 15 && (
+            <div className="px-4 py-2 text-center text-xs text-muted-foreground">
+              +{assets.length - 15} weitere Assets
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -600,6 +733,14 @@ function PageLinkBlock({
                 </p>
               )
             }
+            if (block.type === "mexc_portfolio") {
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <Wallet className="h-3 w-3 shrink-0" />
+                  <span>MEXC Portfolio</span>
+                </p>
+              )
+            }
             if (block.type === "divider") return null
             return null
           })}
@@ -689,6 +830,7 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
       : type === "quote"   ? { text: "" }
       : type === "page_link" ? { pageId: "" }
       : type === "pnl_calendar" ? { entries: {}, currency: "€" }
+      : type === "mexc_portfolio" ? {}
       : {}
 
     const optimistic: PageBlock = { id: crypto.randomUUID(), pageId, type, data: defaultData, position }
@@ -806,6 +948,9 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
               )}
               {block.type === "pnl_calendar" && (
                 <PnlCalendarBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
+              )}
+              {block.type === "mexc_portfolio" && (
+                <MexcPortfolioBlock />
               )}
             </BlockWrapper>
           ))}

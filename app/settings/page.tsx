@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
-import { Building2, Camera, GitBranch, PanelLeft } from "lucide-react"
+import { Building2, Camera, GitBranch, PanelLeft, Wallet } from "lucide-react"
 
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
@@ -47,6 +47,14 @@ export default function SettingsPage() {
   const [ghError, setGhError] = useState("")
   const [ghSuccess, setGhSuccess] = useState(false)
 
+  // MEXC
+  const [mexcConnected, setMexcConnected] = useState(false)
+  const [mexcKey, setMexcKey] = useState("")
+  const [mexcSecret, setMexcSecret] = useState("")
+  const [mexcLoading, setMexcLoading] = useState(false)
+  const [mexcError, setMexcError] = useState("")
+  const [mexcSuccess, setMexcSuccess] = useState(false)
+
   // Password
   const [current, setCurrent] = useState("")
   const [newPw, setNewPw] = useState("")
@@ -74,6 +82,13 @@ export default function SettingsPage() {
           setGhConnected(true)
           setGhUsername(data.username ?? "")
         }
+      })
+      .catch(() => {})
+
+    fetch("/api/mexc/status")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.connected) setMexcConnected(true)
       })
       .catch(() => {})
   }, [searchParams])
@@ -409,6 +424,113 @@ export default function SettingsPage() {
                   </a>
                 </Button>
               </div>
+            )}
+          </div>
+        </section>
+
+        <Separator />
+
+        {/* MEXC */}
+        <section>
+          <h2 className="text-base font-semibold">MEXC Exchange</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Verbinde deinen MEXC-Account, um Assets und PnL in LumaSpace zu sehen.
+            Erstelle einen API Key mit <strong>nur Lese-Rechten</strong> unter{" "}
+            <a href="https://www.mexc.com/user/openapi" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline">
+              mexc.com/user/openapi
+            </a>.
+          </p>
+
+          <div className="mt-4">
+            {mexcConnected ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3 rounded-lg border bg-card p-3">
+                  <Wallet className="h-5 w-5 text-emerald-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">MEXC verbunden</p>
+                    <p className="text-xs text-muted-foreground">API-Zugang ist aktiv</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-destructive hover:text-destructive"
+                  onClick={async () => {
+                    setMexcLoading(true)
+                    await fetch("/api/mexc/disconnect", { method: "POST" })
+                    setMexcConnected(false)
+                    setMexcLoading(false)
+                  }}
+                  disabled={mexcLoading}
+                >
+                  {mexcLoading ? "Wird getrennt…" : "Verbindung trennen"}
+                </Button>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  setMexcError("")
+                  setMexcSuccess(false)
+                  setMexcLoading(true)
+
+                  const res = await fetch("/api/mexc/connect", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ apiKey: mexcKey, apiSecret: mexcSecret }),
+                  })
+                  const data = await res.json()
+
+                  if (!res.ok) {
+                    setMexcError(data.error || "Verbindung fehlgeschlagen")
+                  } else {
+                    setMexcSuccess(true)
+                    setMexcConnected(true)
+                    setMexcKey("")
+                    setMexcSecret("")
+                  }
+                  setMexcLoading(false)
+                }}
+                className="flex flex-col gap-4"
+              >
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mexc-key">API Key</Label>
+                  <Input
+                    id="mexc-key"
+                    placeholder="mx0v..."
+                    value={mexcKey}
+                    onChange={(e) => setMexcKey(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mexc-secret">API Secret</Label>
+                  <Input
+                    id="mexc-secret"
+                    type="password"
+                    placeholder="••••••••"
+                    value={mexcSecret}
+                    onChange={(e) => setMexcSecret(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {mexcError && (
+                  <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    {mexcError}
+                  </p>
+                )}
+                {mexcSuccess && (
+                  <p className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-500">
+                    MEXC erfolgreich verbunden
+                  </p>
+                )}
+
+                <Button type="submit" className="w-full gap-2" disabled={mexcLoading}>
+                  <Wallet className="h-4 w-4" />
+                  {mexcLoading ? "Wird verbunden…" : "MEXC verbinden"}
+                </Button>
+              </form>
             )}
           </div>
         </section>

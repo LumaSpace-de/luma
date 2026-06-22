@@ -146,6 +146,36 @@ export async function removeGithubToken(userId: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+// -- MEXC API key helpers --
+// SQL: ALTER TABLE users ADD COLUMN mexc_api_key text, ADD COLUMN mexc_api_secret text;
+
+export async function getMexcKeys(userId: string): Promise<{ apiKey: string; apiSecret: string } | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("mexc_api_key, mexc_api_secret")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error || !data?.mexc_api_key || !data?.mexc_api_secret) return null
+  return { apiKey: data.mexc_api_key, apiSecret: data.mexc_api_secret }
+}
+
+export async function setMexcKeys(userId: string, apiKey: string, apiSecret: string): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({ mexc_api_key: apiKey, mexc_api_secret: apiSecret })
+    .eq("id", userId)
+  if (error) throw new Error(error.message)
+}
+
+export async function removeMexcKeys(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({ mexc_api_key: null, mexc_api_secret: null })
+    .eq("id", userId)
+  if (error) throw new Error(error.message)
+}
+
 export async function createUser(
   email: string,
   hashedPassword: string
