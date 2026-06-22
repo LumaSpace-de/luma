@@ -149,124 +149,73 @@ const PY_KEYWORDS = new Set([
 
 function highlightLine(line: string, ext: string): React.ReactNode[] {
   if (!line) return [<span key="e">{" "}</span>]
+  if (line.length > 500) return [<span key="l" style={{ color: SYN.text }}>{line}</span>]
 
   const isPy = ext === "py"
-  const isRust = ext === "rs"
-  const isGo = ext === "go"
-  const isJson = ext === "json"
-  const isCss = ext === "css" || ext === "scss"
-  const isHtml = ext === "html" || ext === "xml" || ext === "svg"
   const isShell = ext === "sh" || ext === "bash"
-  const isMd = ext === "md"
   const keywords = isPy ? PY_KEYWORDS : JS_KEYWORDS
 
   const tokens: React.ReactNode[] = []
   let i = 0
   let key = 0
+  let buf = ""
+  let bufColor = SYN.text
 
-  function push(text: string, color: string) {
-    tokens.push(<span key={key++} style={{ color }}>{text}</span>)
+  function flush() {
+    if (buf) { tokens.push(<span key={key++} style={{ color: bufColor }}>{buf}</span>); buf = "" }
+  }
+  function add(text: string, color: string) {
+    if (color === bufColor) { buf += text } else { flush(); buf = text; bufColor = color }
   }
 
   while (i < line.length) {
     // Line comments
-    if (line[i] === "/" && line[i + 1] === "/") {
-      push(line.substring(i), SYN.comment); return tokens
+    if ((line[i] === "/" && line[i + 1] === "/") || ((isPy || isShell) && line[i] === "#")) {
+      flush(); tokens.push(<span key={key++} style={{ color: SYN.comment }}>{line.substring(i)}</span>); return tokens
     }
-    if (isPy && line[i] === "#") {
-      push(line.substring(i), SYN.comment); return tokens
-    }
-    if (isShell && line[i] === "#") {
-      push(line.substring(i), SYN.comment); return tokens
-    }
-    // Block comment start
+    // Block comment
     if (line[i] === "/" && line[i + 1] === "*") {
       const end = line.indexOf("*/", i + 2)
-      if (end !== -1) {
-        push(line.substring(i, end + 2), SYN.comment); i = end + 2; continue
-      }
-      push(line.substring(i), SYN.comment); return tokens
+      if (end !== -1) { add(line.substring(i, end + 2), SYN.comment); i = end + 2; continue }
+      flush(); tokens.push(<span key={key++} style={{ color: SYN.comment }}>{line.substring(i)}</span>); return tokens
     }
-
     // Strings
     if (line[i] === '"' || line[i] === "'" || line[i] === "`") {
-      const q = line[i]
-      let j = i + 1
+      const q = line[i]; let j = i + 1
       while (j < line.length && line[j] !== q) { if (line[j] === "\\") j++; j++ }
-      push(line.substring(i, j + 1), SYN.string); i = j + 1; continue
+      add(line.substring(i, j + 1), SYN.string); i = j + 1; continue
     }
-
-    // JSX/HTML tags
-    if (line[i] === "<" && !isJson && (line[i + 1]?.match(/[A-Za-z\/]/) || line[i + 1] === "!")) {
-      const end = line.indexOf(">", i)
-      if (end !== -1) {
-        const tag = line.substring(i, end + 1)
-        // Color tag name and attributes differently
-        const parts = tag.match(/^(<\/?)([\w.-]+)([\s\S]*?)(\/?>)$/)
-        if (parts) {
-          push(parts[1], SYN.punct)
-          push(parts[2], SYN.tag)
-          if (parts[3]) {
-            // Highlight attributes
-            const attrStr = parts[3]
-            const attrParts = attrStr.split(/("[^"]*"|'[^']*'|{[^}]*})/)
-            for (const ap of attrParts) {
-              if (ap.startsWith('"') || ap.startsWith("'")) push(ap, SYN.string)
-              else if (ap.startsWith("{")) push(ap, SYN.text)
-              else if (ap.includes("=")) {
-                const [name, ...rest] = ap.split("=")
-                push(name, SYN.attr)
-                if (rest.length) push("=" + rest.join("="), SYN.punct)
-              } else push(ap, SYN.attr)
-            }
-          }
-          push(parts[4], SYN.punct)
-        } else {
-          push(tag, SYN.tag)
-        }
-        i = end + 1; continue
-      }
-    }
-
     // Numbers
-    if (/[0-9]/.test(line[i]) && (i === 0 || /[\s=:,([\-+*/%!<>&|^~?]/.test(line[i - 1]))) {
-      let j = i
-      while (j < line.length && /[0-9a-fA-FxXoObBeE._n]/.test(line[j])) j++
-      push(line.substring(i, j), SYN.number); i = j; continue
+    if (/\d/.test(line[i]) && (i === 0 || /[\s=:,([\-+*/%!<>&|^~?{]/.test(line[i - 1]))) {
+      let j = i; while (j < line.length && /[\da-fA-FxXoObBeE._n]/.test(line[j])) j++
+      add(line.substring(i, j), SYN.number); i = j; continue
     }
-
-    // Words (keywords, identifiers)
-    if (/[a-zA-Z_$@]/.test(line[i])) {
-      let j = i
-      while (j < line.length && /[a-zA-Z0-9_$]/.test(line[j])) j++
+    // Words
+    if (/[a-zA-Z_$]/.test(line[i])) {
+      let j = i; while (j < line.length && /[a-zA-Z0-9_$]/.test(line[j])) j++
       const word = line.substring(i, j)
-      if (keywords.has(word)) {
-        push(word, SYN.keyword)
-      } else if (/^[A-Z]/.test(word)) {
-        push(word, SYN.type)
-      } else if (line[j] === "(") {
-        push(word, SYN.func)
-      } else {
-        push(word, SYN.text)
-      }
-      i = j; continue
+      const color = keywords.has(word) ? SYN.keyword : /^[A-Z]/.test(word) ? SYN.type : line[j] === "(" ? SYN.func : SYN.text
+      add(word, color); i = j; continue
     }
-
+    // JSX tags — simplified: just color < > and tag name
+    if (line[i] === "<" && /[A-Za-z/!]/.test(line[i + 1] ?? "")) {
+      add("<", SYN.punct); i++
+      if (line[i] === "/") { add("/", SYN.punct); i++ }
+      let j = i; while (j < line.length && /[a-zA-Z0-9._-]/.test(line[j])) j++
+      if (j > i) { add(line.substring(i, j), SYN.tag); i = j }
+      continue
+    }
     // Operators
     if (/[=+\-*/%<>!&|^~?:]/.test(line[i])) {
-      let j = i
-      while (j < line.length && /[=+\-*/%<>!&|^~?:]/.test(line[j])) j++
-      push(line.substring(i, j), SYN.operator); i = j; continue
+      let j = i; while (j < line.length && /[=+\-*/%<>!&|^~?:]/.test(line[j])) j++
+      add(line.substring(i, j), SYN.operator); i = j; continue
     }
-
-    // Brackets/punctuation
-    if (/[{}()[\],;.]/.test(line[i])) {
-      push(line[i], SYN.punct); i++; continue
-    }
-
+    // Punctuation
+    if (/[{}()[\],;.]/.test(line[i])) { add(line[i], SYN.punct); i++; continue }
     // Default
-    push(line[i], SYN.text); i++
+    add(line[i], SYN.text); i++
   }
+  flush()
   return tokens
 }
 
@@ -314,6 +263,7 @@ export default function GitHubPage() {
   const [dirItems, setDirItems] = useState<DirItem[]>([])
   const [fileData, setFileData] = useState<FileData | null>(null)
   const [browsing, setBrowsing] = useState(false)
+  const [loadError, setLoadError] = useState("")
 
   // Editor state
   const [editing, setEditing] = useState(false)
@@ -411,29 +361,43 @@ export default function GitHubPage() {
 
   async function loadDir(fullName: string, path: string) {
     setBrowsing(true)
-    const [owner, repo] = fullName.split("/")
-    const res = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(path)}`)
-    const data = await res.json()
-    if (data.type === "dir") {
-      const sorted = [...data.items].sort((a: DirItem, b: DirItem) => {
-        if (a.type !== b.type) return a.type === "dir" ? -1 : 1
-        return a.name.localeCompare(b.name)
-      })
-      setDirItems(sorted)
-      setFileData(null)
-      setCurrentPath(path)
+    setLoadError("")
+    try {
+      const [owner, repo] = fullName.split("/")
+      const res = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(path)}`)
+      if (!res.ok) { setLoadError(`Fehler ${res.status}`); setBrowsing(false); return }
+      const data = await res.json()
+      if (data.type === "dir") {
+        const sorted = [...data.items].sort((a: DirItem, b: DirItem) => {
+          if (a.type !== b.type) return a.type === "dir" ? -1 : 1
+          return a.name.localeCompare(b.name)
+        })
+        setDirItems(sorted)
+        setFileData(null)
+        setCurrentPath(path)
+      }
+    } catch {
+      setLoadError("Netzwerkfehler beim Laden")
     }
     setBrowsing(false)
   }
 
   async function openFile(fullName: string, path: string) {
     setBrowsing(true)
-    const [owner, repo] = fullName.split("/")
-    const res = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(path)}`)
-    const data = await res.json()
-    if (data.type === "file") {
-      setFileData(data)
-      setCurrentPath(path)
+    setLoadError("")
+    try {
+      const [owner, repo] = fullName.split("/")
+      const res = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(path)}`)
+      if (!res.ok) { setLoadError(`Fehler ${res.status}`); setBrowsing(false); return }
+      const data = await res.json()
+      if (data.type === "file") {
+        setFileData(data)
+        setCurrentPath(path)
+      } else {
+        setLoadError("Datei konnte nicht geladen werden")
+      }
+    } catch {
+      setLoadError("Netzwerkfehler beim Laden")
     }
     setBrowsing(false)
   }
@@ -880,7 +844,13 @@ export default function GitHubPage() {
         </div>
 
         <div className="flex-1 overflow-auto">
-          {browsing ? (
+          {loadError ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+              <X className="h-8 w-8 text-destructive/50" />
+              <p className="text-sm text-destructive">{loadError}</p>
+              <Button variant="outline" size="sm" onClick={navigateUp}>Zurück</Button>
+            </div>
+          ) : browsing ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex gap-1">
                 {[0, 1, 2].map((i) => (
