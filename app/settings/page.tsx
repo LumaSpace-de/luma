@@ -1,6 +1,7 @@
 "use client"
 
 import { useSession } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
 import { Building2, Camera, GitBranch, PanelLeft } from "lucide-react"
@@ -39,9 +40,9 @@ export default function SettingsPage() {
   const [workspaces, setWorkspaces] = useState<{ id: string; name: string; plan: string; imageUrl: string | null; userRole: string }[]>([])
 
   // GitHub
+  const searchParams = useSearchParams()
   const [ghConnected, setGhConnected] = useState(false)
   const [ghUsername, setGhUsername] = useState("")
-  const [ghToken, setGhToken] = useState("")
   const [ghLoading, setGhLoading] = useState(false)
   const [ghError, setGhError] = useState("")
   const [ghSuccess, setGhSuccess] = useState(false)
@@ -62,6 +63,10 @@ export default function SettingsPage() {
   }, [])
 
   useEffect(() => {
+    const ghParam = searchParams.get("github")
+    if (ghParam === "error") setGhError("GitHub-Verbindung fehlgeschlagen")
+    if (ghParam === "connected") setGhSuccess(true)
+
     fetch("/api/github/repos")
       .then((r) => {
         if (r.ok) return r.json()
@@ -74,7 +79,7 @@ export default function SettingsPage() {
         }
       })
       .catch(() => {})
-  }, [])
+  }, [searchParams])
 
   useEffect(() => {
     fetch("/api/auth/profile")
@@ -354,7 +359,7 @@ export default function SettingsPage() {
         <section>
           <h2 className="text-base font-semibold">GitHub Verbindung</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Verbinde deinen GitHub-Account, um Repositories in LumaSpace zu durchsuchen.
+            Verbinde deinen GitHub-Account per OAuth, um deine Repositories in LumaSpace zu durchsuchen.
           </p>
 
           <div className="mt-4">
@@ -384,57 +389,10 @@ export default function SettingsPage() {
                 </Button>
               </div>
             ) : (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault()
-                  setGhError("")
-                  setGhSuccess(false)
-                  if (!ghToken.trim()) {
-                    setGhError("Token darf nicht leer sein")
-                    return
-                  }
-                  setGhLoading(true)
-                  const res = await fetch("/api/github/connect", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ token: ghToken.trim() }),
-                  })
-                  const data = await res.json()
-                  if (!res.ok) {
-                    setGhError(data.error || "Fehler beim Verbinden")
-                  } else {
-                    setGhConnected(true)
-                    setGhUsername(data.username)
-                    setGhToken("")
-                    setGhSuccess(true)
-                  }
-                  setGhLoading(false)
-                }}
-                className="flex flex-col gap-3"
-              >
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="gh-token">Personal Access Token</Label>
-                  <Input
-                    id="gh-token"
-                    type="password"
-                    placeholder="ghp_xxxxxxxxxxxx"
-                    value={ghToken}
-                    onChange={(e) => setGhToken(e.target.value)}
-                    autoComplete="off"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Erstelle einen Token unter{" "}
-                    <a
-                      href="https://github.com/settings/tokens"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary underline-offset-2 hover:underline"
-                    >
-                      GitHub Settings → Tokens
-                    </a>{" "}
-                    mit <span className="font-medium">repo</span>-Berechtigung.
-                  </p>
-                </div>
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Klicke auf den Button, um dich bei GitHub anzumelden und LumaSpace Zugriff auf deine Repositories zu geben.
+                </p>
 
                 {ghError && (
                   <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -447,10 +405,13 @@ export default function SettingsPage() {
                   </p>
                 )}
 
-                <Button type="submit" className="w-full" disabled={ghLoading}>
-                  {ghLoading ? "Wird verbunden…" : "Verbinden"}
+                <Button asChild className="w-full gap-2">
+                  <a href="/api/github/authorize">
+                    <GitBranch className="h-4 w-4" />
+                    Mit GitHub verbinden
+                  </a>
                 </Button>
-              </form>
+              </div>
             )}
           </div>
         </section>
