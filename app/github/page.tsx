@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import {
   ArrowLeft,
@@ -278,6 +278,23 @@ export default function GitHubPage() {
   const editorRef = useRef<HTMLTextAreaElement>(null)
   const lineNumbersRef = useRef<HTMLDivElement>(null)
 
+  const highlightedContent = useMemo(() => {
+    if (!fileData) return null
+    const decoded = decodeBase64Utf8(fileData.content)
+    const ext = getFileExtension(fileData.name)
+    const allLines = decoded.split("\n")
+    const maxRender = 3000
+    const truncated = allLines.length > maxRender
+    const lines = truncated ? allLines.slice(0, maxRender) : allLines
+    const doHighlight = allLines.length <= 1500
+    return { decoded, ext, allLines, lines, truncated, doHighlight, totalLines: allLines.length }
+  }, [fileData])
+
+  const highlightedLines = useMemo(() => {
+    if (!highlightedContent || !highlightedContent.doHighlight) return null
+    return highlightedContent.lines.map((line) => highlightLine(line, highlightedContent.ext))
+  }, [highlightedContent])
+
   useEffect(() => {
     setGhFavorites(loadGhFavorites())
   }, [])
@@ -364,7 +381,10 @@ export default function GitHubPage() {
     setLoadError("")
     try {
       const [owner, repo] = fullName.split("/")
-      const res = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(path)}`)
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), 20000)
+      const res = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(path)}`, { signal: ctrl.signal })
+      clearTimeout(timer)
       if (!res.ok) { setLoadError(`Fehler ${res.status}`); setBrowsing(false); return }
       const data = await res.json()
       if (data.type === "dir") {
@@ -377,7 +397,7 @@ export default function GitHubPage() {
         setCurrentPath(path)
       }
     } catch {
-      setLoadError("Netzwerkfehler beim Laden")
+      setLoadError("Zeitüberschreitung oder Netzwerkfehler")
     }
     setBrowsing(false)
   }
@@ -387,7 +407,10 @@ export default function GitHubPage() {
     setLoadError("")
     try {
       const [owner, repo] = fullName.split("/")
-      const res = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(path)}`)
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), 20000)
+      const res = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(path)}`, { signal: ctrl.signal })
+      clearTimeout(timer)
       if (!res.ok) { setLoadError(`Fehler ${res.status}`); setBrowsing(false); return }
       const data = await res.json()
       if (data.type === "file") {
@@ -397,7 +420,7 @@ export default function GitHubPage() {
         setLoadError("Datei konnte nicht geladen werden")
       }
     } catch {
-      setLoadError("Netzwerkfehler beim Laden")
+      setLoadError("Zeitüberschreitung oder Netzwerkfehler")
     }
     setBrowsing(false)
   }
@@ -581,18 +604,12 @@ export default function GitHubPage() {
   }
 
   // --- File viewer / editor ---
-  if (activeRepo && fileData) {
-    const decoded = decodeBase64Utf8(fileData.content)
-    const ext = getFileExtension(fileData.name)
+  if (activeRepo && fileData && highlightedContent) {
+    const { ext, lines: viewLines, truncated, doHighlight, totalLines: fileTotalLines } = highlightedContent
     const isImage = ["png", "jpg", "jpeg", "gif", "svg", "webp", "ico"].includes(ext)
     const isBinary = isImage || ["pdf", "zip", "tar", "gz", "woff", "woff2", "ttf", "eot", "mp3", "mp4"].includes(ext)
-    const allViewLines = decoded.split("\n")
-    const MAX_RENDER = 3000
-    const truncated = allViewLines.length > MAX_RENDER
-    const viewLines = truncated ? allViewLines.slice(0, MAX_RENDER) : allViewLines
-    const useHighlight = allViewLines.length <= 1500
     const editLines = editing ? editContent.split("\n") : viewLines
-    const totalLines = editing ? editLines.length : allViewLines.length
+    const totalLines = editing ? editLines.length : fileTotalLines
 
     return (
       <div className="flex h-full flex-col bg-[#11111b]">
@@ -771,12 +788,12 @@ export default function GitHubPage() {
               <pre className="flex-1 overflow-x-auto py-1 pl-4 pr-4 font-mono text-sm leading-[20px]">
                 {viewLines.map((line, i) => (
                   <div key={i} className="hover:bg-[#181825]/80">
-                    {useHighlight ? highlightLine(line, ext) : <span style={{ color: SYN.text }}>{line || " "}</span>}
+                    {highlightedLines ? highlightedLines[i] : <span style={{ color: SYN.text }}>{line || " "}</span>}
                   </div>
                 ))}
                 {truncated && (
                   <div className="mt-2 border-t border-[#1e1e2e] py-3 text-center text-xs text-[#6c7086]">
-                    Datei zu groß — nur die ersten {MAX_RENDER.toLocaleString("de-DE")} von {allViewLines.length.toLocaleString("de-DE")} Zeilen werden angezeigt
+                    Datei zu groß — nur die ersten {(3000).toLocaleString("de-DE")} von {fileTotalLines.toLocaleString("de-DE")} Zeilen werden angezeigt
                   </div>
                 )}
               </pre>
@@ -796,7 +813,7 @@ export default function GitHubPage() {
           <div className="flex items-center gap-3">
             <span>{ext.toUpperCase() || "TXT"}</span>
             <span>UTF-8</span>
-            {!useHighlight && !editing && <span className="text-[#f9e2af]">Highlighting deaktiviert (große Datei)</span>}
+            {!doHighlight && !editing && <span className="text-[#f9e2af]">Highlighting deaktiviert (große Datei)</span>}
             {editing && (
               <span className="text-[#f9e2af]">Tab = 2 Leerzeichen</span>
             )}
