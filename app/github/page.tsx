@@ -116,6 +116,160 @@ const LANG_COLORS: Record<string, string> = {
   SCSS: "bg-pink-400",
 }
 
+const SYN = {
+  keyword: "#cba6f7",
+  string: "#a6e3a1",
+  comment: "#6c7086",
+  number: "#fab387",
+  tag: "#89b4fa",
+  attr: "#f9e2af",
+  type: "#f9e2af",
+  func: "#89b4fa",
+  operator: "#89dceb",
+  punct: "#9399b2",
+  text: "#cdd6f4",
+}
+
+const JS_KEYWORDS = new Set([
+  "import","export","from","default","function","const","let","var","return",
+  "if","else","for","while","do","switch","case","break","continue","throw",
+  "try","catch","finally","new","delete","typeof","instanceof","void","in","of",
+  "class","extends","super","this","static","async","await","yield",
+  "true","false","null","undefined","interface","type","enum","implements",
+  "public","private","protected","readonly","abstract","declare","module",
+  "namespace","require","as","is",
+])
+
+const PY_KEYWORDS = new Set([
+  "import","from","def","class","return","if","elif","else","for","while",
+  "try","except","finally","with","as","yield","raise","pass","break",
+  "continue","and","or","not","is","in","True","False","None","self",
+  "lambda","global","nonlocal","del","assert","async","await",
+])
+
+function highlightLine(line: string, ext: string): React.ReactNode[] {
+  if (!line) return [<span key="e">{" "}</span>]
+
+  const isPy = ext === "py"
+  const isRust = ext === "rs"
+  const isGo = ext === "go"
+  const isJson = ext === "json"
+  const isCss = ext === "css" || ext === "scss"
+  const isHtml = ext === "html" || ext === "xml" || ext === "svg"
+  const isShell = ext === "sh" || ext === "bash"
+  const isMd = ext === "md"
+  const keywords = isPy ? PY_KEYWORDS : JS_KEYWORDS
+
+  const tokens: React.ReactNode[] = []
+  let i = 0
+  let key = 0
+
+  function push(text: string, color: string) {
+    tokens.push(<span key={key++} style={{ color }}>{text}</span>)
+  }
+
+  while (i < line.length) {
+    // Line comments
+    if (line[i] === "/" && line[i + 1] === "/") {
+      push(line.substring(i), SYN.comment); return tokens
+    }
+    if (isPy && line[i] === "#") {
+      push(line.substring(i), SYN.comment); return tokens
+    }
+    if (isShell && line[i] === "#") {
+      push(line.substring(i), SYN.comment); return tokens
+    }
+    // Block comment start
+    if (line[i] === "/" && line[i + 1] === "*") {
+      const end = line.indexOf("*/", i + 2)
+      if (end !== -1) {
+        push(line.substring(i, end + 2), SYN.comment); i = end + 2; continue
+      }
+      push(line.substring(i), SYN.comment); return tokens
+    }
+
+    // Strings
+    if (line[i] === '"' || line[i] === "'" || line[i] === "`") {
+      const q = line[i]
+      let j = i + 1
+      while (j < line.length && line[j] !== q) { if (line[j] === "\\") j++; j++ }
+      push(line.substring(i, j + 1), SYN.string); i = j + 1; continue
+    }
+
+    // JSX/HTML tags
+    if (line[i] === "<" && !isJson && (line[i + 1]?.match(/[A-Za-z\/]/) || line[i + 1] === "!")) {
+      const end = line.indexOf(">", i)
+      if (end !== -1) {
+        const tag = line.substring(i, end + 1)
+        // Color tag name and attributes differently
+        const parts = tag.match(/^(<\/?)([\w.-]+)([\s\S]*?)(\/?>)$/)
+        if (parts) {
+          push(parts[1], SYN.punct)
+          push(parts[2], SYN.tag)
+          if (parts[3]) {
+            // Highlight attributes
+            const attrStr = parts[3]
+            const attrParts = attrStr.split(/("[^"]*"|'[^']*'|{[^}]*})/)
+            for (const ap of attrParts) {
+              if (ap.startsWith('"') || ap.startsWith("'")) push(ap, SYN.string)
+              else if (ap.startsWith("{")) push(ap, SYN.text)
+              else if (ap.includes("=")) {
+                const [name, ...rest] = ap.split("=")
+                push(name, SYN.attr)
+                if (rest.length) push("=" + rest.join("="), SYN.punct)
+              } else push(ap, SYN.attr)
+            }
+          }
+          push(parts[4], SYN.punct)
+        } else {
+          push(tag, SYN.tag)
+        }
+        i = end + 1; continue
+      }
+    }
+
+    // Numbers
+    if (/[0-9]/.test(line[i]) && (i === 0 || /[\s=:,([\-+*/%!<>&|^~?]/.test(line[i - 1]))) {
+      let j = i
+      while (j < line.length && /[0-9a-fA-FxXoObBeE._n]/.test(line[j])) j++
+      push(line.substring(i, j), SYN.number); i = j; continue
+    }
+
+    // Words (keywords, identifiers)
+    if (/[a-zA-Z_$@]/.test(line[i])) {
+      let j = i
+      while (j < line.length && /[a-zA-Z0-9_$]/.test(line[j])) j++
+      const word = line.substring(i, j)
+      if (keywords.has(word)) {
+        push(word, SYN.keyword)
+      } else if (/^[A-Z]/.test(word)) {
+        push(word, SYN.type)
+      } else if (line[j] === "(") {
+        push(word, SYN.func)
+      } else {
+        push(word, SYN.text)
+      }
+      i = j; continue
+    }
+
+    // Operators
+    if (/[=+\-*/%<>!&|^~?:]/.test(line[i])) {
+      let j = i
+      while (j < line.length && /[=+\-*/%<>!&|^~?:]/.test(line[j])) j++
+      push(line.substring(i, j), SYN.operator); i = j; continue
+    }
+
+    // Brackets/punctuation
+    if (/[{}()[\],;.]/.test(line[i])) {
+      push(line[i], SYN.punct); i++; continue
+    }
+
+    // Default
+    push(line[i], SYN.text); i++
+  }
+  return tokens
+}
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -473,9 +627,9 @@ export default function GitHubPage() {
     const totalLines = editLines.length
 
     return (
-      <div className="flex h-full flex-col bg-[#1e1e2e]">
+      <div className="flex h-full flex-col bg-[#11111b]">
         {/* Tab bar */}
-        <div className="flex h-9 shrink-0 items-center border-b border-[#313244] bg-[#181825]">
+        <div className="flex h-9 shrink-0 items-center border-b border-[#1e1e2e] bg-[#0b0b12]">
           <div className="flex items-center gap-0 overflow-x-auto">
             <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-none text-[#6c7086] hover:text-[#cdd6f4]" onClick={toggle}>
               <PanelLeft className="h-3.5 w-3.5" />
@@ -483,7 +637,7 @@ export default function GitHubPage() {
             <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-none text-[#6c7086] hover:text-[#cdd6f4]" onClick={() => { cancelEditing(); navigateUp() }}>
               <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
-            <div className="flex h-9 items-center gap-1.5 border-b-2 border-[#89b4fa] bg-[#1e1e2e] px-3">
+            <div className="flex h-9 items-center gap-1.5 border-b-2 border-[#89b4fa] bg-[#11111b] px-3">
               <File className="h-3.5 w-3.5 text-[#89b4fa]" />
               <span className="text-xs font-medium text-[#cdd6f4]">{fileData.name}</span>
               {editing && <span className="ml-0.5 h-2 w-2 rounded-full bg-[#f9e2af]" title="Ungespeicherte Änderungen" />}
@@ -500,7 +654,7 @@ export default function GitHubPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 gap-1 rounded px-2 text-xs text-[#89b4fa] hover:bg-[#313244] hover:text-[#89b4fa]"
+                className="h-6 gap-1 rounded px-2 text-xs text-[#89b4fa] hover:bg-[#1e1e2e] hover:text-[#89b4fa]"
                 onClick={startEditing}
               >
                 <Pencil className="h-3 w-3" />
@@ -512,7 +666,7 @@ export default function GitHubPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 rounded px-2 text-xs text-[#6c7086] hover:bg-[#313244] hover:text-[#cdd6f4]"
+                  className="h-6 rounded px-2 text-xs text-[#6c7086] hover:bg-[#1e1e2e] hover:text-[#cdd6f4]"
                   onClick={cancelEditing}
                 >
                   Abbrechen
@@ -531,7 +685,7 @@ export default function GitHubPage() {
         </div>
 
         {/* Breadcrumb */}
-        <div className="flex h-7 shrink-0 items-center gap-1 overflow-x-auto border-b border-[#313244] bg-[#181825] px-3 text-xs text-[#6c7086]">
+        <div className="flex h-7 shrink-0 items-center gap-1 overflow-x-auto border-b border-[#1e1e2e] bg-[#0b0b12] px-3 text-xs text-[#6c7086]">
           <button onClick={() => { cancelEditing(); setActiveRepo(null); setDirItems([]); setFileData(null) }} className="shrink-0 hover:text-[#cdd6f4]">
             {activeRepo.owner.login}
           </button>
@@ -556,12 +710,12 @@ export default function GitHubPage() {
 
         {/* Commit dialog */}
         {commitDialogOpen && (
-          <div className="border-b border-[#313244] bg-[#181825] px-4 py-3">
+          <div className="border-b border-[#1e1e2e] bg-[#0b0b12] px-4 py-3">
             <div className="mx-auto flex max-w-2xl flex-col gap-2">
               <p className="text-xs font-medium text-[#cdd6f4]">Commit-Nachricht</p>
               <input
                 autoFocus
-                className="rounded border border-[#313244] bg-[#1e1e2e] px-3 py-1.5 text-sm text-[#cdd6f4] outline-none ring-[#89b4fa] focus:ring-1"
+                className="rounded border border-[#1e1e2e] bg-[#11111b] px-3 py-1.5 text-sm text-[#cdd6f4] outline-none ring-[#89b4fa] focus:ring-1"
                 placeholder="Beschreibe deine Änderungen…"
                 value={commitMsg}
                 onChange={(e) => setCommitMsg(e.target.value)}
@@ -572,7 +726,7 @@ export default function GitHubPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs text-[#6c7086] hover:bg-[#313244] hover:text-[#cdd6f4]"
+                  className="h-7 text-xs text-[#6c7086] hover:bg-[#1e1e2e] hover:text-[#cdd6f4]"
                   onClick={() => setCommitDialogOpen(false)}
                 >
                   Abbrechen
@@ -597,7 +751,7 @@ export default function GitHubPage() {
               <img
                 src={`data:image/${ext};base64,${fileData.content.replace(/\n/g, "")}`}
                 alt={fileData.name}
-                className="max-h-[70vh] max-w-full rounded-lg border border-[#313244]"
+                className="max-h-[70vh] max-w-full rounded-lg border border-[#1e1e2e]"
               />
             </div>
           ) : editing ? (
@@ -605,7 +759,7 @@ export default function GitHubPage() {
               {/* Line numbers */}
               <div
                 ref={lineNumbersRef}
-                className="flex shrink-0 flex-col overflow-hidden border-r border-[#313244] bg-[#181825] py-1 text-right font-mono text-xs leading-[20px] text-[#6c7086] select-none"
+                className="flex shrink-0 flex-col overflow-hidden border-r border-[#1e1e2e] bg-[#0b0b12] py-1 text-right font-mono text-xs leading-[20px] text-[#6c7086] select-none"
                 style={{ width: `${Math.max(String(totalLines).length * 9 + 24, 48)}px` }}
               >
                 {editLines.map((_, i) => (
@@ -620,7 +774,7 @@ export default function GitHubPage() {
               {/* Textarea editor */}
               <textarea
                 ref={editorRef}
-                className="flex-1 resize-none overflow-auto bg-[#1e1e2e] py-1 pl-4 pr-4 font-mono text-sm leading-[20px] text-[#cdd6f4] caret-[#f5e0dc] outline-none"
+                className="flex-1 resize-none overflow-auto bg-[#11111b] py-1 pl-4 pr-4 font-mono text-sm leading-[20px] text-[#cdd6f4] caret-[#f5e0dc] outline-none"
                 value={editContent}
                 onChange={(e) => {
                   setEditContent(e.target.value)
@@ -638,7 +792,7 @@ export default function GitHubPage() {
           ) : (
             <div className="flex flex-1 overflow-auto">
               {/* Line numbers */}
-              <div className="sticky left-0 z-10 flex shrink-0 flex-col border-r border-[#313244] bg-[#181825] py-1 text-right font-mono text-xs leading-[20px] text-[#6c7086] select-none"
+              <div className="sticky left-0 z-10 flex shrink-0 flex-col border-r border-[#1e1e2e] bg-[#0b0b12] py-1 text-right font-mono text-xs leading-[20px] text-[#6c7086] select-none"
                 style={{ width: `${Math.max(String(viewLines.length).length * 9 + 24, 48)}px` }}
               >
                 {viewLines.map((_, i) => (
@@ -646,10 +800,10 @@ export default function GitHubPage() {
                 ))}
               </div>
               {/* Code content */}
-              <pre className="flex-1 overflow-x-auto py-1 pl-4 pr-4 font-mono text-sm leading-[20px] text-[#cdd6f4]">
+              <pre className="flex-1 overflow-x-auto py-1 pl-4 pr-4 font-mono text-sm leading-[20px]">
                 {viewLines.map((line, i) => (
-                  <div key={i} className="hover:bg-[#313244]/50">
-                    {line || " "}
+                  <div key={i} className="hover:bg-[#181825]/80">
+                    {highlightLine(line, ext)}
                   </div>
                 ))}
               </pre>
@@ -658,7 +812,7 @@ export default function GitHubPage() {
         </div>
 
         {/* Status bar */}
-        <div className="flex h-6 shrink-0 items-center justify-between border-t border-[#313244] bg-[#181825] px-3 text-[11px] text-[#6c7086]">
+        <div className="flex h-6 shrink-0 items-center justify-between border-t border-[#1e1e2e] bg-[#0b0b12] px-3 text-[11px] text-[#6c7086]">
           <div className="flex items-center gap-3">
             {editing && (
               <span>Zeile {cursorLine}, Spalte {cursorCol}</span>
