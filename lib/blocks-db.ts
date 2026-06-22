@@ -1,6 +1,6 @@
 import { supabase } from "./supabase"
 
-export type BlockType = "task_table" | "data_table" | "divider" | "heading" | "callout" | "code" | "quote" | "page_link"
+export type BlockType = "task_table" | "data_table" | "divider" | "heading" | "callout" | "code" | "quote" | "page_link" | "pnl_calendar"
 
 export interface PageBlock {
   id: string

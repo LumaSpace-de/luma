@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import {
   AlertCircle,
+  CalendarDays,
   CheckSquare,
+  ChevronLeft,
+  ChevronRight,
   Code2,
   ExternalLink,
   FileText,
@@ -15,7 +18,15 @@ import {
   Quote,
   Table2,
   Trash2,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react"
+import {
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  eachDayOfInterval, format, addMonths, subMonths,
+  isSameMonth, isToday, isSameDay,
+} from "date-fns"
+import { de } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { PageBlock, BlockType } from "@/lib/blocks-db"
 import { PageTaskTable } from "@/components/page-task-table"
@@ -70,6 +81,12 @@ const BLOCK_TYPES: {
     label: "Seitenvorschau",
     description: "Vorschau einer anderen Seite",
     icon: <ExternalLink className="h-4 w-4 text-cyan-400" />,
+  },
+  {
+    type: "pnl_calendar",
+    label: "PnL Kalender",
+    description: "Tägliche Gewinn- & Verlustübersicht",
+    icon: <CalendarDays className="h-4 w-4 text-emerald-400" />,
   },
   {
     type: "divider",
@@ -199,6 +216,206 @@ function CodeBlock({
         placeholder="Code eingeben…"
         className="w-full resize-none bg-transparent p-4 font-mono text-sm leading-relaxed outline-none placeholder:text-muted-foreground/40 disabled:cursor-default"
         spellCheck={false} />
+    </div>
+  )
+}
+
+// ── PnL Calendar block ────────────────────────────────────────────────────
+
+const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+function PnlCalendarBlock({
+  data, canEdit, onChange,
+}: {
+  data: Record<string, unknown>
+  canEdit: boolean
+  onChange: (d: Record<string, unknown>) => void
+}) {
+  const entries = (data.entries as Record<string, number>) ?? {}
+  const currency = (data.currency as string) ?? "€"
+  const [viewDate, setViewDate] = useState(() => new Date())
+  const [editingDay, setEditingDay] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const monthStart = startOfMonth(viewDate)
+  const monthEnd = endOfMonth(viewDate)
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+  const days = eachDayOfInterval({ start: calStart, end: calEnd })
+
+  const monthEntries = Object.entries(entries).filter(([k]) => {
+    const d = new Date(k)
+    return isSameMonth(d, viewDate)
+  })
+  const monthTotal = monthEntries.reduce((s, [, v]) => s + v, 0)
+  const wins = monthEntries.filter(([, v]) => v > 0).length
+  const losses = monthEntries.filter(([, v]) => v < 0).length
+  const tradeDays = monthEntries.filter(([, v]) => v !== 0).length
+  const winRate = tradeDays > 0 ? Math.round((wins / tradeDays) * 100) : 0
+  const bestDay = monthEntries.length > 0 ? Math.max(...monthEntries.map(([, v]) => v)) : 0
+  const worstDay = monthEntries.length > 0 ? Math.min(...monthEntries.map(([, v]) => v)) : 0
+
+  function startEdit(dayKey: string) {
+    if (!canEdit) return
+    setEditingDay(dayKey)
+    setEditValue(entries[dayKey] !== undefined ? String(entries[dayKey]) : "")
+    setTimeout(() => inputRef.current?.focus(), 0)
+  }
+
+  function saveEdit() {
+    if (!editingDay) return
+    const num = parseFloat(editValue.replace(",", "."))
+    const next = { ...entries }
+    if (editValue.trim() === "" || isNaN(num)) {
+      delete next[editingDay]
+    } else {
+      next[editingDay] = Math.round(num * 100) / 100
+    }
+    onChange({ ...data, entries: next })
+    setEditingDay(null)
+  }
+
+  function formatPnl(v: number): string {
+    const s = Math.abs(v).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    return (v >= 0 ? "+" : "−") + s + currency
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border/30 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-emerald-400" />
+          <span className="text-sm font-semibold">PnL Kalender</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setViewDate(d => subMonths(d, 1))}
+            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button onClick={() => setViewDate(new Date())}
+            className="rounded-md px-2 py-0.5 text-sm font-medium text-foreground hover:bg-accent">
+            {format(viewDate, "MMMM yyyy", { locale: de })}
+          </button>
+          <button onClick={() => setViewDate(d => addMonths(d, 1))}
+            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        {canEdit && (
+          <select value={currency} onChange={e => onChange({ ...data, currency: e.target.value })}
+            className="rounded border border-border/40 bg-background px-1.5 py-0.5 text-xs text-muted-foreground">
+            <option value="€">EUR (€)</option>
+            <option value="$">USD ($)</option>
+            <option value="£">GBP (£)</option>
+            <option value="CHF">CHF</option>
+          </select>
+        )}
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-4 gap-px border-b border-border/30 bg-border/20">
+        <div className="flex flex-col items-center bg-card/60 px-3 py-2">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Gesamt</span>
+          <span className={cn("text-sm font-bold", monthTotal > 0 ? "text-emerald-400" : monthTotal < 0 ? "text-red-400" : "text-muted-foreground")}>
+            {formatPnl(monthTotal)}
+          </span>
+        </div>
+        <div className="flex flex-col items-center bg-card/60 px-3 py-2">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Win Rate</span>
+          <span className="text-sm font-bold text-foreground">{winRate}%</span>
+        </div>
+        <div className="flex flex-col items-center bg-card/60 px-3 py-2">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Bester Tag</span>
+          <span className="text-sm font-bold text-emerald-400">{bestDay > 0 ? formatPnl(bestDay) : "—"}</span>
+        </div>
+        <div className="flex flex-col items-center bg-card/60 px-3 py-2">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Schlechtester</span>
+          <span className="text-sm font-bold text-red-400">{worstDay < 0 ? formatPnl(worstDay) : "—"}</span>
+        </div>
+      </div>
+
+      {/* Calendar grid */}
+      <div className="p-3">
+        {/* Weekday headers */}
+        <div className="mb-1 grid grid-cols-7 gap-1">
+          {WEEKDAYS.map(wd => (
+            <div key={wd} className="py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+              {wd}
+            </div>
+          ))}
+        </div>
+
+        {/* Day cells */}
+        <div className="grid grid-cols-7 gap-1">
+          {days.map(day => {
+            const dayKey = format(day, "yyyy-MM-dd")
+            const inMonth = isSameMonth(day, viewDate)
+            const today = isToday(day)
+            const value = entries[dayKey]
+            const hasValue = value !== undefined && value !== 0
+            const isEditing = editingDay === dayKey
+
+            return (
+              <div
+                key={dayKey}
+                onClick={() => inMonth && startEdit(dayKey)}
+                className={cn(
+                  "relative flex min-h-[52px] flex-col items-center rounded-lg border px-1 py-1 transition-colors",
+                  inMonth ? "border-border/30 bg-background/50" : "border-transparent bg-transparent opacity-30",
+                  inMonth && canEdit && "cursor-pointer hover:border-border/60 hover:bg-accent/30",
+                  today && "border-primary/50 bg-primary/5",
+                  hasValue && value > 0 && "border-emerald-500/30 bg-emerald-500/5",
+                  hasValue && value < 0 && "border-red-500/30 bg-red-500/5",
+                )}
+              >
+                <span className={cn(
+                  "text-[10px] font-medium leading-none",
+                  today ? "text-primary" : inMonth ? "text-muted-foreground" : "text-muted-foreground/40",
+                )}>
+                  {format(day, "d")}
+                </span>
+                {isEditing ? (
+                  <input
+                    ref={inputRef}
+                    value={editValue}
+                    onChange={e => setEditValue(e.target.value)}
+                    onBlur={saveEdit}
+                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingDay(null) }}
+                    className="mt-0.5 w-full rounded bg-background px-0.5 text-center text-[11px] font-medium outline-none ring-1 ring-primary/50"
+                    placeholder="0"
+                  />
+                ) : hasValue ? (
+                  <span className={cn(
+                    "mt-0.5 text-[11px] font-semibold leading-tight",
+                    value > 0 ? "text-emerald-400" : "text-red-400",
+                  )}>
+                    {value > 0 ? "+" : "−"}{Math.abs(value).toLocaleString("de-DE", { maximumFractionDigits: 0 })}{currency}
+                  </span>
+                ) : inMonth && canEdit ? (
+                  <span className="mt-1 text-[10px] text-muted-foreground/20">+</span>
+                ) : null}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Footer with trade count */}
+      <div className="flex items-center justify-between border-t border-border/30 px-4 py-2">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <TrendingUp className="h-3 w-3 text-emerald-400" />
+            {wins} Gewinn
+          </span>
+          <span className="flex items-center gap-1">
+            <TrendingDown className="h-3 w-3 text-red-400" />
+            {losses} Verlust
+          </span>
+        </div>
+        <span className="text-xs text-muted-foreground">{tradeDays} Handelstage</span>
+      </div>
     </div>
   )
 }
@@ -373,6 +590,16 @@ function PageLinkBlock({
                 </p>
               )
             }
+            if (block.type === "pnl_calendar") {
+              const entries = (block.data.entries as Record<string, number>) ?? {}
+              const total = Object.values(entries).reduce((s, v) => s + v, 0)
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <CalendarDays className="h-3 w-3 shrink-0" />
+                  <span>PnL {total >= 0 ? "+" : ""}{total.toFixed(2)}</span>
+                </p>
+              )
+            }
             if (block.type === "divider") return null
             return null
           })}
@@ -461,6 +688,7 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
       : type === "code"    ? { lang: "", code: "" }
       : type === "quote"   ? { text: "" }
       : type === "page_link" ? { pageId: "" }
+      : type === "pnl_calendar" ? { entries: {}, currency: "€" }
       : {}
 
     const optimistic: PageBlock = { id: crypto.randomUUID(), pageId, type, data: defaultData, position }
@@ -575,6 +803,9 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
               )}
               {block.type === "page_link" && (
                 <PageLinkBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} workspaceId={workspaceId} />
+              )}
+              {block.type === "pnl_calendar" && (
+                <PnlCalendarBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
               )}
             </BlockWrapper>
           ))}
