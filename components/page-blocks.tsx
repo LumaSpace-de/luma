@@ -249,6 +249,7 @@ function PnlCalendarBlock({
   const [editValue, setEditValue] = useState("")
   const [mexcImporting, setMexcImporting] = useState(false)
   const [mexcSymbol, setMexcSymbol] = useState((data.mexcSymbol as string) ?? "BTCUSDT")
+  const [mexcMarket, setMexcMarket] = useState<"spot" | "futures">((data.mexcMarket as "spot" | "futures") ?? "spot")
   const inputRef = useRef<HTMLInputElement>(null)
 
   const monthStart = startOfMonth(viewDate)
@@ -430,6 +431,16 @@ function PnlCalendarBlock({
         </div>
         {canEdit && (
           <div className="flex items-center gap-1.5">
+            <div className="flex overflow-hidden rounded border border-border/40">
+              <button
+                onClick={() => { setMexcMarket("spot"); onChange({ ...data, mexcMarket: "spot" }) }}
+                className={cn("px-1.5 py-0.5 text-[10px] font-medium transition-colors", mexcMarket === "spot" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-accent")}
+              >Spot</button>
+              <button
+                onClick={() => { setMexcMarket("futures"); onChange({ ...data, mexcMarket: "futures" }) }}
+                className={cn("px-1.5 py-0.5 text-[10px] font-medium transition-colors", mexcMarket === "futures" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-accent")}
+              >Futures</button>
+            </div>
             <input
               value={mexcSymbol}
               onChange={e => { setMexcSymbol(e.target.value.toUpperCase()); onChange({ ...data, mexcSymbol: e.target.value.toUpperCase() }) }}
@@ -441,11 +452,11 @@ function PnlCalendarBlock({
                 setMexcImporting(true)
                 try {
                   const monthKey = format(viewDate, "yyyy-MM")
-                  const res = await fetch(`/api/mexc/pnl?symbol=${mexcSymbol}&month=${monthKey}`)
+                  const res = await fetch(`/api/mexc/pnl?symbol=${mexcSymbol}&month=${monthKey}&market=${mexcMarket}`)
                   if (res.ok) {
                     const pnl = await res.json()
                     const merged = { ...entries, ...pnl.entries }
-                    onChange({ ...data, entries: merged, mexcSymbol })
+                    onChange({ ...data, entries: merged, mexcSymbol, mexcMarket })
                   }
                 } catch { /* ignore */ }
                 setMexcImporting(false)
@@ -454,7 +465,7 @@ function PnlCalendarBlock({
               className="flex items-center gap-1 rounded-md border border-border/40 bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
             >
               <Download className="h-3 w-3" />
-              {mexcImporting ? "…" : "MEXC Import"}
+              {mexcImporting ? "…" : "Import"}
             </button>
           </div>
         )}
@@ -465,7 +476,7 @@ function PnlCalendarBlock({
 
 // ── MEXC Portfolio block ──────────────────────────────────────────────────
 
-interface MexcAsset {
+interface MexcSpotAsset {
   asset: string
   free: number
   locked: number
@@ -473,8 +484,30 @@ interface MexcAsset {
   usdValue: number
 }
 
+interface MexcFuturesBalance {
+  currency: string
+  available: number
+  frozen: number
+  equity: number
+}
+
+interface MexcFuturesPos {
+  symbol: string
+  side: string
+  size: number
+  entryPrice: number
+  pnl: number
+  leverage: number
+  liqPrice: number
+}
+
 function MexcPortfolioBlock() {
-  const [assets, setAssets] = useState<MexcAsset[]>([])
+  const [tab, setTab] = useState<"spot" | "futures">("spot")
+  const [spotAssets, setSpotAssets] = useState<MexcSpotAsset[]>([])
+  const [spotTotal, setSpotTotal] = useState(0)
+  const [futuresBalances, setFuturesBalances] = useState<MexcFuturesBalance[]>([])
+  const [futuresTotal, setFuturesTotal] = useState(0)
+  const [positions, setPositions] = useState<MexcFuturesPos[]>([])
   const [totalUsd, setTotalUsd] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -484,7 +517,14 @@ function MexcPortfolioBlock() {
     setError("")
     fetch("/api/mexc/assets")
       .then(r => { if (!r.ok) throw new Error("Fehler"); return r.json() })
-      .then(d => { setAssets(d.balances ?? []); setTotalUsd(d.totalUsd ?? 0) })
+      .then(d => {
+        setSpotAssets(d.spot?.balances ?? [])
+        setSpotTotal(d.spot?.total ?? 0)
+        setFuturesBalances(d.futures?.balances ?? [])
+        setFuturesTotal(d.futures?.total ?? 0)
+        setPositions(d.futures?.positions ?? [])
+        setTotalUsd(d.totalUsd ?? 0)
+      })
       .catch(() => setError("MEXC nicht verbunden oder API-Fehler"))
       .finally(() => setLoading(false))
   }
@@ -493,6 +533,7 @@ function MexcPortfolioBlock() {
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-border/30 px-4 py-3">
         <div className="flex items-center gap-2">
           <Wallet className="h-4 w-4 text-amber-400" />
@@ -509,43 +550,117 @@ function MexcPortfolioBlock() {
         </div>
       </div>
 
+      {/* Spot / Futures tabs */}
+      <div className="flex border-b border-border/30">
+        <button onClick={() => setTab("spot")}
+          className={cn("flex-1 py-2 text-xs font-medium transition-colors",
+            tab === "spot" ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"
+          )}>
+          Spot {!loading && <span className="ml-1 text-muted-foreground">${spotTotal.toLocaleString("de-DE", { maximumFractionDigits: 0 })}</span>}
+        </button>
+        <button onClick={() => setTab("futures")}
+          className={cn("flex-1 py-2 text-xs font-medium transition-colors",
+            tab === "futures" ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"
+          )}>
+          Futures {!loading && <span className="ml-1 text-muted-foreground">${futuresTotal.toLocaleString("de-DE", { maximumFractionDigits: 0 })}</span>}
+        </button>
+      </div>
+
       {error ? (
         <div className="px-4 py-6 text-center text-sm text-muted-foreground">{error}</div>
       ) : loading ? (
         <div className="flex justify-center py-6">
           <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
-      ) : assets.length === 0 ? (
-        <div className="px-4 py-6 text-center text-sm text-muted-foreground">Keine Assets gefunden</div>
+      ) : tab === "spot" ? (
+        spotAssets.length === 0 ? (
+          <div className="px-4 py-6 text-center text-sm text-muted-foreground">Keine Spot-Assets</div>
+        ) : (
+          <div className="divide-y divide-border/20">
+            {spotAssets.slice(0, 15).map(a => {
+              const pct = spotTotal > 0 ? (a.usdValue / spotTotal) * 100 : 0
+              return (
+                <div key={a.asset} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-foreground">
+                    {a.asset.slice(0, 3)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{a.asset}</span>
+                      <span className="text-sm font-semibold">${a.usdValue.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{a.total.toLocaleString("de-DE", { maximumFractionDigits: 8 })} {a.asset}</span>
+                      <span>{pct.toFixed(1)}%</span>
+                    </div>
+                    <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-amber-400/60" style={{ width: `${Math.min(pct, 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            {spotAssets.length > 15 && (
+              <div className="px-4 py-2 text-center text-xs text-muted-foreground">+{spotAssets.length - 15} weitere</div>
+            )}
+          </div>
+        )
       ) : (
-        <div className="divide-y divide-border/20">
-          {assets.slice(0, 15).map(a => {
-            const pct = totalUsd > 0 ? (a.usdValue / totalUsd) * 100 : 0
-            return (
-              <div key={a.asset} className="flex items-center gap-3 px-4 py-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-foreground">
-                  {a.asset.slice(0, 3)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{a.asset}</span>
-                    <span className="text-sm font-semibold">${a.usdValue.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <div>
+          {/* Futures balances */}
+          {futuresBalances.length > 0 && (
+            <div className="border-b border-border/20 px-4 py-3">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Kontostand</p>
+              <div className="flex flex-wrap gap-4">
+                {futuresBalances.map(b => (
+                  <div key={b.currency} className="flex flex-col">
+                    <span className="text-xs text-muted-foreground">{b.currency}</span>
+                    <span className="text-sm font-semibold">{b.equity.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</span>
+                    <span className="text-[10px] text-muted-foreground">Verfügbar: {b.available.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{a.total.toLocaleString("de-DE", { maximumFractionDigits: 8 })} {a.asset}</span>
-                    <span>{pct.toFixed(1)}%</span>
-                  </div>
-                  <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-amber-400/60" style={{ width: `${Math.min(pct, 100)}%` }} />
-                  </div>
-                </div>
+                ))}
               </div>
-            )
-          })}
-          {assets.length > 15 && (
-            <div className="px-4 py-2 text-center text-xs text-muted-foreground">
-              +{assets.length - 15} weitere Assets
             </div>
+          )}
+
+          {/* Open positions */}
+          {positions.length > 0 ? (
+            <div className="divide-y divide-border/20">
+              <div className="px-4 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Offene Positionen</p>
+              </div>
+              {positions.map((p, i) => (
+                <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "rounded px-1.5 py-0.5 text-[10px] font-bold",
+                      p.side === "Long" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                    )}>
+                      {p.side}
+                    </span>
+                    <div>
+                      <span className="text-sm font-medium">{p.symbol}</span>
+                      <span className="ml-1 text-[10px] text-muted-foreground">{p.leverage}x</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-1">
+                      {p.pnl >= 0 ? <ArrowUpRight className="h-3 w-3 text-emerald-400" /> : <ArrowDownRight className="h-3 w-3 text-red-400" />}
+                      <span className={cn("text-sm font-semibold", p.pnl >= 0 ? "text-emerald-400" : "text-red-400")}>
+                        {p.pnl >= 0 ? "+" : ""}{p.pnl.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      Size: {p.size} · Entry: {p.entryPrice.toLocaleString("de-DE")}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : futuresBalances.length === 0 ? (
+            <div className="px-4 py-6 text-center text-sm text-muted-foreground">Keine Futures-Daten</div>
+          ) : (
+            <div className="px-4 py-4 text-center text-xs text-muted-foreground">Keine offenen Positionen</div>
           )}
         </div>
       )}
