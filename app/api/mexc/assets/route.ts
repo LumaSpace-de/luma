@@ -10,25 +10,6 @@ interface TickerPrice {
   price: string
 }
 
-interface FuturesAsset {
-  currency: string
-  availableBalance: number
-  frozenBalance: number
-  positionMargin: number
-  bonus: number
-}
-
-interface FuturesPosition {
-  symbol: string
-  positionType: number
-  holdVol: number
-  holdAvgPrice: number
-  realised: number
-  leverage: number
-  liquidatePrice: number
-  state: number
-}
-
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
@@ -47,7 +28,7 @@ export async function GET() {
     return NextResponse.json({ error: "MEXC API-Fehler" }, { status: 502 })
   }
 
-  // Spot balances
+  // --- Spot balances ---
   const account = accountResult.data as { balances?: { asset: string; free: string; locked: string }[] }
   const spotBalances = (account.balances ?? [])
     .filter((b) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0)
@@ -78,46 +59,59 @@ export async function GET() {
 
   const spotTotal = spotBalances.reduce((s, b) => s + b.usdValue, 0)
 
-  // Futures balances
+  // --- Futures ---
   let futuresBalances: { currency: string; available: number; frozen: number; equity: number }[] = []
   let futuresTotal = 0
+  let positions: { symbol: string; side: string; size: number; entryPrice: number; pnl: number; leverage: number; liqPrice: number }[] = []
+  let futuresDebug = { ok: futuresResult.ok, status: futuresResult.status, posOk: positionsResult.ok, posStatus: positionsResult.status }
 
+  // Futures API wraps response in { success, code, data }
   if (futuresResult.ok) {
-    const fData = futuresResult.data as { data?: FuturesAsset[] } | FuturesAsset[]
-    const fAssets = Array.isArray(fData) ? fData : (fData?.data ?? [])
-    futuresBalances = fAssets
-      .filter((a) => a.availableBalance > 0 || a.frozenBalance > 0 || a.positionMargin > 0)
-      .map((a) => ({
-        currency: a.currency,
-        available: a.availableBalance,
-        frozen: a.frozenBalance,
-        equity: a.availableBalance + a.frozenBalance + a.positionMargin,
-      }))
+    const raw = futuresResult.data as Record<string, unknown>
+    const fAssets = (raw?.data ?? raw) as Record<string, unknown>[] | Record<string, unknown>
+
+    const assetList = Array.isArray(fAssets) ? fAssets : []
+    futuresBalances = assetList
+      .filter((a) => {
+        const avail = Number(a.availableBalance ?? a.available_balance ?? 0)
+        const frozen = Number(a.frozenBalance ?? a.frozen_balance ?? 0)
+        const margin = Number(a.positionMargin ?? a.position_margin ?? 0)
+        return avail > 0 || frozen > 0 || margin > 0
+      })
+      .map((a) => {
+        const available = Number(a.availableBalance ?? a.available_balance ?? 0)
+        const frozen = Number(a.frozenBalance ?? a.frozen_balance ?? 0)
+        const margin = Number(a.positionMargin ?? a.position_margin ?? 0)
+        return {
+          currency: String(a.currency ?? "USDT"),
+          available,
+          frozen,
+          equity: available + frozen + margin,
+        }
+      })
     futuresTotal = futuresBalances.reduce((s, b) => s + b.equity, 0)
   }
 
-  // Futures positions
-  let positions: { symbol: string; side: string; size: number; entryPrice: number; pnl: number; leverage: number; liqPrice: number }[] = []
-
   if (positionsResult.ok) {
-    const pData = positionsResult.data as { data?: FuturesPosition[] } | FuturesPosition[]
-    const pList = Array.isArray(pData) ? pData : (pData?.data ?? [])
+    const raw = positionsResult.data as Record<string, unknown>
+    const pList = (Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : []) as Record<string, unknown>[]
+
     positions = pList
-      .filter((p) => p.holdVol > 0)
+      .filter((p) => Number(p.holdVol ?? p.hold_vol ?? 0) > 0)
       .map((p) => ({
-        symbol: p.symbol,
-        side: p.positionType === 1 ? "Long" : "Short",
-        size: p.holdVol,
-        entryPrice: p.holdAvgPrice,
-        pnl: p.realised,
-        leverage: p.leverage,
-        liqPrice: p.liquidatePrice,
+        symbol: String(p.symbol ?? ""),
+        side: Number(p.positionType ?? p.position_type ?? 1) === 1 ? "Long" : "Short",
+        size: Number(p.holdVol ?? p.hold_vol ?? 0),
+        entryPrice: Number(p.holdAvgPrice ?? p.hold_avg_price ?? p.openAvgPrice ?? p.open_avg_price ?? 0),
+        pnl: Number(p.realised ?? 0),
+        leverage: Number(p.leverage ?? 1),
+        liqPrice: Number(p.liquidatePrice ?? p.liquidate_price ?? 0),
       }))
   }
 
   return NextResponse.json({
     spot: { balances: spotBalances, total: Math.round(spotTotal * 100) / 100 },
-    futures: { balances: futuresBalances, total: Math.round(futuresTotal * 100) / 100, positions },
+    futures: { balances: futuresBalances, total: Math.round(futuresTotal * 100) / 100, positions, debug: futuresDebug },
     totalUsd: Math.round((spotTotal + futuresTotal) * 100) / 100,
   })
 }
