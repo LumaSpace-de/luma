@@ -19,7 +19,7 @@ export async function GET() {
   const url = new URL("https://github.com/login/oauth/authorize")
   url.searchParams.set("client_id", clientId)
   url.searchParams.set("redirect_uri", redirectUri)
-  url.searchParams.set("scope", "repo read:user")
+  url.searchParams.set("scope", "repo read:user read:org")
   url.searchParams.set("state", session.user.id)
 
   return NextResponse.redirect(url.toString())

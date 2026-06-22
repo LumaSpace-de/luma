@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 
 import {
   ArrowLeft,
+  Building2,
   ChevronRight,
   File,
   Folder,
@@ -12,6 +13,7 @@ import {
   Lock,
   PanelLeft,
   Star,
+  User,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -29,6 +31,12 @@ interface Repo {
   updatedAt: string
   stargazersCount: number
   owner: { login: string; avatarUrl: string }
+}
+
+interface Org {
+  login: string
+  avatarUrl: string
+  description: string | null
 }
 
 interface DirItem {
@@ -68,37 +76,6 @@ const LANG_COLORS: Record<string, string> = {
   SCSS: "bg-pink-400",
 }
 
-function getFileExtension(name: string): string {
-  const parts = name.split(".")
-  return parts.length > 1 ? parts.pop()!.toLowerCase() : ""
-}
-
-function getSyntaxClass(ext: string): string {
-  const map: Record<string, string> = {
-    ts: "language-typescript",
-    tsx: "language-typescript",
-    js: "language-javascript",
-    jsx: "language-javascript",
-    py: "language-python",
-    rs: "language-rust",
-    go: "language-go",
-    java: "language-java",
-    json: "language-json",
-    md: "language-markdown",
-    yml: "language-yaml",
-    yaml: "language-yaml",
-    html: "language-html",
-    css: "language-css",
-    scss: "language-scss",
-    sql: "language-sql",
-    sh: "language-bash",
-    bash: "language-bash",
-    xml: "language-xml",
-    toml: "language-toml",
-  }
-  return map[ext] ?? ""
-}
-
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -118,14 +95,22 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString("de-DE", { day: "numeric", month: "short" })
 }
 
+function getFileExtension(name: string): string {
+  const parts = name.split(".")
+  return parts.length > 1 ? parts.pop()!.toLowerCase() : ""
+}
+
 export default function GitHubPage() {
   const { toggle } = useInlineSidebar()
 
   const [connected, setConnected] = useState<boolean | null>(null)
   const [ghUsername, setGhUsername] = useState("")
   const [repos, setRepos] = useState<Repo[]>([])
+  const [orgs, setOrgs] = useState<Org[]>([])
+  const [activeFilter, setActiveFilter] = useState<string | null>(null) // null = alle, "user" = eigene, org login = org
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
+  const [reposLoading, setReposLoading] = useState(false)
 
   // Browser state
   const [activeRepo, setActiveRepo] = useState<Repo | null>(null)
@@ -135,24 +120,53 @@ export default function GitHubPage() {
   const [browsing, setBrowsing] = useState(false)
 
   useEffect(() => {
-    fetch("/api/github/repos")
-      .then((r) => {
-        if (r.status === 400) {
+    Promise.all([
+      fetch("/api/github/repos").then((r) => {
+        if (r.status === 400) return null
+        return r.json()
+      }),
+      fetch("/api/github/orgs").then((r) => {
+        if (r.status === 400) return null
+        return r.json()
+      }),
+    ])
+      .then(([repoData, orgData]) => {
+        if (!repoData) {
           setConnected(false)
           setLoading(false)
-          return null
+          return
         }
-        return r.json()
-      })
-      .then((data) => {
-        if (!data) return
         setConnected(true)
-        setRepos(Array.isArray(data) ? data : [])
-        if (data[0]) setGhUsername(data[0].owner.login)
+        setRepos(Array.isArray(repoData) ? repoData : [])
+        if (repoData[0]) setGhUsername(repoData[0].owner.login)
+        if (orgData && Array.isArray(orgData)) setOrgs(orgData)
         setLoading(false)
       })
       .catch(() => setLoading(false))
   }, [])
+
+  async function selectFilter(filter: string | null) {
+    setActiveFilter(filter)
+    setSearch("")
+
+    if (filter && filter !== "user") {
+      setReposLoading(true)
+      const res = await fetch(`/api/github/repos?org=${encodeURIComponent(filter)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setRepos(Array.isArray(data) ? data : [])
+      }
+      setReposLoading(false)
+    } else {
+      setReposLoading(true)
+      const res = await fetch("/api/github/repos")
+      if (res.ok) {
+        const data = await res.json()
+        setRepos(Array.isArray(data) ? data : [])
+      }
+      setReposLoading(false)
+    }
+  }
 
   function openRepo(repo: Repo) {
     setActiveRepo(repo)
@@ -217,12 +231,16 @@ export default function GitHubPage() {
   }
 
   const pathParts = currentPath ? currentPath.split("/") : []
-  const filteredRepos = repos.filter(
-    (r) =>
+
+  const filteredRepos = repos.filter((r) => {
+    const matchesSearch =
       r.name.toLowerCase().includes(search.toLowerCase()) ||
       (r.description ?? "").toLowerCase().includes(search.toLowerCase())
-  )
+    if (activeFilter === "user") return matchesSearch && r.owner.login === ghUsername
+    return matchesSearch
+  })
 
+  // --- Loading state ---
   if (loading) {
     return (
       <div className="flex h-full flex-col">
@@ -248,6 +266,7 @@ export default function GitHubPage() {
     )
   }
 
+  // --- Not connected ---
   if (connected === false) {
     return (
       <div className="flex h-full flex-col">
@@ -273,7 +292,7 @@ export default function GitHubPage() {
     )
   }
 
-  // File viewer
+  // --- File viewer ---
   if (activeRepo && fileData) {
     let decoded = ""
     try {
@@ -296,7 +315,7 @@ export default function GitHubPage() {
           </Button>
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <button onClick={() => { setActiveRepo(null); setDirItems([]); setFileData(null) }} className="hover:text-foreground">
-              {ghUsername}
+              {activeRepo.owner.login}
             </button>
             <ChevronRight className="h-3 w-3" />
             <button onClick={() => { setFileData(null); loadDir(activeRepo.fullName, "") }} className="hover:text-foreground">
@@ -356,7 +375,7 @@ export default function GitHubPage() {
     )
   }
 
-  // Directory browser
+  // --- Directory browser ---
   if (activeRepo) {
     return (
       <div className="flex h-full flex-col">
@@ -369,7 +388,7 @@ export default function GitHubPage() {
           </Button>
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <button onClick={() => { setActiveRepo(null); setDirItems([]) }} className="hover:text-foreground">
-              {ghUsername}
+              {activeRepo.owner.login}
             </button>
             <ChevronRight className="h-3 w-3" />
             <button onClick={() => loadDir(activeRepo.fullName, "")} className="font-medium text-foreground hover:text-foreground">
@@ -433,7 +452,7 @@ export default function GitHubPage() {
     )
   }
 
-  // Repo list
+  // --- Repo list with org filter ---
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
@@ -443,6 +462,54 @@ export default function GitHubPage() {
         <h1 className="text-lg font-semibold tracking-tight">GitHub</h1>
         <span className="text-sm text-muted-foreground">@{ghUsername}</span>
       </div>
+
+      {/* Owner / Org filter tabs */}
+      {orgs.length > 0 && (
+        <div className="flex items-center gap-1 overflow-x-auto border-b px-4 py-2">
+          <button
+            onClick={() => selectFilter(null)}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              activeFilter === null
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+          >
+            Alle
+          </button>
+          <button
+            onClick={() => selectFilter("user")}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              activeFilter === "user"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+          >
+            <User className="h-3 w-3" />
+            {ghUsername}
+          </button>
+          {orgs.map((org) => (
+            <button
+              key={org.login}
+              onClick={() => selectFilter(org.login)}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                activeFilter === org.login
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
+              )}
+            >
+              {org.avatarUrl ? (
+                <img src={org.avatarUrl} alt={org.login} className="h-4 w-4 rounded-full" />
+              ) : (
+                <Building2 className="h-3 w-3" />
+              )}
+              {org.login}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="p-4">
         <Input
@@ -454,43 +521,61 @@ export default function GitHubPage() {
       </div>
 
       <div className="flex-1 overflow-auto px-4 pb-4">
-        <div className="grid gap-2">
-          {filteredRepos.map((repo) => (
-            <button
-              key={repo.id}
-              onClick={() => openRepo(repo)}
-              className="flex flex-col gap-1 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-accent/50"
-            >
-              <div className="flex items-center gap-2">
-                <span className="truncate text-sm font-medium text-foreground">{repo.name}</span>
-                {repo.private && <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />}
-              </div>
-              {repo.description && (
-                <p className="line-clamp-1 text-xs text-muted-foreground">{repo.description}</p>
-              )}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                {repo.language && (
-                  <span className="flex items-center gap-1">
-                    <span className={cn("h-2 w-2 rounded-full", LANG_COLORS[repo.language] ?? "bg-gray-500")} />
-                    {repo.language}
-                  </span>
+        {reposLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30"
+                  style={{ animation: `luma-pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
+                />
+              ))}
+            </div>
+            <style>{`@keyframes luma-pulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}`}</style>
+          </div>
+        ) : (
+          <div className="grid gap-2">
+            {filteredRepos.map((repo) => (
+              <button
+                key={repo.id}
+                onClick={() => openRepo(repo)}
+                className="flex flex-col gap-1 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-accent/50"
+              >
+                <div className="flex items-center gap-2">
+                  {repo.owner.login !== ghUsername && (
+                    <span className="text-xs text-muted-foreground">{repo.owner.login}/</span>
+                  )}
+                  <span className="truncate text-sm font-medium text-foreground">{repo.name}</span>
+                  {repo.private && <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                </div>
+                {repo.description && (
+                  <p className="line-clamp-1 text-xs text-muted-foreground">{repo.description}</p>
                 )}
-                {repo.stargazersCount > 0 && (
-                  <span className="flex items-center gap-0.5">
-                    <Star className="h-3 w-3" />
-                    {repo.stargazersCount}
-                  </span>
-                )}
-                <span>{formatDate(repo.updatedAt)}</span>
-              </div>
-            </button>
-          ))}
-          {filteredRepos.length === 0 && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              {search ? "Keine Repositories gefunden" : "Keine Repositories vorhanden"}
-            </p>
-          )}
-        </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  {repo.language && (
+                    <span className="flex items-center gap-1">
+                      <span className={cn("h-2 w-2 rounded-full", LANG_COLORS[repo.language] ?? "bg-gray-500")} />
+                      {repo.language}
+                    </span>
+                  )}
+                  {repo.stargazersCount > 0 && (
+                    <span className="flex items-center gap-0.5">
+                      <Star className="h-3 w-3" />
+                      {repo.stargazersCount}
+                    </span>
+                  )}
+                  <span>{formatDate(repo.updatedAt)}</span>
+                </div>
+              </button>
+            ))}
+            {filteredRepos.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                {search ? "Keine Repositories gefunden" : "Keine Repositories vorhanden"}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
