@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import {
@@ -20,6 +21,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 import { cn } from "@/lib/utils"
+
+export interface GhFavoriteRepo {
+  fullName: string
+  name: string
+  owner: string
+}
+
+const GH_FAV_KEY = "luma-github-favorites"
+
+function loadGhFavorites(): GhFavoriteRepo[] {
+  try { return JSON.parse(localStorage.getItem(GH_FAV_KEY) ?? "[]") } catch { return [] }
+}
+
+function saveGhFavorites(favs: GhFavoriteRepo[]) {
+  localStorage.setItem(GH_FAV_KEY, JSON.stringify(favs))
+  window.dispatchEvent(new Event("gh-favorites-changed"))
+}
 
 interface Repo {
   id: number
@@ -102,15 +120,17 @@ function getFileExtension(name: string): string {
 
 export default function GitHubPage() {
   const { toggle } = useInlineSidebar()
+  const searchParams = useSearchParams()
 
   const [connected, setConnected] = useState<boolean | null>(null)
   const [ghUsername, setGhUsername] = useState("")
   const [repos, setRepos] = useState<Repo[]>([])
   const [orgs, setOrgs] = useState<Org[]>([])
-  const [activeFilter, setActiveFilter] = useState<string | null>(null) // null = alle, "user" = eigene, org login = org
+  const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [reposLoading, setReposLoading] = useState(false)
+  const [ghFavorites, setGhFavorites] = useState<GhFavoriteRepo[]>([])
 
   // Browser state
   const [activeRepo, setActiveRepo] = useState<Repo | null>(null)
@@ -118,6 +138,22 @@ export default function GitHubPage() {
   const [dirItems, setDirItems] = useState<DirItem[]>([])
   const [fileData, setFileData] = useState<FileData | null>(null)
   const [browsing, setBrowsing] = useState(false)
+
+  useEffect(() => {
+    setGhFavorites(loadGhFavorites())
+  }, [])
+
+  function toggleFavorite(repo: Repo) {
+    const current = loadGhFavorites()
+    const exists = current.some((f) => f.fullName === repo.fullName)
+    const next = exists
+      ? current.filter((f) => f.fullName !== repo.fullName)
+      : [...current, { fullName: repo.fullName, name: repo.name, owner: repo.owner.login }]
+    saveGhFavorites(next)
+    setGhFavorites(next)
+  }
+
+  const favSet = new Set(ghFavorites.map((f) => f.fullName))
 
   useEffect(() => {
     fetch("/api/github/status")
@@ -135,13 +171,24 @@ export default function GitHubPage() {
           fetch("/api/github/repos").then((r) => r.ok ? r.json() : []),
           fetch("/api/github/orgs").then((r) => r.ok ? r.json() : []),
         ]).then(([repoData, orgData]) => {
-          setRepos(Array.isArray(repoData) ? repoData : [])
+          const repoList: Repo[] = Array.isArray(repoData) ? repoData : []
+          setRepos(repoList)
           if (orgData && Array.isArray(orgData)) setOrgs(orgData)
+
+          const repoParam = searchParams.get("repo")
+          if (repoParam) {
+            const match = repoList.find((r) => r.fullName === repoParam)
+            if (match) {
+              setActiveRepo(match)
+              loadDir(match.fullName, "")
+            }
+          }
+
           setLoading(false)
         })
       })
       .catch(() => setLoading(false))
-  }, [])
+  }, [searchParams])
 
   async function selectFilter(filter: string | null) {
     setActiveFilter(filter)
@@ -534,39 +581,53 @@ export default function GitHubPage() {
           </div>
         ) : (
           <div className="grid gap-2">
-            {filteredRepos.map((repo) => (
-              <button
-                key={repo.id}
-                onClick={() => openRepo(repo)}
-                className="flex flex-col gap-1 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-accent/50"
-              >
-                <div className="flex items-center gap-2">
-                  {repo.owner.login !== ghUsername && (
-                    <span className="text-xs text-muted-foreground">{repo.owner.login}/</span>
-                  )}
-                  <span className="truncate text-sm font-medium text-foreground">{repo.name}</span>
-                  {repo.private && <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />}
+            {filteredRepos.map((repo) => {
+              const isFav = favSet.has(repo.fullName)
+              return (
+                <div
+                  key={repo.id}
+                  className="flex items-start gap-2 rounded-lg border bg-card p-3 transition-colors hover:bg-accent/50"
+                >
+                  <button
+                    onClick={() => openRepo(repo)}
+                    className="flex min-w-0 flex-1 flex-col gap-1 text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      {repo.owner.login !== ghUsername && (
+                        <span className="text-xs text-muted-foreground">{repo.owner.login}/</span>
+                      )}
+                      <span className="truncate text-sm font-medium text-foreground">{repo.name}</span>
+                      {repo.private && <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                    </div>
+                    {repo.description && (
+                      <p className="line-clamp-1 text-xs text-muted-foreground">{repo.description}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {repo.language && (
+                        <span className="flex items-center gap-1">
+                          <span className={cn("h-2 w-2 rounded-full", LANG_COLORS[repo.language] ?? "bg-gray-500")} />
+                          {repo.language}
+                        </span>
+                      )}
+                      {repo.stargazersCount > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <Star className="h-3 w-3" />
+                          {repo.stargazersCount}
+                        </span>
+                      )}
+                      <span>{formatDate(repo.updatedAt)}</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => toggleFavorite(repo)}
+                    className="mt-0.5 shrink-0 rounded p-1 transition-colors hover:bg-accent"
+                    title={isFav ? "Aus Sidebar entfernen" : "Zur Sidebar hinzufügen"}
+                  >
+                    <Star className={cn("h-4 w-4", isFav ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40")} />
+                  </button>
                 </div>
-                {repo.description && (
-                  <p className="line-clamp-1 text-xs text-muted-foreground">{repo.description}</p>
-                )}
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  {repo.language && (
-                    <span className="flex items-center gap-1">
-                      <span className={cn("h-2 w-2 rounded-full", LANG_COLORS[repo.language] ?? "bg-gray-500")} />
-                      {repo.language}
-                    </span>
-                  )}
-                  {repo.stargazersCount > 0 && (
-                    <span className="flex items-center gap-0.5">
-                      <Star className="h-3 w-3" />
-                      {repo.stargazersCount}
-                    </span>
-                  )}
-                  <span>{formatDate(repo.updatedAt)}</span>
-                </div>
-              </button>
-            ))}
+              )
+            })}
             {filteredRepos.length === 0 && (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 {search ? "Keine Repositories gefunden" : "Keine Repositories vorhanden"}

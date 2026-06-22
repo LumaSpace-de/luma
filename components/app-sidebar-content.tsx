@@ -317,6 +317,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
   const [privatePages, setPrivatePages] = useState<Page[]>([])
 
   const [favorites, setFavorites] = useState<FavoritePage[]>([])
+  const [ghFavorites, setGhFavorites] = useState<{ fullName: string; name: string; owner: string }[]>([])
   const [inboxCount, setInboxCount] = useState(0)
   const [announcementCount, setAnnouncementCount] = useState(0)
   const [friendRequestCount, setFriendRequestCount] = useState(0)
@@ -336,6 +337,12 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
 
   useEffect(() => {
     setFavorites(loadFavorites())
+    function loadGhFavs() {
+      try { setGhFavorites(JSON.parse(localStorage.getItem("luma-github-favorites") ?? "[]")) } catch {}
+    }
+    loadGhFavs()
+    window.addEventListener("gh-favorites-changed", loadGhFavs)
+    return () => window.removeEventListener("gh-favorites-changed", loadGhFavs)
   }, [])
 
   useEffect(() => {
@@ -686,6 +693,37 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
             </div>
           )}
         </div>
+
+        {/* GitHub Repos */}
+        {ghFavorites.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              GitHub Repos
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {ghFavorites.map((repo) => {
+                const href = `/github?repo=${encodeURIComponent(repo.fullName)}`
+                const active = pathname === "/github" && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("repo") === repo.fullName
+                return (
+                  <Link
+                    key={repo.fullName}
+                    href={href}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                      active
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    )}
+                  >
+                    <GitBranch className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{repo.owner !== repo.name ? `${repo.owner}/` : ""}{repo.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
       </div>
 
