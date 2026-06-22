@@ -622,9 +622,13 @@ export default function GitHubPage() {
     const ext = getFileExtension(fileData.name)
     const isImage = ["png", "jpg", "jpeg", "gif", "svg", "webp", "ico"].includes(ext)
     const isBinary = isImage || ["pdf", "zip", "tar", "gz", "woff", "woff2", "ttf", "eot", "mp3", "mp4"].includes(ext)
-    const viewLines = decoded.split("\n")
+    const allViewLines = decoded.split("\n")
+    const MAX_RENDER = 3000
+    const truncated = allViewLines.length > MAX_RENDER
+    const viewLines = truncated ? allViewLines.slice(0, MAX_RENDER) : allViewLines
+    const useHighlight = allViewLines.length <= 1500
     const editLines = editing ? editContent.split("\n") : viewLines
-    const totalLines = editLines.length
+    const totalLines = editing ? editLines.length : allViewLines.length
 
     return (
       <div className="flex h-full flex-col bg-[#11111b]">
@@ -803,9 +807,14 @@ export default function GitHubPage() {
               <pre className="flex-1 overflow-x-auto py-1 pl-4 pr-4 font-mono text-sm leading-[20px]">
                 {viewLines.map((line, i) => (
                   <div key={i} className="hover:bg-[#181825]/80">
-                    {highlightLine(line, ext)}
+                    {useHighlight ? highlightLine(line, ext) : <span style={{ color: SYN.text }}>{line || " "}</span>}
                   </div>
                 ))}
+                {truncated && (
+                  <div className="mt-2 border-t border-[#1e1e2e] py-3 text-center text-xs text-[#6c7086]">
+                    Datei zu groß — nur die ersten {MAX_RENDER.toLocaleString("de-DE")} von {allViewLines.length.toLocaleString("de-DE")} Zeilen werden angezeigt
+                  </div>
+                )}
               </pre>
             </div>
           )}
@@ -823,6 +832,7 @@ export default function GitHubPage() {
           <div className="flex items-center gap-3">
             <span>{ext.toUpperCase() || "TXT"}</span>
             <span>UTF-8</span>
+            {!useHighlight && !editing && <span className="text-[#f9e2af]">Highlighting deaktiviert (große Datei)</span>}
             {editing && (
               <span className="text-[#f9e2af]">Tab = 2 Leerzeichen</span>
             )}

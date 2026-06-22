@@ -38,13 +38,27 @@ export async function GET(
     return NextResponse.json({ type: "dir", items })
   }
 
+  let content = data.content ?? ""
+  let encoding = data.encoding ?? "base64"
+
+  if (!content && data.git_url) {
+    const blobRes = await fetch(data.git_url, {
+      headers: { Authorization: `Bearer ${gh.token}`, Accept: "application/vnd.github.v3+json" },
+    })
+    if (blobRes.ok) {
+      const blob = await blobRes.json()
+      content = blob.content ?? ""
+      encoding = blob.encoding ?? "base64"
+    }
+  }
+
   return NextResponse.json({
     type: "file",
     name: data.name,
     path: data.path,
     size: data.size,
-    content: data.content,
-    encoding: data.encoding,
+    content,
+    encoding,
     sha: data.sha,
   })
 }
