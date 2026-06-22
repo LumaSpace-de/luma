@@ -67,15 +67,12 @@ export default function SettingsPage() {
     if (ghParam === "error") setGhError("GitHub-Verbindung fehlgeschlagen")
     if (ghParam === "connected") setGhSuccess(true)
 
-    fetch("/api/github/repos")
-      .then((r) => {
-        if (r.ok) return r.json()
-        return null
-      })
+    fetch("/api/github/status")
+      .then((r) => r.json())
       .then((data) => {
-        if (data && Array.isArray(data) && data.length > 0) {
+        if (data?.connected) {
           setGhConnected(true)
-          setGhUsername(data[0]?.owner?.login ?? "")
+          setGhUsername(data.username ?? "")
         }
       })
       .catch(() => {})

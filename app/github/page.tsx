@@ -120,27 +120,25 @@ export default function GitHubPage() {
   const [browsing, setBrowsing] = useState(false)
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/github/repos").then((r) => {
-        if (r.status === 400) return null
-        return r.json()
-      }),
-      fetch("/api/github/orgs").then((r) => {
-        if (r.status === 400) return null
-        return r.json()
-      }),
-    ])
-      .then(([repoData, orgData]) => {
-        if (!repoData) {
+    fetch("/api/github/status")
+      .then((r) => r.json())
+      .then((status) => {
+        if (!status.connected) {
           setConnected(false)
           setLoading(false)
           return
         }
         setConnected(true)
-        setRepos(Array.isArray(repoData) ? repoData : [])
-        if (repoData[0]) setGhUsername(repoData[0].owner.login)
-        if (orgData && Array.isArray(orgData)) setOrgs(orgData)
-        setLoading(false)
+        setGhUsername(status.username ?? "")
+
+        Promise.all([
+          fetch("/api/github/repos").then((r) => r.ok ? r.json() : []),
+          fetch("/api/github/orgs").then((r) => r.ok ? r.json() : []),
+        ]).then(([repoData, orgData]) => {
+          setRepos(Array.isArray(repoData) ? repoData : [])
+          if (orgData && Array.isArray(orgData)) setOrgs(orgData)
+          setLoading(false)
+        })
       })
       .catch(() => setLoading(false))
   }, [])
