@@ -7,14 +7,17 @@ import { useEffect, useState } from "react"
 import {
   ArrowLeft,
   Building2,
+  Check,
   ChevronRight,
   File,
   Folder,
   GitBranch,
   Lock,
   PanelLeft,
+  Pencil,
   Star,
   User,
+  X,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -70,6 +73,7 @@ interface FileData {
   size: number
   content: string
   encoding: string
+  sha: string
 }
 
 const LANG_COLORS: Record<string, string> = {
@@ -138,6 +142,15 @@ export default function GitHubPage() {
   const [dirItems, setDirItems] = useState<DirItem[]>([])
   const [fileData, setFileData] = useState<FileData | null>(null)
   const [browsing, setBrowsing] = useState(false)
+
+  // Editor state
+  const [editing, setEditing] = useState(false)
+  const [editContent, setEditContent] = useState("")
+  const [commitMsg, setCommitMsg] = useState("")
+  const [commitDialogOpen, setCommitDialogOpen] = useState(false)
+  const [committing, setCommitting] = useState(false)
+  const [commitError, setCommitError] = useState("")
+  const [commitSuccess, setCommitSuccess] = useState("")
 
   useEffect(() => {
     setGhFavorites(loadGhFavorites())
@@ -275,6 +288,57 @@ export default function GitHubPage() {
     }
   }
 
+  function startEditing() {
+    if (!fileData) return
+    let decoded = ""
+    try { decoded = atob(fileData.content.replace(/\n/g, "")) } catch { decoded = fileData.content }
+    setEditContent(decoded)
+    setEditing(true)
+    setCommitError("")
+    setCommitSuccess("")
+  }
+
+  function cancelEditing() {
+    setEditing(false)
+    setCommitDialogOpen(false)
+    setCommitMsg("")
+    setCommitError("")
+    setCommitSuccess("")
+  }
+
+  async function handleCommit() {
+    if (!activeRepo || !fileData || !commitMsg.trim()) return
+    setCommitting(true)
+    setCommitError("")
+
+    const [owner, repo] = activeRepo.fullName.split("/")
+    const res = await fetch(`/api/github/repos/${owner}/${repo}/contents`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: fileData.path,
+        content: editContent,
+        message: commitMsg.trim(),
+        sha: fileData.sha,
+      }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) {
+      setCommitError(data.error ?? "Commit fehlgeschlagen")
+      setCommitting(false)
+      return
+    }
+
+    setFileData({ ...fileData, content: btoa(editContent), sha: data.sha })
+    setCommitSuccess("Commit erfolgreich!")
+    setEditing(false)
+    setCommitDialogOpen(false)
+    setCommitMsg("")
+    setCommitting(false)
+    setTimeout(() => setCommitSuccess(""), 3000)
+  }
+
   const pathParts = currentPath ? currentPath.split("/") : []
 
   const filteredRepos = repos.filter((r) => {
@@ -337,7 +401,7 @@ export default function GitHubPage() {
     )
   }
 
-  // --- File viewer ---
+  // --- File viewer / editor ---
   if (activeRepo && fileData) {
     let decoded = ""
     try {
@@ -347,6 +411,7 @@ export default function GitHubPage() {
     }
     const ext = getFileExtension(fileData.name)
     const isImage = ["png", "jpg", "jpeg", "gif", "svg", "webp", "ico"].includes(ext)
+    const isBinary = isImage || ["pdf", "zip", "tar", "gz", "woff", "woff2", "ttf", "eot", "mp3", "mp4"].includes(ext)
     const lines = decoded.split("\n")
 
     return (
@@ -355,23 +420,24 @@ export default function GitHubPage() {
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
             <PanelLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={navigateUp}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { cancelEditing(); navigateUp() }}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <button onClick={() => { setActiveRepo(null); setDirItems([]); setFileData(null) }} className="hover:text-foreground">
+          <div className="flex min-w-0 flex-1 items-center gap-1 text-sm text-muted-foreground">
+            <button onClick={() => { cancelEditing(); setActiveRepo(null); setDirItems([]); setFileData(null) }} className="shrink-0 hover:text-foreground">
               {activeRepo.owner.login}
             </button>
-            <ChevronRight className="h-3 w-3" />
-            <button onClick={() => { setFileData(null); loadDir(activeRepo.fullName, "") }} className="hover:text-foreground">
+            <ChevronRight className="h-3 w-3 shrink-0" />
+            <button onClick={() => { cancelEditing(); setFileData(null); loadDir(activeRepo.fullName, "") }} className="shrink-0 hover:text-foreground">
               {activeRepo.name}
             </button>
             {pathParts.map((part, i) => (
-              <span key={i} className="flex items-center gap-1">
+              <span key={i} className="flex shrink-0 items-center gap-1">
                 <ChevronRight className="h-3 w-3" />
                 {i < pathParts.length - 1 ? (
                   <button
                     onClick={() => {
+                      cancelEditing()
                       setFileData(null)
                       loadDir(activeRepo.fullName, pathParts.slice(0, i + 1).join("/"))
                     }}
@@ -385,8 +451,66 @@ export default function GitHubPage() {
               </span>
             ))}
           </div>
-          <span className="ml-auto text-xs text-muted-foreground">{formatBytes(fileData.size)}</span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {commitSuccess && (
+              <span className="flex items-center gap-1 text-xs text-green-500">
+                <Check className="h-3 w-3" />
+                {commitSuccess}
+              </span>
+            )}
+            {!isBinary && !editing && (
+              <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={startEditing}>
+                <Pencil className="h-3 w-3" />
+                Bearbeiten
+              </Button>
+            )}
+            {editing && (
+              <>
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={cancelEditing}>
+                  Abbrechen
+                </Button>
+                <Button size="sm" className="h-7 gap-1.5 text-xs" onClick={() => setCommitDialogOpen(true)}>
+                  <Check className="h-3 w-3" />
+                  Commit
+                </Button>
+              </>
+            )}
+            <span className="text-xs text-muted-foreground">{formatBytes(fileData.size)}</span>
+          </div>
         </div>
+
+        {/* Commit dialog */}
+        {commitDialogOpen && (
+          <div className="border-b bg-card px-4 py-3">
+            <div className="mx-auto flex max-w-2xl flex-col gap-2">
+              <p className="text-sm font-medium">Änderungen committen</p>
+              <input
+                autoFocus
+                className="rounded-md border bg-background px-3 py-1.5 text-sm outline-none ring-ring focus:ring-1"
+                placeholder="Commit-Nachricht…"
+                value={commitMsg}
+                onChange={(e) => setCommitMsg(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && commitMsg.trim()) handleCommit() }}
+              />
+              {commitError && (
+                <p className="text-xs text-destructive">{commitError}</p>
+              )}
+              <div className="flex items-center justify-end gap-2">
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setCommitDialogOpen(false)}>
+                  Abbrechen
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={!commitMsg.trim() || committing}
+                  onClick={handleCommit}
+                >
+                  {committing ? "Wird committed…" : "Commit & Push"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 overflow-auto">
           {isImage ? (
@@ -397,6 +521,13 @@ export default function GitHubPage() {
                 className="max-h-[70vh] max-w-full rounded-lg border"
               />
             </div>
+          ) : editing ? (
+            <textarea
+              className="h-full w-full resize-none bg-background p-4 font-mono text-sm leading-relaxed outline-none"
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              spellCheck={false}
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse font-mono text-sm">

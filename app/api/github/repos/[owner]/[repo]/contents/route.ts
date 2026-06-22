@@ -45,5 +45,53 @@ export async function GET(
     size: data.size,
     content: data.content,
     encoding: data.encoding,
+    sha: data.sha,
+  })
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { owner: string; repo: string } }
+) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
+
+  const gh = await getGithubToken(session.user.id)
+  if (!gh) return NextResponse.json({ error: "GitHub nicht verbunden" }, { status: 400 })
+
+  const { path, content, message, sha } = await req.json()
+  if (!path || content === undefined || !message) {
+    return NextResponse.json({ error: "path, content und message sind erforderlich" }, { status: 400 })
+  }
+
+  const encoded = Buffer.from(content, "utf-8").toString("base64")
+  const url = `https://api.github.com/repos/${params.owner}/${params.repo}/contents/${path}`
+
+  const body: Record<string, string> = { message, content: encoded }
+  if (sha) body.sha = sha
+
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${gh.token}`,
+      Accept: "application/vnd.github.v3+json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    return NextResponse.json(
+      { error: (err as Record<string, unknown>).message ?? "Commit fehlgeschlagen" },
+      { status: res.status === 409 ? 409 : 502 }
+    )
+  }
+
+  const data = await res.json()
+  return NextResponse.json({
+    sha: data.content?.sha,
+    commit: data.commit?.sha,
+    message: data.commit?.message,
   })
 }
