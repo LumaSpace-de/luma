@@ -231,8 +231,9 @@ function CodeBlock({
 }
 
 // ── PnL Calendar block ────────────────────────────────────────────────────
+// ── PnL Calendar block ────────────────────────────────────────────────────
 
-const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+const WEEKDAYS_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 
 function PnlCalendarBlock({
   data, canEdit, onChange,
@@ -241,32 +242,44 @@ function PnlCalendarBlock({
   canEdit: boolean
   onChange: (d: Record<string, unknown>) => void
 }) {
-  const [entries, setEntries] = useState<Record<string, number>>((data.entries as Record<string, number>) ?? {})
-  const currency = "$"
+  const [entries, setEntries] = useState<Record<string, number>>(() => {
+    try { return (data.entries as Record<string, number>) ?? {} } catch { return {} }
+  })
   const [viewDate, setViewDate] = useState(() => new Date())
   const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState("")
   const [editingDay, setEditingDay] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
+  const [tab, setTab] = useState<"daily" | "monthly">("daily")
   const inputRef = useRef<HTMLInputElement>(null)
-  const lastFetchRef = useRef("")
+  const fetchedMonths = useRef<Set<string>>(new Set())
 
+  // Auto-fetch futures PnL
   useEffect(() => {
     const monthKey = format(viewDate, "yyyy-MM")
-    if (lastFetchRef.current === monthKey) return
-    lastFetchRef.current = monthKey
+    if (fetchedMonths.current.has(monthKey)) return
+    fetchedMonths.current.add(monthKey)
     setLoading(true)
+    setFetchError("")
     fetch(`/api/mexc/pnl?symbol=BTCUSDT&month=${monthKey}&market=futures`)
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (!r.ok) throw new Error("API error")
+        return r.json()
+      })
       .then(pnl => {
-        if (pnl?.entries && Object.keys(pnl.entries).length > 0) {
-          setEntries(prev => {
-            const merged = { ...prev, ...pnl.entries }
-            onChange({ ...data, entries: merged })
-            return merged
-          })
+        if (pnl?.entries && typeof pnl.entries === "object") {
+          const pnlEntries = pnl.entries as Record<string, number>
+          if (Object.keys(pnlEntries).length > 0) {
+            setEntries(prev => {
+              const merged = { ...prev, ...pnlEntries }
+              // persist to block data (debounced by parent)
+              try { onChange({ ...data, entries: merged }) } catch {}
+              return merged
+            })
+          }
         }
       })
-      .catch(() => {})
+      .catch(() => setFetchError("MEXC nicht verbunden"))
       .finally(() => setLoading(false))
   }, [viewDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -276,14 +289,23 @@ function PnlCalendarBlock({
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
   const days = eachDayOfInterval({ start: calStart, end: calEnd })
 
-  const monthEntries = Object.entries(entries).filter(([k]) => isSameMonth(new Date(k), viewDate))
+  const monthEntries = Object.entries(entries).filter(([k]) => {
+    try { return isSameMonth(new Date(k), viewDate) } catch { return false }
+  })
   const monthTotal = monthEntries.reduce((s, [, v]) => s + v, 0)
   const wins = monthEntries.filter(([, v]) => v > 0).length
   const losses = monthEntries.filter(([, v]) => v < 0).length
   const tradeDays = monthEntries.filter(([, v]) => v !== 0).length
   const winRate = tradeDays > 0 ? Math.round((wins / tradeDays) * 100) : 0
-  const bestDay = monthEntries.length > 0 ? Math.max(...monthEntries.map(([, v]) => v)) : 0
-  const worstDay = monthEntries.length > 0 ? Math.min(...monthEntries.map(([, v]) => v)) : 0
+
+  // Recent 7 days
+  const now = new Date()
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now)
+    d.setDate(d.getDate() - i)
+    return format(d, "yyyy-MM-dd")
+  })
+  const recent7Total = last7.reduce((s, k) => s + (entries[k] ?? 0), 0)
 
   function startEdit(dayKey: string) {
     if (!canEdit) return
@@ -302,141 +324,181 @@ function PnlCalendarBlock({
       next[editingDay] = Math.round(num * 100) / 100
     }
     setEntries(next)
-    onChange({ ...data, entries: next })
+    try { onChange({ ...data, entries: next }) } catch {}
     setEditingDay(null)
   }
 
-  function fmtPnl(v: number): string {
-    const s = Math.abs(v).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    return (v >= 0 ? "+" : "−") + s + currency
+  function forceRefresh() {
+    const monthKey = format(viewDate, "yyyy-MM")
+    fetchedMonths.current.delete(monthKey)
+    setViewDate(new Date(viewDate.getTime()))
   }
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
+      {/* Title bar */}
       <div className="flex items-center justify-between border-b border-border/30 px-4 py-3">
         <div className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-emerald-400" />
-          <span className="text-sm font-semibold">Futures PnL</span>
-          {loading && <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />}
+          <span className="text-sm font-semibold">Futures PNL Analysis</span>
         </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => setViewDate(d => subMonths(d, 1))}
-            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button onClick={() => setViewDate(new Date())}
-            className="rounded-md px-2 py-0.5 text-sm font-medium text-foreground hover:bg-accent">
-            {format(viewDate, "MMMM yyyy", { locale: de })}
-          </button>
-          <button onClick={() => setViewDate(d => addMonths(d, 1))}
-            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-        <button onClick={() => { lastFetchRef.current = ""; setViewDate(new Date(viewDate)) }}
-          disabled={loading}
+        <button onClick={forceRefresh} disabled={loading}
           className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50">
           <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-px border-b border-border/30 bg-border/20">
-        <div className="flex flex-col items-center bg-card/60 px-3 py-2">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Gesamt</span>
-          <span className={cn("text-sm font-bold", monthTotal > 0 ? "text-emerald-400" : monthTotal < 0 ? "text-red-400" : "text-muted-foreground")}>
-            {fmtPnl(monthTotal)}
-          </span>
-        </div>
-        <div className="flex flex-col items-center bg-card/60 px-3 py-2">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Win Rate</span>
-          <span className="text-sm font-bold text-foreground">{winRate}%</span>
-        </div>
-        <div className="flex flex-col items-center bg-card/60 px-3 py-2">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Bester Tag</span>
-          <span className="text-sm font-bold text-emerald-400">{bestDay > 0 ? fmtPnl(bestDay) : "—"}</span>
-        </div>
-        <div className="flex flex-col items-center bg-card/60 px-3 py-2">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Schlechtester</span>
-          <span className="text-sm font-bold text-red-400">{worstDay < 0 ? fmtPnl(worstDay) : "—"}</span>
-        </div>
+      {/* Tabs: Daily PNL / Monthly PNL */}
+      <div className="flex border-b border-border/30">
+        <button onClick={() => setTab("daily")}
+          className={cn("flex-1 py-2 text-xs font-medium transition-colors",
+            tab === "daily" ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"
+          )}>Daily PNL</button>
+        <button onClick={() => setTab("monthly")}
+          className={cn("flex-1 py-2 text-xs font-medium transition-colors",
+            tab === "monthly" ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"
+          )}>Monthly PNL</button>
       </div>
 
-      <div className="p-3">
-        <div className="mb-1 grid grid-cols-7 gap-1">
-          {WEEKDAYS.map(wd => (
-            <div key={wd} className="py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-              {wd}
+      {/* 7-day summary */}
+      <div className="border-b border-border/30 px-4 py-2.5">
+        <span className="text-xs text-muted-foreground">Recent 7-Day PNL: </span>
+        <span className={cn("text-xs font-bold", recent7Total >= 0 ? "text-emerald-400" : "text-red-400")}>
+          {recent7Total >= 0 ? "+" : ""}{recent7Total.toFixed(2)} USDT
+        </span>
+      </div>
+
+      {fetchError && !loading && Object.keys(entries).length === 0 && (
+        <div className="px-4 py-3 text-center text-xs text-muted-foreground">{fetchError}</div>
+      )}
+
+      {tab === "daily" ? (
+        <>
+          {/* Month navigation */}
+          <div className="flex items-center justify-center gap-2 px-4 py-2">
+            <button onClick={() => setViewDate(d => subMonths(d, 1))}
+              className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-[120px] text-center text-sm font-medium">
+              {format(viewDate, "MMM yyyy", { locale: de })}
+            </span>
+            <button onClick={() => setViewDate(d => addMonths(d, 1))}
+              className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            {loading && <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />}
+          </div>
+
+          {/* Calendar grid */}
+          <div className="px-2 pb-3">
+            <div className="mb-0.5 grid grid-cols-7">
+              {WEEKDAYS_SHORT.map(wd => (
+                <div key={wd} className="py-1 text-center text-[10px] font-medium text-muted-foreground/50">
+                  {wd}
+                </div>
+              ))}
             </div>
-          ))}
+
+            <div className="grid grid-cols-7">
+              {days.map(day => {
+                const dayKey = format(day, "yyyy-MM-dd")
+                const inMonth = isSameMonth(day, viewDate)
+                const today = isToday(day)
+                const value = entries[dayKey]
+                const hasValue = value !== undefined && value !== 0
+                const isEditing = editingDay === dayKey
+
+                return (
+                  <div
+                    key={dayKey}
+                    onClick={() => inMonth && startEdit(dayKey)}
+                    className={cn(
+                      "flex min-h-[48px] flex-col items-center justify-center rounded-md py-1 transition-colors",
+                      !inMonth && "opacity-20",
+                      inMonth && canEdit && "cursor-pointer hover:bg-accent/30",
+                      today && "bg-primary/10",
+                      hasValue && value > 0 && "bg-emerald-500/8",
+                      hasValue && value < 0 && "bg-red-500/8",
+                    )}
+                  >
+                    <span className={cn(
+                      "text-xs font-medium",
+                      today ? "text-primary" : "text-muted-foreground",
+                    )}>
+                      {format(day, "d")}
+                    </span>
+                    {isEditing ? (
+                      <input
+                        ref={inputRef}
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onBlur={saveEdit}
+                        onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingDay(null) }}
+                        className="mt-0.5 w-14 rounded bg-background px-0.5 text-center text-[10px] font-medium outline-none ring-1 ring-primary/50"
+                        placeholder="0"
+                      />
+                    ) : hasValue ? (
+                      <span className={cn(
+                        "text-[10px] font-bold",
+                        value > 0 ? "text-emerald-400" : "text-red-400",
+                      )}>
+                        {value > 0 ? "+" : ""}{value.toFixed(2)}
+                      </span>
+                    ) : inMonth ? (
+                      <span className="text-[10px] text-muted-foreground/30">--</span>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      ) : (
+        /* Monthly PNL summary */
+        <div className="px-4 py-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border/30 bg-background/50 p-3 text-center">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Monats-PNL</p>
+              <p className={cn("mt-1 text-lg font-bold", monthTotal >= 0 ? "text-emerald-400" : "text-red-400")}>
+                {monthTotal >= 0 ? "+" : ""}{monthTotal.toFixed(2)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">USDT</p>
+            </div>
+            <div className="rounded-lg border border-border/30 bg-background/50 p-3 text-center">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Win Rate</p>
+              <p className="mt-1 text-lg font-bold text-foreground">{winRate}%</p>
+              <p className="text-[10px] text-muted-foreground">{wins}W / {losses}L</p>
+            </div>
+            <div className="rounded-lg border border-border/30 bg-background/50 p-3 text-center">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Handelstage</p>
+              <p className="mt-1 text-lg font-bold text-foreground">{tradeDays}</p>
+              <p className="text-[10px] text-muted-foreground">Tage mit Trades</p>
+            </div>
+            <div className="rounded-lg border border-border/30 bg-background/50 p-3 text-center">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Durchschnitt/Tag</p>
+              <p className={cn("mt-1 text-lg font-bold", tradeDays > 0 ? (monthTotal / tradeDays >= 0 ? "text-emerald-400" : "text-red-400") : "text-muted-foreground")}>
+                {tradeDays > 0 ? `${(monthTotal / tradeDays) >= 0 ? "+" : ""}${(monthTotal / tradeDays).toFixed(2)}` : "--"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">USDT</p>
+            </div>
+          </div>
         </div>
+      )}
 
-        <div className="grid grid-cols-7 gap-1">
-          {days.map(day => {
-            const dayKey = format(day, "yyyy-MM-dd")
-            const inMonth = isSameMonth(day, viewDate)
-            const today = isToday(day)
-            const value = entries[dayKey]
-            const hasValue = value !== undefined && value !== 0
-            const isEditing = editingDay === dayKey
-
-            return (
-              <div
-                key={dayKey}
-                onClick={() => inMonth && startEdit(dayKey)}
-                className={cn(
-                  "relative flex min-h-[52px] flex-col items-center rounded-lg border px-1 py-1 transition-colors",
-                  inMonth ? "border-border/30 bg-background/50" : "border-transparent bg-transparent opacity-30",
-                  inMonth && canEdit && "cursor-pointer hover:border-border/60 hover:bg-accent/30",
-                  today && "border-primary/50 bg-primary/5",
-                  hasValue && value > 0 && "border-emerald-500/30 bg-emerald-500/5",
-                  hasValue && value < 0 && "border-red-500/30 bg-red-500/5",
-                )}
-              >
-                <span className={cn(
-                  "text-[10px] font-medium leading-none",
-                  today ? "text-primary" : inMonth ? "text-muted-foreground" : "text-muted-foreground/40",
-                )}>
-                  {format(day, "d")}
-                </span>
-                {isEditing ? (
-                  <input
-                    ref={inputRef}
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onBlur={saveEdit}
-                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingDay(null) }}
-                    className="mt-0.5 w-full rounded bg-background px-0.5 text-center text-[11px] font-medium outline-none ring-1 ring-primary/50"
-                    placeholder="0"
-                  />
-                ) : hasValue ? (
-                  <span className={cn(
-                    "mt-0.5 text-[11px] font-semibold leading-tight",
-                    value > 0 ? "text-emerald-400" : "text-red-400",
-                  )}>
-                    {value > 0 ? "+" : "−"}{Math.abs(value).toLocaleString("de-DE", { maximumFractionDigits: 0 })}{currency}
-                  </span>
-                ) : inMonth && canEdit ? (
-                  <span className="mt-1 text-[10px] text-muted-foreground/20">+</span>
-                ) : null}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
+      {/* Footer */}
       <div className="flex items-center justify-between border-t border-border/30 px-4 py-2">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <TrendingUp className="h-3 w-3 text-emerald-400" />
-            {wins} Gewinn
+            {wins}W
           </span>
           <span className="flex items-center gap-1">
             <TrendingDown className="h-3 w-3 text-red-400" />
-            {losses} Verlust
+            {losses}L
           </span>
-          <span>{tradeDays} Tage</span>
         </div>
-        <span className="text-[10px] text-muted-foreground/50">MEXC Futures</span>
+        <span className="text-[10px] text-muted-foreground/50">MEXC Futures · Auto-Sync</span>
       </div>
     </div>
   )

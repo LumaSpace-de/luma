@@ -107,11 +107,20 @@ export async function getMexcFuturesPositions(apiKey: string, apiSecret: string)
   return futuresRequest("/api/v1/private/position/open_positions", apiKey, apiSecret)
 }
 
-export async function getMexcFuturesHistory(apiKey: string, apiSecret: string, symbol: string, pageNum = 1, pageSize = 100) {
+export async function getMexcFuturesHistoryPositions(apiKey: string, apiSecret: string, pageNum = 1, pageSize = 100) {
   const params: Record<string, string> = {
-    symbol,
     page_num: pageNum.toString(),
     page_size: pageSize.toString(),
   }
+  return futuresRequest("/api/v1/private/position/list/history_positions", apiKey, apiSecret, params)
+}
+
+export async function getMexcFuturesOrderDeals(apiKey: string, apiSecret: string, startTime?: number, endTime?: number, pageNum = 1) {
+  const params: Record<string, string> = {
+    page_num: pageNum.toString(),
+    page_size: "100",
+  }
+  if (startTime) params.start_time = startTime.toString()
+  if (endTime) params.end_time = endTime.toString()
   return futuresRequest("/api/v1/private/order/list/history_orders", apiKey, apiSecret, params)
 }

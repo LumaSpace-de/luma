@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
 import { getMexcKeys } from "@/lib/users-db"
-import { spotRequest, futuresRequest, MexcTrade } from "@/lib/mexc"
+import { futuresRequest, spotRequest, MexcTrade } from "@/lib/mexc"
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -12,12 +12,11 @@ export async function GET(req: NextRequest) {
   const keys = await getMexcKeys(session.user.id)
   if (!keys) return NextResponse.json({ error: "MEXC nicht verbunden" }, { status: 400 })
 
-  const symbol = req.nextUrl.searchParams.get("symbol") ?? "BTCUSDT"
   const month = req.nextUrl.searchParams.get("month")
-  const market = req.nextUrl.searchParams.get("market") ?? "spot"
+  const market = req.nextUrl.searchParams.get("market") ?? "futures"
 
-  let startTime: number | undefined
-  let endTime: number | undefined
+  let startTime: number
+  let endTime: number
 
   if (month) {
     const [y, m] = month.split("-").map(Number)
@@ -33,55 +32,96 @@ export async function GET(req: NextRequest) {
   let tradeCount = 0
 
   if (market === "futures") {
-    // Futures symbol format: BTC_USDT instead of BTCUSDT
-    const futSymbol = symbol.includes("_") ? symbol : symbol.replace("USDT", "_USDT")
-    const params: Record<string, string> = {
-      symbol: futSymbol,
-      page_num: "1",
-      page_size: "100",
-    }
-    if (startTime) params.start_time = Math.floor(startTime / 1000).toString()
-    if (endTime) params.end_time = Math.floor(endTime / 1000).toString()
+    // Try history positions first (closed positions with PnL)
+    let gotData = false
 
-    const result = await futuresRequest(
-      "/api/v1/private/order/list/history_orders",
-      keys.apiKey, keys.apiSecret, params
-    )
+    try {
+      const result = await futuresRequest(
+        "/api/v1/private/position/list/history_positions",
+        keys.apiKey, keys.apiSecret,
+        { page_num: "1", page_size: "200" }
+      )
 
-    if (result.ok) {
-      const raw = result.data as Record<string, unknown>
-      const orders = (Array.isArray(raw?.data) ? raw.data : []) as Record<string, unknown>[]
-      tradeCount = orders.length
+      if (result.ok) {
+        const raw = result.data as Record<string, unknown>
+        const positions = (Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : []) as Record<string, unknown>[]
 
-      for (const order of orders) {
-        const state = Number(order.state ?? 0)
-        if (state !== 3) continue
-        const ts = Number(order.createTime ?? order.create_time ?? 0)
-        const date = new Date(ts > 1e12 ? ts : ts * 1000).toISOString().split("T")[0]
-        const profit = Number(order.profit ?? order.realised ?? 0)
-        dailyPnl[date] = (dailyPnl[date] ?? 0) + profit
+        for (const pos of positions) {
+          const ts = Number(pos.updateTime ?? pos.update_time ?? pos.createTime ?? pos.create_time ?? 0)
+          if (ts === 0) continue
+          const msTs = ts > 1e12 ? ts : ts * 1000
+          if (msTs < startTime || msTs > endTime) continue
+
+          const profit = Number(pos.closeProfitLoss ?? pos.close_profit_loss ?? pos.realised ?? pos.profit ?? 0)
+          if (profit === 0) continue
+
+          const date = new Date(msTs).toISOString().split("T")[0]
+          dailyPnl[date] = (dailyPnl[date] ?? 0) + profit
+          tradeCount++
+        }
+
+        if (tradeCount > 0) gotData = true
       }
+    } catch {}
+
+    // Fallback: try history orders if positions didn't work
+    if (!gotData) {
+      try {
+        const startSec = Math.floor(startTime / 1000)
+        const endSec = Math.floor(endTime / 1000)
+
+        const result = await futuresRequest(
+          "/api/v1/private/order/list/history_orders",
+          keys.apiKey, keys.apiSecret,
+          { page_num: "1", page_size: "200", start_time: startSec.toString(), end_time: endSec.toString() }
+        )
+
+        if (result.ok) {
+          const raw = result.data as Record<string, unknown>
+          const orders = (Array.isArray(raw?.data) ? raw.data : []) as Record<string, unknown>[]
+
+          for (const order of orders) {
+            const state = Number(order.state ?? 0)
+            if (state !== 3) continue
+
+            const ts = Number(order.updateTime ?? order.update_time ?? order.createTime ?? order.create_time ?? 0)
+            if (ts === 0) continue
+            const msTs = ts > 1e12 ? ts : ts * 1000
+
+            const profit = Number(order.profit ?? order.realised ?? order.dealAvgPrice ?? 0)
+            if (profit === 0) continue
+
+            const date = new Date(msTs).toISOString().split("T")[0]
+            dailyPnl[date] = (dailyPnl[date] ?? 0) + profit
+            tradeCount++
+          }
+        }
+      } catch {}
     }
   } else {
+    // Spot trades
+    const symbol = req.nextUrl.searchParams.get("symbol") ?? "BTCUSDT"
     const params: Record<string, string> = { symbol, limit: "1000" }
-    if (startTime) params.startTime = startTime.toString()
-    if (endTime) params.endTime = endTime.toString()
+    params.startTime = startTime.toString()
+    params.endTime = endTime.toString()
 
-    const result = await spotRequest("/api/v3/myTrades", keys.apiKey, keys.apiSecret, params)
+    try {
+      const result = await spotRequest("/api/v3/myTrades", keys.apiKey, keys.apiSecret, params)
 
-    if (result.ok) {
-      const trades = result.data as MexcTrade[]
-      if (Array.isArray(trades)) {
-        tradeCount = trades.length
-        for (const trade of trades) {
-          const date = new Date(trade.time).toISOString().split("T")[0]
-          const quoteQty = parseFloat(trade.quoteQty)
-          const commission = parseFloat(trade.commission)
-          const pnl = trade.isBuyer ? -(quoteQty + commission) : quoteQty - commission
-          dailyPnl[date] = (dailyPnl[date] ?? 0) + pnl
+      if (result.ok) {
+        const trades = result.data as MexcTrade[]
+        if (Array.isArray(trades)) {
+          tradeCount = trades.length
+          for (const trade of trades) {
+            const date = new Date(trade.time).toISOString().split("T")[0]
+            const quoteQty = parseFloat(trade.quoteQty)
+            const commission = parseFloat(trade.commission)
+            const pnl = trade.isBuyer ? -(quoteQty + commission) : quoteQty - commission
+            dailyPnl[date] = (dailyPnl[date] ?? 0) + pnl
+          }
         }
       }
-    }
+    } catch {}
   }
 
   for (const key of Object.keys(dailyPnl)) {
@@ -91,7 +131,6 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     entries: dailyPnl,
     tradeCount,
-    symbol,
     market,
   })
 }
