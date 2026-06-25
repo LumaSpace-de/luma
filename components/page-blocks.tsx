@@ -4,20 +4,28 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import {
   AlertCircle,
+  BarChart3,
   CalendarDays,
+  Check,
   CheckSquare,
   ChevronLeft,
   ChevronRight,
   Code2,
   ExternalLink,
   FileText,
+  Globe,
   GripVertical,
   Heading1,
+  Image as ImageIcon,
+  Link2,
+  ListChecks,
   Minus,
   NotebookPen,
   Plus,
   Quote,
+  Square,
   Table2,
+  Target,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -25,6 +33,7 @@ import {
   RefreshCw,
   ArrowUpRight,
   ArrowDownRight,
+  X,
 } from "lucide-react"
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -104,6 +113,42 @@ const BLOCK_TYPES: {
     label: "Tagesnotizen",
     description: "Tägliche Notizen & Trading-Journal",
     icon: <NotebookPen className="h-4 w-4 text-violet-400" />,
+  },
+  {
+    type: "checklist",
+    label: "Checkliste",
+    description: "Einfache Checkbox-Liste",
+    icon: <ListChecks className="h-4 w-4 text-sky-400" />,
+  },
+  {
+    type: "embed",
+    label: "Embed",
+    description: "TradingView, YouTube & mehr einbetten",
+    icon: <Globe className="h-4 w-4 text-indigo-400" />,
+  },
+  {
+    type: "image",
+    label: "Bild",
+    description: "Bild per URL einbetten",
+    icon: <ImageIcon className="h-4 w-4 text-pink-400" />,
+  },
+  {
+    type: "progress",
+    label: "Fortschritt",
+    description: "Fortschrittsbalken mit Ziel",
+    icon: <Target className="h-4 w-4 text-rose-400" />,
+  },
+  {
+    type: "bookmark",
+    label: "Bookmark",
+    description: "Link mit Titel & Beschreibung",
+    icon: <Link2 className="h-4 w-4 text-teal-400" />,
+  },
+  {
+    type: "habit_tracker",
+    label: "Habit Tracker",
+    description: "Tägliche Gewohnheiten tracken",
+    icon: <BarChart3 className="h-4 w-4 text-lime-400" />,
   },
   {
     type: "divider",
@@ -838,6 +883,497 @@ function DailyNotesBlock({
   )
 }
 
+
+// ── Checklist block ───────────────────────────────────────────────────────
+
+interface CheckItem { id: string; text: string; done: boolean }
+
+function ChecklistBlock({
+  data, canEdit, onChange,
+}: {
+  data: Record<string, unknown>
+  canEdit: boolean
+  onChange: (d: Record<string, unknown>) => void
+}) {
+  const items = (data.items as CheckItem[]) ?? []
+  const title = (data.title as string) ?? ""
+
+  function update(newItems: CheckItem[]) {
+    onChange({ ...data, items: newItems })
+  }
+
+  function addItem() {
+    update([...items, { id: crypto.randomUUID(), text: "", done: false }])
+  }
+
+  function toggleItem(id: string) {
+    update(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
+  }
+
+  function updateText(id: string, text: string) {
+    update(items.map(i => i.id === id ? { ...i, text } : i))
+  }
+
+  function removeItem(id: string) {
+    update(items.filter(i => i.id !== id))
+  }
+
+  const doneCount = items.filter(i => i.done).length
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
+      <div className="flex items-center justify-between border-b border-border/30 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <ListChecks className="h-4 w-4 text-sky-400" />
+          {canEdit ? (
+            <input value={title} onChange={e => onChange({ ...data, title: e.target.value })}
+              placeholder="Checkliste" className="bg-transparent text-sm font-semibold outline-none placeholder:text-muted-foreground/40" />
+          ) : (
+            <span className="text-sm font-semibold">{title || "Checkliste"}</span>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">{doneCount}/{items.length}</span>
+      </div>
+
+      <div className="divide-y divide-border/20">
+        {items.map(item => (
+          <div key={item.id} className="flex items-center gap-2 px-4 py-2">
+            <button onClick={() => toggleItem(item.id)}
+              className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
+                item.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-border/60 hover:border-primary/60"
+              )}>
+              {item.done && <Check className="h-3 w-3" />}
+            </button>
+            <input
+              disabled={!canEdit}
+              value={item.text}
+              onChange={e => updateText(item.id, e.target.value)}
+              placeholder="Neuer Punkt…"
+              className={cn("flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/30 disabled:cursor-default",
+                item.done && "text-muted-foreground line-through"
+              )}
+            />
+            {canEdit && (
+              <button onClick={() => removeItem(item.id)} className="text-muted-foreground/30 hover:text-destructive">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {canEdit && (
+        <button onClick={addItem}
+          className="flex w-full items-center gap-2 border-t border-border/30 px-4 py-2.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+          <Plus className="h-3.5 w-3.5" /> Punkt hinzufügen
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── Embed block ───────────────────────────────────────────────────────────
+
+function EmbedBlock({
+  data, canEdit, onChange,
+}: {
+  data: Record<string, unknown>
+  canEdit: boolean
+  onChange: (d: Record<string, unknown>) => void
+}) {
+  const url = (data.url as string) ?? ""
+  const height = (data.height as number) ?? 400
+
+  function getEmbedUrl(rawUrl: string): string {
+    try {
+      const u = new URL(rawUrl)
+      if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) {
+        return `https://www.youtube.com/embed/${u.searchParams.get("v")}`
+      }
+      if (u.hostname === "youtu.be") {
+        return `https://www.youtube.com/embed${u.pathname}`
+      }
+    } catch {}
+    return rawUrl
+  }
+
+  if (!url && canEdit) {
+    return (
+      <div className="rounded-xl border border-dashed border-border/60 p-6 text-center">
+        <Globe className="mx-auto mb-2 h-8 w-8 text-muted-foreground/30" />
+        <input
+          placeholder="URL eingeben (YouTube, TradingView, …)"
+          className="w-full rounded-lg border border-border/40 bg-background px-3 py-2 text-sm outline-none focus:border-primary/40"
+          onKeyDown={e => { if (e.key === "Enter") onChange({ ...data, url: (e.target as HTMLInputElement).value }) }}
+          onBlur={e => { if (e.target.value) onChange({ ...data, url: e.target.value }) }}
+        />
+      </div>
+    )
+  }
+
+  if (!url) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+        <Globe className="h-4 w-4" /> Kein Embed konfiguriert
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50">
+      {canEdit && (
+        <div className="flex items-center gap-2 border-b border-border/30 bg-muted/30 px-3 py-1.5">
+          <Globe className="h-3 w-3 text-muted-foreground" />
+          <input value={url} onChange={e => onChange({ ...data, url: e.target.value })}
+            className="flex-1 bg-transparent text-xs text-muted-foreground outline-none" />
+          <input type="number" value={height} onChange={e => onChange({ ...data, height: Number(e.target.value) })}
+            className="w-16 rounded border border-border/40 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground outline-none" min={100} max={800} step={50} />
+        </div>
+      )}
+      <iframe src={getEmbedUrl(url)} width="100%" height={height}
+        className="border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen loading="lazy" referrerPolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups" />
+    </div>
+  )
+}
+
+// ── Image block ───────────────────────────────────────────────────────────
+
+function ImageBlock({
+  data, canEdit, onChange,
+}: {
+  data: Record<string, unknown>
+  canEdit: boolean
+  onChange: (d: Record<string, unknown>) => void
+}) {
+  const url = (data.url as string) ?? ""
+  const caption = (data.caption as string) ?? ""
+
+  if (!url && canEdit) {
+    return (
+      <div className="rounded-xl border border-dashed border-border/60 p-6 text-center">
+        <ImageIcon className="mx-auto mb-2 h-8 w-8 text-muted-foreground/30" />
+        <input
+          placeholder="Bild-URL eingeben…"
+          className="w-full rounded-lg border border-border/40 bg-background px-3 py-2 text-sm outline-none focus:border-primary/40"
+          onKeyDown={e => { if (e.key === "Enter") onChange({ ...data, url: (e.target as HTMLInputElement).value }) }}
+          onBlur={e => { if (e.target.value) onChange({ ...data, url: e.target.value }) }}
+        />
+      </div>
+    )
+  }
+
+  if (!url) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+        <ImageIcon className="h-4 w-4" /> Kein Bild
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50">
+      <img src={url} alt={caption || "Bild"} className="w-full object-cover" loading="lazy" />
+      {(caption || canEdit) && (
+        <div className="border-t border-border/30 px-4 py-2">
+          {canEdit ? (
+            <input value={caption} onChange={e => onChange({ ...data, caption: e.target.value })}
+              placeholder="Bildunterschrift…" className="w-full bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/30" />
+          ) : caption ? (
+            <p className="text-xs text-muted-foreground">{caption}</p>
+          ) : null}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Progress block ────────────────────────────────────────────────────────
+
+function ProgressBlock({
+  data, canEdit, onChange,
+}: {
+  data: Record<string, unknown>
+  canEdit: boolean
+  onChange: (d: Record<string, unknown>) => void
+}) {
+  const label = (data.label as string) ?? ""
+  const current = (data.current as number) ?? 0
+  const goal = (data.goal as number) ?? 100
+  const unit = (data.unit as string) ?? ""
+  const color = (data.color as string) ?? "primary"
+  const pct = goal > 0 ? Math.min(Math.round((current / goal) * 100), 100) : 0
+
+  const colorClass: Record<string, string> = {
+    primary: "bg-primary",
+    emerald: "bg-emerald-500",
+    red: "bg-red-500",
+    amber: "bg-amber-500",
+    violet: "bg-violet-500",
+    sky: "bg-sky-500",
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60 px-4 py-4">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Target className="h-4 w-4 text-rose-400" />
+          {canEdit ? (
+            <input value={label} onChange={e => onChange({ ...data, label: e.target.value })}
+              placeholder="Ziel-Name" className="bg-transparent text-sm font-semibold outline-none placeholder:text-muted-foreground/40" />
+          ) : (
+            <span className="text-sm font-semibold">{label || "Fortschritt"}</span>
+          )}
+        </div>
+        <span className="text-sm font-bold text-foreground">{pct}%</span>
+      </div>
+
+      <div className="mb-2 h-3 w-full overflow-hidden rounded-full bg-muted">
+        <div className={cn("h-full rounded-full transition-all", colorClass[color] ?? "bg-primary")}
+          style={{ width: `${pct}%` }} />
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        {canEdit ? (
+          <>
+            <div className="flex items-center gap-1">
+              <input type="number" value={current} onChange={e => onChange({ ...data, current: Number(e.target.value) })}
+                className="w-16 rounded border border-border/40 bg-background px-1.5 py-0.5 text-xs outline-none" />
+              <span>/</span>
+              <input type="number" value={goal} onChange={e => onChange({ ...data, goal: Number(e.target.value) })}
+                className="w-16 rounded border border-border/40 bg-background px-1.5 py-0.5 text-xs outline-none" />
+              <input value={unit} onChange={e => onChange({ ...data, unit: e.target.value })}
+                placeholder="Einheit" className="w-16 bg-transparent text-xs outline-none placeholder:text-muted-foreground/30" />
+            </div>
+            <select value={color} onChange={e => onChange({ ...data, color: e.target.value })}
+              className="rounded border border-border/40 bg-background px-1 py-0.5 text-[10px] text-muted-foreground">
+              <option value="primary">Blau</option>
+              <option value="emerald">Grün</option>
+              <option value="red">Rot</option>
+              <option value="amber">Gelb</option>
+              <option value="violet">Lila</option>
+              <option value="sky">Hellblau</option>
+            </select>
+          </>
+        ) : (
+          <span>{current}{unit ? ` ${unit}` : ""} / {goal}{unit ? ` ${unit}` : ""}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Bookmark block ────────────────────────────────────────────────────────
+
+function BookmarkBlock({
+  data, canEdit, onChange,
+}: {
+  data: Record<string, unknown>
+  canEdit: boolean
+  onChange: (d: Record<string, unknown>) => void
+}) {
+  const url = (data.url as string) ?? ""
+  const title = (data.title as string) ?? ""
+  const description = (data.description as string) ?? ""
+
+  function getDomain(rawUrl: string): string {
+    try { return new URL(rawUrl).hostname } catch { return "" }
+  }
+
+  if (!url && canEdit) {
+    return (
+      <div className="rounded-xl border border-dashed border-border/60 p-4">
+        <input placeholder="Link-URL eingeben…"
+          className="w-full rounded-lg border border-border/40 bg-background px-3 py-2 text-sm outline-none focus:border-primary/40"
+          onKeyDown={e => { if (e.key === "Enter") onChange({ ...data, url: (e.target as HTMLInputElement).value }) }}
+          onBlur={e => { if (e.target.value) onChange({ ...data, url: e.target.value }) }} />
+      </div>
+    )
+  }
+
+  if (!url) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+        <Link2 className="h-4 w-4" /> Kein Bookmark
+      </div>
+    )
+  }
+
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      className="group flex items-start gap-4 rounded-xl border border-border/50 bg-card/60 p-4 transition-colors hover:bg-accent/30">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+        <Link2 className="h-5 w-5 text-muted-foreground" />
+      </div>
+      <div className="min-w-0 flex-1">
+        {canEdit ? (
+          <>
+            <input value={title} onChange={e => { e.preventDefault(); e.stopPropagation(); onChange({ ...data, title: e.target.value }) }}
+              onClick={e => e.preventDefault()} placeholder="Titel"
+              className="w-full bg-transparent text-sm font-semibold outline-none placeholder:text-muted-foreground/40" />
+            <input value={description} onChange={e => { e.preventDefault(); e.stopPropagation(); onChange({ ...data, description: e.target.value }) }}
+              onClick={e => e.preventDefault()} placeholder="Beschreibung"
+              className="mt-0.5 w-full bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/30" />
+          </>
+        ) : (
+          <>
+            <p className="truncate text-sm font-semibold">{title || url}</p>
+            {description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{description}</p>}
+          </>
+        )}
+        <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground/50">
+          <Globe className="h-3 w-3" /> {getDomain(url)}
+          <ExternalLink className="ml-auto h-3 w-3 opacity-0 group-hover:opacity-100" />
+        </p>
+      </div>
+    </a>
+  )
+}
+
+// ── Habit Tracker block ───────────────────────────────────────────────────
+
+function HabitTrackerBlock({
+  data, canEdit, onChange,
+}: {
+  data: Record<string, unknown>
+  canEdit: boolean
+  onChange: (d: Record<string, unknown>) => void
+}) {
+  const habits = (data.habits as string[]) ?? []
+  const checks = (data.checks as Record<string, string[]>) ?? {}
+  const [viewDate, setViewDate] = useState(() => new Date())
+
+  const monthStart = startOfMonth(viewDate)
+  const monthEnd = endOfMonth(viewDate)
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd })
+
+  function toggleHabit(dayKey: string, habit: string) {
+    const dayChecks = checks[dayKey] ?? []
+    const next = dayChecks.includes(habit)
+      ? dayChecks.filter(h => h !== habit)
+      : [...dayChecks, habit]
+    onChange({ ...data, checks: { ...checks, [dayKey]: next } })
+  }
+
+  function addHabit() {
+    onChange({ ...data, habits: [...habits, ""] })
+  }
+
+  function updateHabit(index: number, text: string) {
+    const next = [...habits]
+    next[index] = text
+    onChange({ ...data, habits: next })
+  }
+
+  function removeHabit(index: number) {
+    onChange({ ...data, habits: habits.filter((_, i) => i !== index) })
+  }
+
+  // Streak calculation for a habit
+  function getStreak(habit: string): number {
+    let streak = 0
+    const today = new Date()
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      const key = format(d, "yyyy-MM-dd")
+      if ((checks[key] ?? []).includes(habit)) streak++
+      else break
+    }
+    return streak
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
+      <div className="flex items-center justify-between border-b border-border/30 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-lime-400" />
+          <span className="text-sm font-semibold">Habit Tracker</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setViewDate(d => subMonths(d, 1))}
+            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="min-w-[100px] text-center text-xs font-medium">
+            {format(viewDate, "MMMM yyyy", { locale: de })}
+          </span>
+          <button onClick={() => setViewDate(d => addMonths(d, 1))}
+            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {habits.length === 0 ? (
+        <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+          {canEdit ? "Füge eine Gewohnheit hinzu" : "Keine Gewohnheiten"}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border/20">
+                <th className="sticky left-0 z-10 bg-card/90 px-3 py-2 text-left text-[10px] font-medium text-muted-foreground/60">Habit</th>
+                {daysInMonth.map(day => (
+                  <th key={day.getTime()} className={cn("px-0.5 py-2 text-center text-[9px] font-medium",
+                    isToday(day) ? "text-primary" : "text-muted-foreground/40"
+                  )}>{format(day, "d")}</th>
+                ))}
+                <th className="px-3 py-2 text-right text-[10px] font-medium text-muted-foreground/60">Streak</th>
+              </tr>
+            </thead>
+            <tbody>
+              {habits.map((habit, hi) => (
+                <tr key={hi} className="border-b border-border/10">
+                  <td className="sticky left-0 z-10 bg-card/90 px-3 py-1.5">
+                    {canEdit ? (
+                      <div className="flex items-center gap-1">
+                        <input value={habit} onChange={e => updateHabit(hi, e.target.value)}
+                          placeholder="Gewohnheit…" className="w-24 bg-transparent text-xs outline-none placeholder:text-muted-foreground/30" />
+                        <button onClick={() => removeHabit(hi)} className="text-muted-foreground/20 hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs">{habit}</span>
+                    )}
+                  </td>
+                  {daysInMonth.map(day => {
+                    const dayKey = format(day, "yyyy-MM-dd")
+                    const checked = (checks[dayKey] ?? []).includes(habit)
+                    return (
+                      <td key={day.getTime()} className="px-0.5 py-1.5 text-center">
+                        <button onClick={() => toggleHabit(dayKey, habit)}
+                          className={cn("inline-flex h-4 w-4 items-center justify-center rounded-sm transition-colors",
+                            checked ? "bg-lime-500 text-white" : "bg-muted/50 hover:bg-muted"
+                          )}>
+                          {checked && <Check className="h-2.5 w-2.5" />}
+                        </button>
+                      </td>
+                    )
+                  })}
+                  <td className="px-3 py-1.5 text-right">
+                    <span className="text-xs font-bold text-lime-400">{getStreak(habit)}d</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {canEdit && (
+        <button onClick={addHabit}
+          className="flex w-full items-center gap-2 border-t border-border/30 px-4 py-2.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+          <Plus className="h-3.5 w-3.5" /> Gewohnheit hinzufügen
+        </button>
+      )}
+    </div>
+  )
+}
+
+
 function PageLinkBlock({
   data, canEdit, onChange, workspaceId,
 }: {
@@ -1035,6 +1571,62 @@ function PageLinkBlock({
                 </p>
               )
             }
+            if (block.type === "checklist") {
+              const items = (block.data.items as { text: string; done: boolean }[]) ?? []
+              const done = items.filter(it => it.done).length
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <ListChecks className="h-3 w-3 shrink-0" />
+                  <span>Checkliste {items.length > 0 ? `${done}/${items.length}` : ""}</span>
+                </p>
+              )
+            }
+            if (block.type === "embed") {
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <Globe className="h-3 w-3 shrink-0" />
+                  <span>Embed</span>
+                </p>
+              )
+            }
+            if (block.type === "image") {
+              const caption = (block.data.caption as string) ?? ""
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <ImageIcon className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{caption || "Bild"}</span>
+                </p>
+              )
+            }
+            if (block.type === "progress") {
+              const label = (block.data.label as string) ?? "Fortschritt"
+              const current = (block.data.current as number) ?? 0
+              const goal = (block.data.goal as number) ?? 100
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <BarChart3 className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{label} {goal > 0 ? `${Math.round((current / goal) * 100)}%` : ""}</span>
+                </p>
+              )
+            }
+            if (block.type === "bookmark") {
+              const title = (block.data.title as string) ?? (block.data.url as string) ?? ""
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <Link2 className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{title || "Lesezeichen"}</span>
+                </p>
+              )
+            }
+            if (block.type === "habit_tracker") {
+              const habits = (block.data.habits as string[]) ?? []
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <Target className="h-3 w-3 shrink-0" />
+                  <span>{habits.length} Gewohnheiten</span>
+                </p>
+              )
+            }
             if (block.type === "divider") return null
             return null
           })}
@@ -1126,6 +1718,12 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
       : type === "pnl_calendar" ? { entries: {}, currency: "€" }
       : type === "mexc_portfolio" ? {}
       : type === "daily_notes" ? { notes: {} }
+      : type === "checklist" ? { items: [], title: "" }
+      : type === "embed" ? { url: "", height: 400 }
+      : type === "image" ? { url: "", caption: "" }
+      : type === "progress" ? { label: "", current: 0, goal: 100, unit: "", color: "primary" }
+      : type === "bookmark" ? { url: "", title: "", description: "" }
+      : type === "habit_tracker" ? { habits: [], checks: {} }
       : {}
 
     const optimistic: PageBlock = { id: crypto.randomUUID(), pageId, type, data: defaultData, position }
@@ -1249,6 +1847,24 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
               )}
               {block.type === "daily_notes" && (
                 <DailyNotesBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
+              )}
+              {block.type === "checklist" && (
+                <ChecklistBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
+              )}
+              {block.type === "embed" && (
+                <EmbedBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
+              )}
+              {block.type === "image" && (
+                <ImageBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
+              )}
+              {block.type === "progress" && (
+                <ProgressBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
+              )}
+              {block.type === "bookmark" && (
+                <BookmarkBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
+              )}
+              {block.type === "habit_tracker" && (
+                <HabitTrackerBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
               )}
             </BlockWrapper>
           ))}
