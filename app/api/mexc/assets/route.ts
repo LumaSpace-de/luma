@@ -62,10 +62,9 @@ export async function GET() {
   // --- Futures ---
   let futuresBalances: { currency: string; available: number; frozen: number; equity: number }[] = []
   let futuresTotal = 0
-  let positions: { symbol: string; side: string; size: number; entryPrice: number; pnl: number; leverage: number; liqPrice: number }[] = []
+  let positions: { symbol: string; side: string; size: number; entryPrice: number; pnl: number; unrealisedPnl: number; leverage: number; liqPrice: number }[] = []
   let futuresDebug = { ok: futuresResult.ok, status: futuresResult.status, posOk: positionsResult.ok, posStatus: positionsResult.status }
 
-  // Futures API wraps response in { success, code, data }
   if (futuresResult.ok) {
     const raw = futuresResult.data as Record<string, unknown>
     const fAssets = (raw?.data ?? raw) as Record<string, unknown>[] | Record<string, unknown>
@@ -104,6 +103,7 @@ export async function GET() {
         size: Number(p.holdVol ?? p.hold_vol ?? 0),
         entryPrice: Number(p.holdAvgPrice ?? p.hold_avg_price ?? p.openAvgPrice ?? p.open_avg_price ?? 0),
         pnl: Number(p.realised ?? 0),
+        unrealisedPnl: Number(p.unrealised ?? p.unRealised ?? p.unrealised_pnl ?? 0),
         leverage: Number(p.leverage ?? 1),
         liqPrice: Number(p.liquidatePrice ?? p.liquidate_price ?? 0),
       }))

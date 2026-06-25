@@ -14,6 +14,7 @@ import {
   GripVertical,
   Heading1,
   Minus,
+  NotebookPen,
   Plus,
   Quote,
   Table2,
@@ -97,6 +98,12 @@ const BLOCK_TYPES: {
     label: "MEXC Portfolio",
     description: "Live Kontostände von MEXC Exchange",
     icon: <Wallet className="h-4 w-4 text-amber-400" />,
+  },
+  {
+    type: "daily_notes",
+    label: "Tagesnotizen",
+    description: "Tägliche Notizen & Trading-Journal",
+    icon: <NotebookPen className="h-4 w-4 text-violet-400" />,
   },
   {
     type: "divider",
@@ -527,6 +534,7 @@ interface MexcFuturesPos {
   size: number
   entryPrice: number
   pnl: number
+  unrealisedPnl: number
   leverage: number
   liqPrice: number
 }
@@ -656,8 +664,14 @@ function MexcPortfolioBlock() {
           {/* Open positions */}
           {positions.length > 0 ? (
             <div className="divide-y divide-border/20">
-              <div className="px-4 py-2">
+              <div className="flex items-center justify-between px-4 py-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Offene Positionen</p>
+                <p className={cn("text-xs font-bold",
+                  positions.reduce((s, p) => s + p.unrealisedPnl, 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                )}>
+                  Unrealised: {positions.reduce((s, p) => s + p.unrealisedPnl, 0) >= 0 ? "+" : ""}
+                  {positions.reduce((s, p) => s + p.unrealisedPnl, 0).toLocaleString("de-DE", { minimumFractionDigits: 2 })} USDT
+                </p>
               </div>
               {positions.map((p, i) => (
                 <div key={i} className="flex items-center justify-between px-4 py-2.5">
@@ -675,14 +689,23 @@ function MexcPortfolioBlock() {
                   </div>
                   <div className="text-right">
                     <div className="flex items-center gap-1">
-                      {p.pnl >= 0 ? <ArrowUpRight className="h-3 w-3 text-emerald-400" /> : <ArrowDownRight className="h-3 w-3 text-red-400" />}
-                      <span className={cn("text-sm font-semibold", p.pnl >= 0 ? "text-emerald-400" : "text-red-400")}>
-                        {p.pnl >= 0 ? "+" : ""}{p.pnl.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
+                      {p.unrealisedPnl >= 0
+                        ? <ArrowUpRight className="h-3 w-3 text-emerald-400" />
+                        : <ArrowDownRight className="h-3 w-3 text-red-400" />
+                      }
+                      <span className={cn("text-sm font-semibold", p.unrealisedPnl >= 0 ? "text-emerald-400" : "text-red-400")}>
+                        {p.unrealisedPnl >= 0 ? "+" : ""}{p.unrealisedPnl.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">
-                      Size: {p.size} · Entry: {p.entryPrice.toLocaleString("de-DE")}
-                    </span>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <span>Size: {p.size}</span>
+                      <span>Entry: {p.entryPrice.toLocaleString("de-DE")}</span>
+                    </div>
+                    {p.pnl !== 0 && (
+                      <span className="text-[10px] text-muted-foreground/60">
+                        Realised: {p.pnl >= 0 ? "+" : ""}{p.pnl.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -694,6 +717,123 @@ function MexcPortfolioBlock() {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Daily Notes block ─────────────────────────────────────────────────────
+
+function DailyNotesBlock({
+  data, canEdit, onChange,
+}: {
+  data: Record<string, unknown>
+  canEdit: boolean
+  onChange: (d: Record<string, unknown>) => void
+}) {
+  const notes = (data.notes as Record<string, string>) ?? {}
+  const [viewDate, setViewDate] = useState(() => new Date())
+  const [selectedDay, setSelectedDay] = useState(() => format(new Date(), "yyyy-MM-dd"))
+  const currentNote = notes[selectedDay] ?? ""
+
+  const monthStart = startOfMonth(viewDate)
+  const monthEnd = endOfMonth(viewDate)
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+  const days = eachDayOfInterval({ start: calStart, end: calEnd })
+
+  function saveNote(text: string) {
+    const next = { ...notes }
+    if (text.trim() === "") {
+      delete next[selectedDay]
+    } else {
+      next[selectedDay] = text
+    }
+    onChange({ ...data, notes: next })
+  }
+
+  const noteDays = Object.keys(notes).filter(k => notes[k]?.trim())
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border/30 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <NotebookPen className="h-4 w-4 text-violet-400" />
+          <span className="text-sm font-semibold">Tagesnotizen</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setViewDate(d => subMonths(d, 1))}
+            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button onClick={() => { setViewDate(new Date()); setSelectedDay(format(new Date(), "yyyy-MM-dd")) }}
+            className="rounded-md px-2 py-0.5 text-sm font-medium text-foreground hover:bg-accent">
+            {format(viewDate, "MMM yyyy", { locale: de })}
+          </button>
+          <button onClick={() => setViewDate(d => addMonths(d, 1))}
+            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        <span className="text-[10px] text-muted-foreground">{noteDays.length} Einträge</span>
+      </div>
+
+      {/* Mini calendar */}
+      <div className="border-b border-border/30 px-3 py-2">
+        <div className="mb-0.5 grid grid-cols-7">
+          {["Mo","Di","Mi","Do","Fr","Sa","So"].map(wd => (
+            <div key={wd} className="py-0.5 text-center text-[9px] font-medium text-muted-foreground/40">{wd}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-0.5">
+          {days.map(day => {
+            const dayKey = format(day, "yyyy-MM-dd")
+            const inMonth = isSameMonth(day, viewDate)
+            const today = isToday(day)
+            const selected = dayKey === selectedDay
+            const hasNote = !!notes[dayKey]?.trim()
+
+            return (
+              <button
+                key={dayKey}
+                onClick={() => setSelectedDay(dayKey)}
+                className={cn(
+                  "relative flex h-7 items-center justify-center rounded text-xs transition-colors",
+                  !inMonth && "opacity-20",
+                  selected && "bg-primary text-primary-foreground",
+                  !selected && today && "bg-primary/10 text-primary",
+                  !selected && !today && inMonth && "text-muted-foreground hover:bg-accent",
+                )}
+              >
+                {format(day, "d")}
+                {hasNote && !selected && (
+                  <span className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-violet-400" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Note editor */}
+      <div className="p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-semibold text-foreground">
+            {format(new Date(selectedDay + "T00:00:00"), "EEEE, d. MMMM yyyy", { locale: de })}
+          </span>
+          {isToday(new Date(selectedDay + "T00:00:00")) && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">Heute</span>
+          )}
+        </div>
+        <textarea
+          disabled={!canEdit}
+          value={currentNote}
+          onChange={e => saveNote(e.target.value)}
+          placeholder={canEdit ? "Was hast du heute gemacht? Trades, Gedanken, Learnings…" : "Keine Notiz"}
+          rows={5}
+          className="w-full resize-none rounded-lg border border-border/30 bg-background/50 p-3 text-sm leading-relaxed outline-none placeholder:text-muted-foreground/30 focus:border-primary/40 disabled:cursor-default"
+        />
+      </div>
     </div>
   )
 }
@@ -886,6 +1026,15 @@ function PageLinkBlock({
                 </p>
               )
             }
+            if (block.type === "daily_notes") {
+              const noteCount = Object.values((block.data.notes as Record<string, string>) ?? {}).filter(v => v?.trim()).length
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <NotebookPen className="h-3 w-3 shrink-0" />
+                  <span>{noteCount} Notizen</span>
+                </p>
+              )
+            }
             if (block.type === "divider") return null
             return null
           })}
@@ -976,6 +1125,7 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
       : type === "page_link" ? { pageId: "" }
       : type === "pnl_calendar" ? { entries: {}, currency: "€" }
       : type === "mexc_portfolio" ? {}
+      : type === "daily_notes" ? { notes: {} }
       : {}
 
     const optimistic: PageBlock = { id: crypto.randomUUID(), pageId, type, data: defaultData, position }
@@ -1096,6 +1246,9 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
               )}
               {block.type === "mexc_portfolio" && (
                 <MexcPortfolioBlock />
+              )}
+              {block.type === "daily_notes" && (
+                <DailyNotesBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
               )}
             </BlockWrapper>
           ))}
