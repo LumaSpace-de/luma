@@ -7,23 +7,23 @@ import { cn } from "@/lib/utils"
 const FAQS = [
   {
     q: "Ist LumaSpace wirklich kostenlos?",
-    a: "Ja – der Free Plan ist dauerhaft kostenlos, kein Kreditkarte erforderlich. Du bekommst Kalender, Seiten-Editor, Workspaces und alles andere ohne versteckte Kosten.",
+    a: "Ja – der Free Plan ist dauerhaft kostenlos, keine Kreditkarte erforderlich. Du bekommst Kalender, Seiten-Editor mit 17+ Block-Typen, MEXC Trading-Integration, Workspaces und alles andere ohne versteckte Kosten.",
   },
   {
     q: "Was ist der Unterschied zwischen Free und Enterprise?",
-    a: "Der Free Plan deckt alles für Einzelpersonen und kleine Teams ab. Enterprise richtet sich an Unternehmen mit SSO, eigener Domain, dediziertem Support und erweiterter Rollenverwaltung – auf Anfrage.",
+    a: "Der Free Plan deckt alles für Einzelpersonen und kleine Teams ab – inklusive Trading-Tools. Enterprise richtet sich an Unternehmen mit SSO (SAML/OpenID), eigener Domain, Slack-Integration, dediziertem Support und erweiterter Rollenverwaltung.",
+  },
+  {
+    q: "Wie funktioniert die MEXC-Integration?",
+    a: "Verbinde deine MEXC API-Keys in den Einstellungen (nur Leserechte nötig). Danach stehen dir Portfolio-Block, PnL Kalender und Trade Logs als Blöcke auf jeder Seite zur Verfügung – alles wird automatisch synchronisiert.",
   },
   {
     q: "Kann ich mehrere Workspaces erstellen?",
-    a: "Im Free Plan kannst du Workspaces erstellen und Mitglieder einladen. Enterprise-Kunden erhalten unbegrenzte Workspaces mit zusätzlichen Admin-Funktionen.",
-  },
-  {
-    q: "Wie lade ich Teammitglieder ein?",
-    a: "In deinem Workspace kannst du Mitglieder per E-Mail-Adresse oder @Benutzername einladen. Du vergibst dabei Rollen: Betrachter, Mitglied, Admin oder Eigentümer.",
+    a: "Im Free Plan kannst du Workspaces erstellen und Mitglieder einladen. Enterprise-Kunden erhalten unbegrenzte Workspaces mit SSO, eigener Domain und zusätzlichen Admin-Funktionen.",
   },
   {
     q: "Werden meine Daten sicher gespeichert?",
-    a: "Alle Daten werden verschlüsselt in einer Supabase-Datenbank (PostgreSQL) in der EU gespeichert. Wir geben keine Daten an Dritte weiter.",
+    a: "Alle Daten werden verschlüsselt in einer Supabase-Datenbank (PostgreSQL) in der EU gespeichert. MEXC API-Keys werden serverseitig verschlüsselt – wir haben nie Zugriff auf dein Exchange-Guthaben.",
   },
   {
     q: "Wie bekomme ich Enterprise-Zugang?",
