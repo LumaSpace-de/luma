@@ -1,6 +1,35 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Bell, Check, Clock, Copy, FileText, GripVertical, LayoutGrid, Link as LinkIcon, Mail, MapPin, Plus, Repeat, Search, Smartphone, Sparkles, UserCircle, Building2, Camera } from "lucide-react"
+import {
+  ArrowRight,
+  BarChart3,
+  Bell,
+  Building2,
+  Camera,
+  Check,
+  Clock,
+  Copy,
+  FileText,
+  Globe,
+  GripVertical,
+  Heading1,
+  LayoutGrid,
+  Link as LinkIcon,
+  ListChecks,
+  Mail,
+  MapPin,
+  Plus,
+  Repeat,
+  Search,
+  ScrollText,
+  Shield,
+  Smartphone,
+  Sparkles,
+  Target,
+  TrendingUp,
+  UserCircle,
+  Wallet,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -59,8 +88,8 @@ export default function IndexPage() {
         </h1>
 
         <p className="mt-6 max-w-lg text-balance text-base text-muted-foreground sm:text-lg">
-          LumaSpace vereint Kalender, Aufgaben und Projekte in einem modernen
-          Workspace – damit du dich auf das Wesentliche konzentrieren kannst.
+          LumaSpace vereint Kalender, Aufgaben, Trading-Tools und Projekte in einem
+          modernen Workspace – damit du dich auf das Wesentliche konzentrieren kannst.
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
@@ -85,9 +114,7 @@ export default function IndexPage() {
       {/* ── Calendar Hero Image ────────────────────────────── */}
       <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-20">
         <div className="overflow-hidden rounded-2xl border border-border/60 bg-card/60 shadow-2xl shadow-primary/5 backdrop-blur-sm">
-          {/* Calendar mockup */}
           <div className="p-4 sm:p-6">
-            {/* Header */}
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold sm:text-xl">Juni 2026</h3>
               <div className="flex gap-1">
@@ -95,17 +122,12 @@ export default function IndexPage() {
                 <div className="rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground">Woche</div>
               </div>
             </div>
-
-            {/* Day headers */}
             <div className="grid grid-cols-7 gap-px text-center text-xs font-medium text-muted-foreground">
               {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(d => (
                 <div key={d} className="py-2">{d}</div>
               ))}
             </div>
-
-            {/* Calendar grid */}
             <div className="grid grid-cols-7 gap-px">
-              {/* Row 1: Jun 1-7 (Mon June 1) */}
               {[1,2,3,4,5,6,7].map(day => (
                 <div key={day} className={cn("min-h-[60px] rounded-lg border border-transparent p-1.5 sm:min-h-[72px]", day === 3 && "border-blue-500/30 bg-blue-500/5")}>
                   <span className={cn("text-xs", day === 3 ? "font-bold text-blue-400" : "text-muted-foreground/70")}>{day}</span>
@@ -114,7 +136,6 @@ export default function IndexPage() {
                   {day === 5 && <div className="mt-1 rounded bg-green-500/20 px-1 py-0.5 text-[10px] text-green-400 sm:text-[11px]">Release v2.0</div>}
                 </div>
               ))}
-              {/* Row 2: Jun 8-14 */}
               {[8,9,10,11,12,13,14].map(day => (
                 <div key={day} className="min-h-[60px] rounded-lg p-1.5 sm:min-h-[72px]">
                   <span className="text-xs text-muted-foreground/70">{day}</span>
@@ -122,7 +143,6 @@ export default function IndexPage() {
                   {day === 12 && <div className="mt-1 rounded bg-red-500/20 px-1 py-0.5 text-[10px] text-red-400 sm:text-[11px]">Deadline</div>}
                 </div>
               ))}
-              {/* Row 3: Jun 15-21 */}
               {[15,16,17,18,19,20,21].map(day => (
                 <div key={day} className={cn("min-h-[60px] rounded-lg p-1.5 sm:min-h-[72px]", day === 20 && "ring-2 ring-primary/40")}>
                   <span className={cn("text-xs", day === 20 ? "font-bold text-primary" : "text-muted-foreground/70")}>{day}</span>
@@ -131,7 +151,6 @@ export default function IndexPage() {
                   {day === 20 && <div className="mt-1 rounded bg-primary/20 px-1 py-0.5 text-[10px] text-primary sm:text-[11px]">Heute</div>}
                 </div>
               ))}
-              {/* Row 4: Jun 22-28 */}
               {[22,23,24,25,26,27,28].map(day => (
                 <div key={day} className="min-h-[60px] rounded-lg p-1.5 sm:min-h-[72px]">
                   <span className="text-xs text-muted-foreground/70">{day}</span>
@@ -143,14 +162,14 @@ export default function IndexPage() {
         </div>
       </section>
 
-      {/* ── Features ───────────────────────────────────────── */}
-      <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-28">
+      {/* ── Features: Kalender & Produktivität ─────────────── */}
+      <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-20">
         <div className="mb-12 text-center">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Alles was du brauchst
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Produktivität und Übersicht – in einer App.
+            Kalender, Seiten-Editor und smarte Blöcke – in einer App.
           </p>
         </div>
 
@@ -159,7 +178,6 @@ export default function IndexPage() {
           <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
             <div className="border-b border-border/40 bg-card/60 p-4">
               <div className="rounded-lg border border-border/50 bg-background/90 p-2 overflow-hidden">
-                {/* View toggle */}
                 <div className="mb-1.5 flex items-center gap-1">
                   <div className="flex items-center gap-0.5 rounded bg-muted/60 p-0.5">
                     <div className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[7px] text-muted-foreground">
@@ -173,7 +191,6 @@ export default function IndexPage() {
                     KW 24 · Juni 2026
                   </div>
                 </div>
-                {/* Day pills */}
                 <div className="grid gap-px" style={{ gridTemplateColumns: "1.4rem 1fr 1fr 1fr" }}>
                   <div />
                   {[{ d: "Mo 8" }, { d: "Di 9", today: true }, { d: "Mi 10" }].map(({ d, today }) => (
@@ -182,7 +199,6 @@ export default function IndexPage() {
                     </div>
                   ))}
                 </div>
-                {/* Timeline grid */}
                 <div className="grid gap-px" style={{ gridTemplateColumns: "1.4rem 1fr 1fr 1fr" }}>
                   <div />
                   {["c0", "c1", "c2"].map((c) => <div key={c} />)}
@@ -209,7 +225,6 @@ export default function IndexPage() {
                               <span className="truncate text-[7px] leading-none text-purple-300">Call</span>
                             </div>
                           )}
-                          {/* "Jetzt"-Indikator */}
                           {h === 11 && col === 0 && (
                             <div className="absolute inset-x-0 top-1/2 h-px bg-red-500/70">
                               <span className="absolute -left-px -top-[1.5px] h-1 w-1 rounded-full bg-red-500" />
@@ -228,7 +243,7 @@ export default function IndexPage() {
                 <h3 className="font-semibold">Timeline & Monatsraster</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Wechsle zwischen Monatsraster (1–6 Spalten), Wochenansicht und Zeitstrahl mit Live-Indikator für „Jetzt&rdquo;.
+                Wechsle zwischen Monatsraster (1–6 Spalten), Wochenansicht und Zeitstrahl mit Live-Indikator.
               </p>
             </div>
           </div>
@@ -237,17 +252,14 @@ export default function IndexPage() {
           <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
             <div className="border-b border-border/40 bg-card/60 p-4">
               <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-1.5">
-                {/* Dialog header */}
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold text-foreground/80">Neues Event</span>
                   <div className="h-2.5 w-2.5 rounded-full bg-border/60" />
                 </div>
                 <p className="text-[8px] text-muted-foreground">Montag, 4. Juni 2026</p>
-                {/* Title */}
                 <div className="rounded-md border border-primary/50 bg-muted/40 px-2 py-1 ring-1 ring-primary/20">
                   <span className="text-[9px] text-foreground/80">Team-Meeting</span>
                 </div>
-                {/* Von/Bis */}
                 <div className="grid grid-cols-2 gap-1">
                   <div className="rounded-md border border-border/50 bg-muted/40 px-1.5 py-1">
                     <p className="text-[6px] text-muted-foreground">Von</p>
@@ -258,12 +270,10 @@ export default function IndexPage() {
                     <p className="text-[8px] font-medium">10:30 ▾</p>
                   </div>
                 </div>
-                {/* Standort */}
                 <div className="flex items-center gap-1 rounded-md border border-border/50 bg-muted/40 px-1.5 py-1">
                   <MapPin className="h-2 w-2 shrink-0 text-muted-foreground/60" />
                   <span className="text-[8px] text-foreground/70">Berlin, Deutschland</span>
                 </div>
-                {/* Colors */}
                 <div className="flex items-center gap-1.5">
                   {["bg-blue-600", "bg-green-700", "bg-red-600", "bg-yellow-600", "bg-purple-600"].map((c, i) => (
                     <div key={i} className={`h-3 w-3 rounded-full ${c} ${i === 0 ? "ring-2 ring-offset-1 ring-offset-background ring-white/40" : ""}`} />
@@ -286,63 +296,52 @@ export default function IndexPage() {
             </div>
           </div>
 
-          {/* ── Card 3: Kalenderraster ── */}
+          {/* ── Card 3: Block-System ── */}
           <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
             <div className="border-b border-border/40 bg-card/60 p-4">
-              <div className="rounded-lg border border-border/50 bg-background/90 p-2">
-                {/* Column picker */}
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[7px] text-muted-foreground">Spalten</span>
-                  <div className="flex gap-0.5 rounded-md bg-muted/50 p-0.5">
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <div
-                        key={n}
-                        className={`flex h-3.5 w-3.5 items-center justify-center rounded text-[7px] font-medium ${
-                          n === 4 ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                        }`}
-                      >
-                        {n}
+              <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[9px] font-semibold text-foreground/80">Block einfügen</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  {[
+                    { icon: <ListChecks className="h-2.5 w-2.5 text-sky-400" />, label: "Checkliste" },
+                    { icon: <Target className="h-2.5 w-2.5 text-rose-400" />, label: "Fortschritt" },
+                    { icon: <Globe className="h-2.5 w-2.5 text-indigo-400" />, label: "Embed" },
+                    { icon: <BarChart3 className="h-2.5 w-2.5 text-lime-400" />, label: "Habit Tracker" },
+                    { icon: <Heading1 className="h-2.5 w-2.5 text-purple-400" />, label: "Überschrift" },
+                    { icon: <Wallet className="h-2.5 w-2.5 text-amber-400" />, label: "Portfolio" },
+                  ].map((b, i) => (
+                    <div key={i} className="flex items-center gap-1.5 rounded-md border border-border/40 bg-muted/30 px-1.5 py-1">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-muted/80">{b.icon}</span>
+                      <span className="text-[8px] font-medium">{b.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-md border border-border/40 bg-muted/20 p-1.5">
+                  <div className="flex items-center gap-1 mb-1">
+                    <ListChecks className="h-2 w-2 text-sky-400" />
+                    <span className="text-[7px] font-semibold">Sprint Tasks</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    {["API Endpoints", "Unit Tests", "Deploy"].map((t, i) => (
+                      <div key={i} className="flex items-center gap-1">
+                        <div className={cn("h-2 w-2 rounded-sm border", i < 2 ? "border-emerald-500 bg-emerald-500/30" : "border-border/60")} />
+                        <span className={cn("text-[7px]", i < 2 ? "text-muted-foreground line-through" : "text-foreground/80")}>{t}</span>
                       </div>
                     ))}
                   </div>
-                </div>
-                {/* 4-column grid with event chips */}
-                <div className="grid grid-cols-4 gap-px overflow-hidden rounded-md border border-border/30 bg-border/20">
-                  {["Mo", "Di", "Mi", "Do"].map((d) => (
-                    <div key={d} className="bg-muted/30 py-0.5 text-center text-[6px] font-medium text-muted-foreground">{d}</div>
-                  ))}
-                  {[
-                    { d: "1", evs: [] as { c: string; t: string }[] },
-                    { d: "2", evs: [{ c: "bg-blue-500", t: "Standup" }] },
-                    { d: "3", evs: [] },
-                    { d: "4", today: true, evs: [{ c: "bg-green-600", t: "Review" }, { c: "bg-purple-500", t: "1:1" }] },
-                    { d: "8", evs: [{ c: "bg-green-700", t: "Sprint" }] },
-                    { d: "9", evs: [] },
-                    { d: "10", evs: [{ c: "bg-yellow-500", t: "Demo" }] },
-                    { d: "11", evs: [{ c: "bg-yellow-600", t: "Retro" }, { c: "bg-blue-500", t: "Sync" }, { c: "bg-red-500", t: "Deadline" }] },
-                  ].map(({ d, evs, today }, i) => (
-                    <div key={i} className={cn("min-h-[28px] bg-background/90 p-0.5", today && "bg-primary/5")}>
-                      <span className={`mx-auto flex h-3 w-3 items-center justify-center rounded-full text-[6px] ${today ? "bg-primary text-primary-foreground" : "text-foreground/50"}`}>{d}</span>
-                      <div className="mt-0.5 space-y-px">
-                        {evs.slice(0, 2).map((ev, j) => (
-                          <div key={j} className={`truncate rounded-[2px] px-0.5 text-[5px] leading-[6px] text-white ${ev.c}`}>{ev.t}</div>
-                        ))}
-                        {evs.length > 2 && (
-                          <div className="truncate text-[5px] leading-[6px] text-muted-foreground">+{evs.length - 2} weitere</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
             <div className="p-5">
               <div className="mb-2 flex items-center gap-2">
                 <LayoutGrid className="h-4 w-4 text-purple-400" />
-                <h3 className="font-semibold">Flexible Spaltenansicht</h3>
+                <h3 className="font-semibold">17+ Block-Typen</h3>
+                <Badge className="rounded-full bg-purple-500/15 px-2 py-0 text-[10px] font-medium text-purple-400 hover:bg-purple-500/15">Neu</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
-                1 bis 6 Spalten im Monatsraster – mit Event-Vorschau, Überlauf-Anzeige und Live-Highlight für heute.
+                Checklisten, Fortschritt, Embeds, Bilder, Bookmarks, Habit Tracker und mehr – alles per Drag & Drop.
               </p>
             </div>
           </div>
@@ -389,7 +388,6 @@ export default function IndexPage() {
           <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
             <div className="border-b border-border/40 bg-card/60 p-4">
               <div className="rounded-lg border border-border/50 bg-background/90 overflow-hidden">
-                {/* Editor header */}
                 <div className="flex items-center justify-between border-b border-border/30 px-2.5 py-1.5">
                   <div className="flex items-center gap-1">
                     <FileText className="h-2.5 w-2.5 text-muted-foreground/60" />
@@ -397,7 +395,6 @@ export default function IndexPage() {
                   </div>
                   <span className="text-[6px] text-muted-foreground/40">Gespeichert ✓</span>
                 </div>
-                {/* Editor content */}
                 <div className="px-3 py-2 space-y-1.5">
                   <p className="text-[11px] font-bold text-foreground/90">Sprint Planning Q3</p>
                   <div className="space-y-1">
@@ -406,7 +403,6 @@ export default function IndexPage() {
                     <div className="h-[6px] w-full rounded-sm bg-muted/60" />
                     <div className="h-[6px] w-3/5 rounded-sm bg-muted/40" />
                   </div>
-                  {/* Sidebar mini */}
                   <div className="mt-1.5 space-y-0.5 border-t border-border/30 pt-1.5">
                     {["Meeting Notes", "↳ Sprint Planning", "↳ Retrospektive", "Roadmap Q3"].map((t, i) => (
                       <div key={i} className={`text-[7px] ${i === 1 ? "text-primary font-medium" : "text-muted-foreground/60"}`}>{t}</div>
@@ -421,61 +417,12 @@ export default function IndexPage() {
                 <h3 className="font-semibold">Seiten-Editor</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Verschachtelte Seiten mit vollständigem Editor und automatischem Speichern.
+                Verschachtelte Seiten mit vollständigem Editor, Blöcken und automatischem Speichern.
               </p>
             </div>
           </div>
 
-          {/* ── Card 6: Profil & Avatar ── */}
-          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
-            <div className="border-b border-border/40 bg-card/60 p-4">
-              <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-2">
-                {/* Avatar with camera overlay */}
-                <div className="flex items-center gap-2.5">
-                  <div className="relative h-10 w-10 shrink-0">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary/40 bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-sm font-bold text-primary">
-                      PB
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-70">
-                      <Camera className="h-3 w-3 text-white" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-semibold">Prodbybezo</p>
-                    <p className="text-[8px] text-muted-foreground">@prodbybezo</p>
-                    <p className="text-[7px] text-muted-foreground/50 mt-0.5">JPG · PNG · WebP</p>
-                  </div>
-                </div>
-                {/* Fields */}
-                {[
-                  { label: "Name", value: "Prodbybezo" },
-                  { label: "@Benutzername", value: "prodbybezo" },
-                  { label: "Passwort", value: "••••••••" },
-                ].map(({ label, value }) => (
-                  <div key={label} className="rounded-md border border-border/40 bg-muted/30 px-2 py-1">
-                    <p className="text-[6px] text-muted-foreground">{label}</p>
-                    <p className="text-[8px] font-medium">{value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="p-5">
-              <div className="mb-2 flex items-center gap-2">
-                <UserCircle className="h-4 w-4 text-purple-400" />
-                <h3 className="font-semibold">Profil & Einstellungen</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Profilbild hochladen, Name, @Benutzername und Passwort jederzeit ändern.
-              </p>
-            </div>
-          </div>
-
-        </div>
-
-        {/* ── Third row ── */}
-        <div className="mt-5 grid gap-5 sm:grid-cols-3">
-
-          {/* ── Card 7: Apple Kalender Sync ── */}
+          {/* ── Card 6: Apple Kalender Sync ── */}
           <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
             <div className="border-b border-border/40 bg-card/60 p-4">
               <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-1.5">
@@ -500,15 +447,18 @@ export default function IndexPage() {
               <div className="mb-2 flex items-center gap-2">
                 <Smartphone className="h-4 w-4 text-blue-400" />
                 <h3 className="font-semibold">Apple Kalender Sync</h3>
-                <Badge className="rounded-full bg-blue-500/15 px-2 py-0 text-[10px] font-medium text-blue-400 hover:bg-blue-500/15">Neu</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
                 Abonniere deinen Kalender per ICS-Link – Events erscheinen automatisch in Apple Kalender & Co.
               </p>
             </div>
           </div>
+        </div>
 
-          {/* ── Card 8: Wiederkehrende Events & Erinnerungen ── */}
+        {/* ── Third row ── */}
+        <div className="mt-5 grid gap-5 sm:grid-cols-3">
+
+          {/* ── Card 7: Wiederkehrende Events ── */}
           <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
             <div className="border-b border-border/40 bg-card/60 p-4">
               <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-1.5">
@@ -540,7 +490,6 @@ export default function IndexPage() {
               <div className="mb-2 flex items-center gap-2">
                 <Repeat className="h-4 w-4 text-green-400" />
                 <h3 className="font-semibold">Wiederkehrende Events</h3>
-                <Badge className="rounded-full bg-green-500/15 px-2 py-0 text-[10px] font-medium text-green-400 hover:bg-green-500/15">Neu</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
                 Täglich, wöchentlich, monatlich oder jährlich – inklusive Browser-Erinnerungen.
@@ -548,7 +497,49 @@ export default function IndexPage() {
             </div>
           </div>
 
-          {/* ── Card 9: Suche, Filter & Drag and Drop ── */}
+          {/* ── Card 8: Profil & Einstellungen ── */}
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
+            <div className="border-b border-border/40 bg-card/60 p-4">
+              <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative h-10 w-10 shrink-0">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary/40 bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-sm font-bold text-primary">
+                      PB
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-70">
+                      <Camera className="h-3 w-3 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-semibold">Prodbybezo</p>
+                    <p className="text-[8px] text-muted-foreground">@prodbybezo</p>
+                    <p className="text-[7px] text-muted-foreground/50 mt-0.5">JPG · PNG · WebP</p>
+                  </div>
+                </div>
+                {[
+                  { label: "Name", value: "Prodbybezo" },
+                  { label: "@Benutzername", value: "prodbybezo" },
+                  { label: "Passwort", value: "••••••••" },
+                ].map(({ label, value }) => (
+                  <div key={label} className="rounded-md border border-border/40 bg-muted/30 px-2 py-1">
+                    <p className="text-[6px] text-muted-foreground">{label}</p>
+                    <p className="text-[8px] font-medium">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <UserCircle className="h-4 w-4 text-purple-400" />
+                <h3 className="font-semibold">Profil & Einstellungen</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Profilbild, Name, @Benutzername und Passwort jederzeit ändern.
+              </p>
+            </div>
+          </div>
+
+          {/* ── Card 9: Suche, Filter & DnD ── */}
           <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
             <div className="border-b border-border/40 bg-card/60 p-4">
               <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-1.5">
@@ -580,15 +571,176 @@ export default function IndexPage() {
             <div className="p-5">
               <div className="mb-2 flex items-center gap-2">
                 <Search className="h-4 w-4 text-purple-400" />
-                <h3 className="font-semibold">Suche, Filter & Drag and Drop</h3>
-                <Badge className="rounded-full bg-purple-500/15 px-2 py-0 text-[10px] font-medium text-purple-400 hover:bg-purple-500/15">Neu</Badge>
+                <h3 className="font-semibold">Suche & Drag and Drop</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Events durchsuchen, nach Labels filtern und per Drag and Drop auf neue Tage verschieben.
+                Events durchsuchen, nach Labels filtern und per Drag & Drop verschieben.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features: Trading & Finanzen ────────────────────── */}
+      <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-28">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-1/4 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-emerald-600/6 blur-[100px]" />
+        </div>
+
+        <div className="mb-12 text-center">
+          <Badge variant="secondary" className="mb-4 gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs text-emerald-400">
+            <TrendingUp className="h-3 w-3" />
+            Trading-Integration
+          </Badge>
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Dein Trading-Dashboard
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            MEXC Exchange direkt in deinem Workspace – Portfolio, PnL und Trade Logs als Blöcke.
+          </p>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-3">
+
+          {/* ── Trading Card 1: MEXC Portfolio ── */}
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
+            <div className="border-b border-border/40 bg-card/60 p-4">
+              <div className="rounded-lg border border-border/50 bg-background/90 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Wallet className="h-2.5 w-2.5 text-amber-400" />
+                    <span className="text-[9px] font-semibold">MEXC Portfolio</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-400">$12.847,53</span>
+                </div>
+                <div className="flex gap-0.5 rounded bg-muted/50 p-0.5">
+                  <div className="rounded bg-background px-2 py-0.5 text-[7px] font-medium shadow-sm">Spot</div>
+                  <div className="rounded px-2 py-0.5 text-[7px] text-muted-foreground">Futures</div>
+                </div>
+                {[
+                  { asset: "BTC", amount: "0.1523", usd: "$9.142,00", change: "+2.4%" },
+                  { asset: "ETH", amount: "2.8400", usd: "$2.841,20", change: "-0.8%" },
+                  { asset: "USDT", amount: "864.33", usd: "$864,33", change: "" },
+                ].map((row, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-md bg-muted/20 px-2 py-1">
+                    <div>
+                      <span className="text-[9px] font-semibold">{row.asset}</span>
+                      <span className="ml-1 text-[7px] text-muted-foreground">{row.amount}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[8px] font-medium">{row.usd}</span>
+                      {row.change && (
+                        <span className={cn("ml-1 text-[7px] font-medium", row.change.startsWith("+") ? "text-emerald-400" : "text-red-400")}>
+                          {row.change}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-amber-400" />
+                <h3 className="font-semibold">MEXC Portfolio</h3>
+                <Badge className="rounded-full bg-amber-500/15 px-2 py-0 text-[10px] font-medium text-amber-400 hover:bg-amber-500/15">Neu</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Live Spot- & Futures-Kontostände, offene Positionen mit unrealisiertem PnL.
               </p>
             </div>
           </div>
 
+          {/* ── Trading Card 2: PnL Kalender ── */}
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
+            <div className="border-b border-border/40 bg-card/60 p-4">
+              <div className="rounded-lg border border-border/50 bg-background/90 p-2.5 space-y-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[9px] font-semibold">Juni 2026</span>
+                  <span className="text-[8px] font-bold text-emerald-400">+$1.247,80</span>
+                </div>
+                <div className="grid grid-cols-7 gap-px">
+                  {["Mo","Di","Mi","Do","Fr","Sa","So"].map(d => (
+                    <div key={d} className="py-0.5 text-center text-[5px] font-medium text-muted-foreground">{d}</div>
+                  ))}
+                  {[
+                    null, null, null, null, null, null, "+12",
+                    "-45", "+89", "+23", "-15", "+67", null, null,
+                    "+134", "-28", "+56", "+91", "-33", null, null,
+                    "+78", "-12", "+45", "+210", "+56", null, null,
+                  ].map((val, i) => (
+                    <div key={i} className={cn(
+                      "flex items-center justify-center rounded py-1 text-[6px] font-medium",
+                      !val ? "" :
+                      val.startsWith("+") ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                    )}>
+                      {val ? `${val}$` : ""}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                <h3 className="font-semibold">PnL Kalender</h3>
+                <Badge className="rounded-full bg-emerald-500/15 px-2 py-0 text-[10px] font-medium text-emerald-400 hover:bg-emerald-500/15">Neu</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Tägliche Gewinn- & Verlustübersicht – automatisch aus MEXC Futures-Trades berechnet.
+              </p>
+            </div>
+          </div>
+
+          {/* ── Trading Card 3: Trade Logs ── */}
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm">
+            <div className="border-b border-border/40 bg-card/60 p-4">
+              <div className="rounded-lg border border-border/50 bg-background/90 p-2.5 space-y-1">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1">
+                    <ScrollText className="h-2.5 w-2.5 text-cyan-400" />
+                    <span className="text-[9px] font-semibold">Trade Logs</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[7px]">
+                    <span className="text-emerald-400">8W</span>
+                    <span className="text-muted-foreground/40">/</span>
+                    <span className="text-red-400">3L</span>
+                    <span className="text-muted-foreground/50">· 73%</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 text-[6px] font-medium text-muted-foreground/60 border-b border-border/20 pb-0.5">
+                  <span>Symbol</span><span>Seite</span><span>Hebel</span><span className="text-right">PnL</span>
+                </div>
+                {[
+                  { sym: "BTC_USDT", side: "Long", lev: "20x", pnl: "+$245.80", win: true },
+                  { sym: "ETH_USDT", side: "Short", lev: "10x", pnl: "-$32.10", win: false },
+                  { sym: "SOL_USDT", side: "Long", lev: "15x", pnl: "+$89.40", win: true },
+                  { sym: "DOGE_USDT", side: "Long", lev: "5x", pnl: "+$12.20", win: true },
+                ].map((t, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 py-0.5 text-[7px]">
+                    <span className="font-medium truncate">{t.sym}</span>
+                    <span className={cn("rounded px-1 py-px text-[6px] font-semibold", t.side === "Long" ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400")}>{t.side}</span>
+                    <span className="text-muted-foreground">{t.lev}</span>
+                    <span className={cn("text-right font-semibold", t.win ? "text-emerald-400" : "text-red-400")}>{t.pnl}</span>
+                  </div>
+                ))}
+                <div className="border-t border-border/20 pt-1 flex items-center justify-between text-[7px]">
+                  <span className="text-muted-foreground">Gesamt</span>
+                  <span className="font-bold text-emerald-400">+$315.30</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <ScrollText className="h-4 w-4 text-cyan-400" />
+                <h3 className="font-semibold">Trade Logs</h3>
+                <Badge className="rounded-full bg-cyan-500/15 px-2 py-0 text-[10px] font-medium text-cyan-400 hover:bg-cyan-500/15">Neu</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Vollständige Handelshistorie mit Winrate, PnL pro Trade und Pagination.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -610,21 +762,22 @@ export default function IndexPage() {
                 Free
               </span>
               <div className="mt-4 flex items-end gap-1">
-                <span className="text-4xl font-bold tracking-tight">€0</span>
+                <span className="text-4xl font-bold tracking-tight">0€</span>
                 <span className="mb-1 text-sm text-muted-foreground">/ Monat</span>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Für immer kostenlos. Kein Kreditkarte nötig.
+                Für immer kostenlos. Keine Kreditkarte nötig.
               </p>
             </div>
 
             <ul className="mb-8 flex flex-col gap-3 text-sm">
               {[
-                "Kalender mit Monatsraster & Timeline",
-                "Seiten-Editor mit verschachtelten Seiten",
-                "Privater Bereich & Favoriten",
+                "Kalender mit Monats-, Wochen- & Timeline-Ansicht",
+                "Seiten-Editor mit 17+ Block-Typen",
+                "MEXC Portfolio, PnL Kalender & Trade Logs",
+                "Checklisten, Habit Tracker & Fortschrittsbalken",
                 "Workspace mit unbegrenzten Mitgliedern",
-                "Einladungssystem für Mitglieder",
+                "Apple Kalender Sync (ICS)",
                 "Profil mit Avatar & Benutzername",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5">
@@ -645,7 +798,6 @@ export default function IndexPage() {
 
           {/* ── Enterprise ── */}
           <div className="relative flex flex-col overflow-hidden rounded-2xl border border-purple-500/30 bg-card/40 p-8 backdrop-blur-sm">
-            {/* Glow */}
             <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-600/8 via-transparent to-transparent" />
 
             <div className="relative mb-6">
@@ -656,22 +808,24 @@ export default function IndexPage() {
                 <span className="text-4xl font-bold tracking-tight">Auf Anfrage</span>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Nur für verifizierte Unternehmen. Melde dich bei uns.
+                Für verifizierte Unternehmen. Maßgeschneidert für dein Team.
               </p>
             </div>
 
             <ul className="relative mb-8 flex flex-col gap-3 text-sm">
               {[
-                "Alles aus Free",
-                "Unbegrenzte Workspaces",
-                "SSO & eigene Domain",
-                "Dedizierter Support & SLA",
-                "Erweiterte Rollen & Berechtigungen",
-                "Unternehmens-Verifizierung erforderlich",
+                { text: "Alles aus Free", highlight: false },
+                { text: "Unbegrenzte Workspaces", highlight: false },
+                { text: "SSO (SAML / OpenID Connect)", highlight: false },
+                { text: "Eigene Domain (workspace.deinefirma.de)", highlight: false },
+                { text: "Slack-Integration & Webhooks", highlight: false },
+                { text: "Dedizierter Support & SLA", highlight: false },
+                { text: "Erweiterte Rollen & Berechtigungen", highlight: false },
+                { text: "Unternehmens-Verifizierung erforderlich", highlight: true },
               ].map((f, i) => (
-                <li key={f} className="flex items-start gap-2.5">
-                  <Check className={`mt-0.5 h-4 w-4 shrink-0 ${i === 5 ? "text-purple-400" : "text-green-500"}`} />
-                  <span className={i === 5 ? "font-medium text-purple-300" : "text-muted-foreground"}>{f}</span>
+                <li key={i} className="flex items-start gap-2.5">
+                  <Check className={`mt-0.5 h-4 w-4 shrink-0 ${f.highlight ? "text-purple-400" : "text-green-500"}`} />
+                  <span className={f.highlight ? "font-medium text-purple-300" : "text-muted-foreground"}>{f.text}</span>
                 </li>
               ))}
             </ul>
