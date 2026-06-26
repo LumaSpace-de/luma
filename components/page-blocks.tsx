@@ -48,113 +48,140 @@ import { PageDataTable } from "@/components/page-data-table"
 
 // ── Block menu definition ──────────────────────────────────────────────────
 
-const BLOCK_TYPES: {
+interface BlockTypeItem {
   type: BlockType
   label: string
   description: string
   icon: React.ReactNode
-}[] = [
+}
+
+const BLOCK_CATEGORIES: { category: string; items: BlockTypeItem[] }[] = [
   {
-    type: "task_table",
-    label: "Aufgabentabelle",
-    description: "Tasks mit Status & Priorität",
-    icon: <CheckSquare className="h-4 w-4 text-blue-400" />,
+    category: "Daten & Tabellen",
+    items: [
+      {
+        type: "task_table",
+        label: "Aufgabentabelle",
+        description: "Tasks mit Status & Priorität",
+        icon: <CheckSquare className="h-4 w-4 text-blue-400" />,
+      },
+      {
+        type: "data_table",
+        label: "Datenbank",
+        description: "Freie Tabelle mit eigenen Spalten",
+        icon: <Table2 className="h-4 w-4 text-teal-400" />,
+      },
+      {
+        type: "checklist",
+        label: "Checkliste",
+        description: "Einfache Checkbox-Liste",
+        icon: <ListChecks className="h-4 w-4 text-sky-400" />,
+      },
+    ],
   },
   {
-    type: "data_table",
-    label: "Datenbank",
-    description: "Freie Tabelle mit eigenen Spalten",
-    icon: <Table2 className="h-4 w-4 text-teal-400" />,
+    category: "Text & Layout",
+    items: [
+      {
+        type: "heading",
+        label: "Überschrift",
+        description: "H1, H2 oder H3",
+        icon: <Heading1 className="h-4 w-4 text-purple-400" />,
+      },
+      {
+        type: "callout",
+        label: "Hinweis",
+        description: "Info, Warnung oder Erfolg",
+        icon: <AlertCircle className="h-4 w-4 text-yellow-400" />,
+      },
+      {
+        type: "quote",
+        label: "Zitat",
+        description: "Hervorgehobenes Zitat",
+        icon: <Quote className="h-4 w-4 text-green-400" />,
+      },
+      {
+        type: "code",
+        label: "Code-Block",
+        description: "Formatierter Code",
+        icon: <Code2 className="h-4 w-4 text-orange-400" />,
+      },
+      {
+        type: "divider",
+        label: "Trennlinie",
+        description: "Horizontaler Trenner",
+        icon: <Minus className="h-4 w-4 text-muted-foreground" />,
+      },
+    ],
   },
   {
-    type: "heading",
-    label: "Überschrift",
-    description: "H1, H2 oder H3",
-    icon: <Heading1 className="h-4 w-4 text-purple-400" />,
+    category: "Medien & Links",
+    items: [
+      {
+        type: "image",
+        label: "Bild",
+        description: "Bild per URL einbetten",
+        icon: <ImageIcon className="h-4 w-4 text-pink-400" />,
+      },
+      {
+        type: "embed",
+        label: "Embed",
+        description: "TradingView, YouTube & mehr",
+        icon: <Globe className="h-4 w-4 text-indigo-400" />,
+      },
+      {
+        type: "bookmark",
+        label: "Bookmark",
+        description: "Link mit Titel & Beschreibung",
+        icon: <Link2 className="h-4 w-4 text-teal-400" />,
+      },
+      {
+        type: "page_link",
+        label: "Seitenvorschau",
+        description: "Vorschau einer anderen Seite",
+        icon: <ExternalLink className="h-4 w-4 text-cyan-400" />,
+      },
+    ],
   },
   {
-    type: "callout",
-    label: "Hinweis",
-    description: "Info, Warnung oder Erfolg",
-    icon: <AlertCircle className="h-4 w-4 text-yellow-400" />,
+    category: "Trading & Finanzen",
+    items: [
+      {
+        type: "pnl_calendar",
+        label: "PnL Kalender",
+        description: "Tägliche Gewinn- & Verlustübersicht",
+        icon: <CalendarDays className="h-4 w-4 text-emerald-400" />,
+      },
+      {
+        type: "mexc_portfolio",
+        label: "MEXC Portfolio",
+        description: "Live Kontostände von MEXC",
+        icon: <Wallet className="h-4 w-4 text-amber-400" />,
+      },
+      {
+        type: "daily_notes",
+        label: "Tagesnotizen",
+        description: "Trading-Journal & Notizen",
+        icon: <NotebookPen className="h-4 w-4 text-violet-400" />,
+      },
+    ],
   },
   {
-    type: "quote",
-    label: "Zitat",
-    description: "Hervorgehobenes Zitat",
-    icon: <Quote className="h-4 w-4 text-green-400" />,
-  },
-  {
-    type: "code",
-    label: "Code-Block",
-    description: "Formatierter Code",
-    icon: <Code2 className="h-4 w-4 text-orange-400" />,
-  },
-  {
-    type: "page_link",
-    label: "Seitenvorschau",
-    description: "Vorschau einer anderen Seite",
-    icon: <ExternalLink className="h-4 w-4 text-cyan-400" />,
-  },
-  {
-    type: "pnl_calendar",
-    label: "PnL Kalender",
-    description: "Tägliche Gewinn- & Verlustübersicht",
-    icon: <CalendarDays className="h-4 w-4 text-emerald-400" />,
-  },
-  {
-    type: "mexc_portfolio",
-    label: "MEXC Portfolio",
-    description: "Live Kontostände von MEXC Exchange",
-    icon: <Wallet className="h-4 w-4 text-amber-400" />,
-  },
-  {
-    type: "daily_notes",
-    label: "Tagesnotizen",
-    description: "Tägliche Notizen & Trading-Journal",
-    icon: <NotebookPen className="h-4 w-4 text-violet-400" />,
-  },
-  {
-    type: "checklist",
-    label: "Checkliste",
-    description: "Einfache Checkbox-Liste",
-    icon: <ListChecks className="h-4 w-4 text-sky-400" />,
-  },
-  {
-    type: "embed",
-    label: "Embed",
-    description: "TradingView, YouTube & mehr einbetten",
-    icon: <Globe className="h-4 w-4 text-indigo-400" />,
-  },
-  {
-    type: "image",
-    label: "Bild",
-    description: "Bild per URL einbetten",
-    icon: <ImageIcon className="h-4 w-4 text-pink-400" />,
-  },
-  {
-    type: "progress",
-    label: "Fortschritt",
-    description: "Fortschrittsbalken mit Ziel",
-    icon: <Target className="h-4 w-4 text-rose-400" />,
-  },
-  {
-    type: "bookmark",
-    label: "Bookmark",
-    description: "Link mit Titel & Beschreibung",
-    icon: <Link2 className="h-4 w-4 text-teal-400" />,
-  },
-  {
-    type: "habit_tracker",
-    label: "Habit Tracker",
-    description: "Tägliche Gewohnheiten tracken",
-    icon: <BarChart3 className="h-4 w-4 text-lime-400" />,
-  },
-  {
-    type: "divider",
-    label: "Trennlinie",
-    description: "Horizontaler Trenner",
-    icon: <Minus className="h-4 w-4 text-muted-foreground" />,
+    category: "Tracking",
+    items: [
+      {
+        type: "progress",
+        label: "Fortschritt",
+        description: "Fortschrittsbalken mit Ziel",
+        icon: <Target className="h-4 w-4 text-rose-400" />,
+      },
+      {
+        type: "habit_tracker",
+        label: "Habit Tracker",
+        description: "Tägliche Gewohnheiten tracken",
+        icon: <BarChart3 className="h-4 w-4 text-lime-400" />,
+      },
+    ],
   },
 ]
 
@@ -1882,22 +1909,33 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
           </button>
 
           {menuOpen && (
-            <div className="absolute top-full left-1/2 z-50 mt-2 w-56 -translate-x-1/2 overflow-hidden rounded-xl border bg-popover shadow-xl">
-              <div className="border-b border-border/40 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+            <div className="absolute top-full left-1/2 z-50 mt-2 w-[340px] -translate-x-1/2 overflow-hidden rounded-xl border bg-popover shadow-xl sm:w-[420px]">
+              <div className="border-b border-border/40 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
                 Block einfügen
               </div>
-              {BLOCK_TYPES.map(bt => (
-                <button key={bt.type} onClick={() => addBlock(bt.type)}
-                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-muted">
-                    {bt.icon}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium leading-tight">{bt.label}</p>
-                    <p className="text-xs text-muted-foreground">{bt.description}</p>
+              <div className="max-h-[70vh] overflow-y-auto">
+                {BLOCK_CATEGORIES.map(cat => (
+                  <div key={cat.category}>
+                    <div className="sticky top-0 z-10 bg-popover/95 backdrop-blur-sm px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                      {cat.category}
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 px-2 pb-2">
+                      {cat.items.map(bt => (
+                        <button key={bt.type} onClick={() => addBlock(bt.type)}
+                          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-accent">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-muted">
+                            {bt.icon}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium leading-tight">{bt.label}</p>
+                            <p className="truncate text-[11px] text-muted-foreground">{bt.description}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </button>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
