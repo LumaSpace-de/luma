@@ -817,7 +817,6 @@ export default function IndexPage() {
                 { text: "Alles aus Free", highlight: false },
                 { text: "Unbegrenzte Workspaces", highlight: false },
                 { text: "SSO (SAML / OpenID Connect)", highlight: false },
-                { text: "Eigene Domain (workspace.deinefirma.de)", highlight: false },
                 { text: "Slack-Integration & Webhooks", highlight: false },
                 { text: "Dedizierter Support & SLA", highlight: false },
                 { text: "Erweiterte Rollen & Berechtigungen", highlight: false },

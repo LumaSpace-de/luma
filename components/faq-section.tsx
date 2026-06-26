@@ -11,7 +11,7 @@ const FAQS = [
   },
   {
     q: "Was ist der Unterschied zwischen Free und Enterprise?",
-    a: "Der Free Plan deckt alles für Einzelpersonen und kleine Teams ab – inklusive Trading-Tools. Enterprise richtet sich an Unternehmen mit SSO (SAML/OpenID), eigener Domain, Slack-Integration, dediziertem Support und erweiterter Rollenverwaltung.",
+    a: "Der Free Plan deckt alles für Einzelpersonen und kleine Teams ab – inklusive Trading-Tools. Enterprise richtet sich an Unternehmen mit SSO (SAML/OpenID), Slack-Integration, dediziertem Support und erweiterter Rollenverwaltung.",
   },
   {
     q: "Wie funktioniert die MEXC-Integration?",
@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: "Kann ich mehrere Workspaces erstellen?",
-    a: "Im Free Plan kannst du Workspaces erstellen und Mitglieder einladen. Enterprise-Kunden erhalten unbegrenzte Workspaces mit SSO, eigener Domain und zusätzlichen Admin-Funktionen.",
+    a: "Im Free Plan kannst du Workspaces erstellen und Mitglieder einladen. Enterprise-Kunden erhalten unbegrenzte Workspaces mit SSO und zusätzlichen Admin-Funktionen.",
   },
   {
     q: "Werden meine Daten sicher gespeichert?",
