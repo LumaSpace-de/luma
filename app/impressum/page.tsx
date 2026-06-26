@@ -20,7 +20,7 @@ export default function ImpressumPage() {
             <h2 className="mb-2 text-base font-semibold text-foreground">Angaben gemäß § 5 DDG</h2>
             <p>
               Flux Network<br />
-              Inhaber: Bezo Alizada<br />
+              Inhaber: Bastian Kroha<br />
               Sandbrink 7<br />
               31558 Hagenburg<br />
               Deutschland
