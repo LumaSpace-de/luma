@@ -34,6 +34,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   X,
+  ScrollText,
+  ChevronDown,
+  Filter,
 } from "lucide-react"
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -163,6 +166,12 @@ const BLOCK_CATEGORIES: { category: string; items: BlockTypeItem[] }[] = [
         label: "Tagesnotizen",
         description: "Trading-Journal & Notizen",
         icon: <NotebookPen className="h-4 w-4 text-violet-400" />,
+      },
+      {
+        type: "trade_logs",
+        label: "Trade Logs",
+        description: "Handelshistorie von MEXC",
+        icon: <ScrollText className="h-4 w-4 text-cyan-400" />,
       },
     ],
   },
@@ -788,6 +797,197 @@ function MexcPortfolioBlock() {
             <div className="px-4 py-4 text-center text-xs text-muted-foreground">Keine offenen Positionen</div>
           )}
         </div>
+      )}
+    </div>
+  )
+}
+
+// ── Trade Logs block ──────────────────────────────────────────────────────
+
+interface TradeEntry {
+  id: string
+  symbol: string
+  side: string
+  size: number
+  entryPrice: number
+  closePrice: number
+  pnl: number
+  leverage: number
+  time: number
+  market: string
+}
+
+function TradeLogsBlock() {
+  const [trades, setTrades] = useState<TradeEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [market, setMarket] = useState<"futures" | "spot">("futures")
+  const [page, setPage] = useState(1)
+
+  const fetchTrades = async (m: string, p: number) => {
+    setLoading(true)
+    setError("")
+    try {
+      const res = await fetch(`/api/mexc/trades?market=${m}&page=${p}`)
+      if (!res.ok) { setError("Fehler beim Laden"); setLoading(false); return }
+      const json = await res.json()
+      setTrades(json.trades ?? [])
+    } catch {
+      setError("Netzwerkfehler")
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchTrades(market, page) }, [market, page])
+
+  const formatDate = (ts: number) => {
+    const d = new Date(ts)
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }) +
+      " " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+  }
+
+  const formatNum = (n: number, decimals = 2) =>
+    n.toLocaleString("de-DE", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+
+  return (
+    <div className="rounded-xl border bg-card/60">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <ScrollText className="h-4 w-4 text-cyan-400" />
+          <span className="text-sm font-semibold">Trade Logs</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-border/60 bg-muted/30 p-0.5">
+            <button
+              onClick={() => { setMarket("futures"); setPage(1) }}
+              className={cn(
+                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                market === "futures" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Futures
+            </button>
+            <button
+              onClick={() => { setMarket("spot"); setPage(1) }}
+              className={cn(
+                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                market === "spot" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Spot
+            </button>
+          </div>
+          <button onClick={() => fetchTrades(market, page)} className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      {error ? (
+        <div className="px-4 py-8 text-center text-sm text-red-400">{error}</div>
+      ) : loading ? (
+        <div className="px-4 py-8 text-center text-sm text-muted-foreground">Lade Trades…</div>
+      ) : trades.length === 0 ? (
+        <div className="px-4 py-8 text-center text-sm text-muted-foreground">Keine Trades gefunden</div>
+      ) : (
+        <>
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/30 text-muted-foreground">
+                  <th className="px-4 py-2.5 text-left font-medium">Datum</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Symbol</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Seite</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Größe</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Einstieg</th>
+                  {market === "futures" && <th className="px-4 py-2.5 text-right font-medium">Schlusskurs</th>}
+                  {market === "futures" && <th className="px-4 py-2.5 text-right font-medium">Hebel</th>}
+                  <th className="px-4 py-2.5 text-right font-medium">PnL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trades.map(t => (
+                  <tr key={t.id + t.time} className="border-b border-border/20 transition-colors hover:bg-muted/30">
+                    <td className="whitespace-nowrap px-4 py-2.5 text-muted-foreground">{formatDate(t.time)}</td>
+                    <td className="px-4 py-2.5 font-medium">{t.symbol}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={cn(
+                        "inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold",
+                        t.side === "Long" || t.side === "Buy"
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : "bg-red-500/15 text-red-400"
+                      )}>
+                        {t.side}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{formatNum(t.size, 4)}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{formatNum(t.entryPrice)}</td>
+                    {market === "futures" && <td className="px-4 py-2.5 text-right tabular-nums">{t.closePrice > 0 ? formatNum(t.closePrice) : "—"}</td>}
+                    {market === "futures" && <td className="px-4 py-2.5 text-right tabular-nums">{t.leverage}x</td>}
+                    <td className={cn(
+                      "px-4 py-2.5 text-right font-semibold tabular-nums",
+                      t.pnl > 0 ? "text-emerald-400" : t.pnl < 0 ? "text-red-400" : "text-muted-foreground"
+                    )}>
+                      {t.pnl > 0 ? "+" : ""}{formatNum(t.pnl)} $
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between border-t border-border/30 px-4 py-2.5">
+            <span className="text-xs text-muted-foreground">{trades.length} Trades</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-xs tabular-nums text-muted-foreground">Seite {page}</span>
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={trades.length < 100}
+                className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Summary */}
+          {trades.length > 0 && (() => {
+            const totalPnl = trades.reduce((s, t) => s + t.pnl, 0)
+            const wins = trades.filter(t => t.pnl > 0).length
+            const losses = trades.filter(t => t.pnl < 0).length
+            return (
+              <div className="flex items-center gap-4 border-t border-border/30 px-4 py-2.5">
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-muted-foreground">Gesamt:</span>
+                  <span className={cn("font-semibold tabular-nums", totalPnl > 0 ? "text-emerald-400" : totalPnl < 0 ? "text-red-400" : "text-muted-foreground")}>
+                    {totalPnl > 0 ? "+" : ""}{formatNum(totalPnl)} $
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-emerald-400 tabular-nums">{wins}W</span>
+                  <span className="text-muted-foreground">/</span>
+                  <span className="text-red-400 tabular-nums">{losses}L</span>
+                </div>
+                {(wins + losses) > 0 && (
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    {Math.round((wins / (wins + losses)) * 100)}% Winrate
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </>
       )}
     </div>
   )
@@ -1654,6 +1854,14 @@ function PageLinkBlock({
                 </p>
               )
             }
+            if (block.type === "trade_logs") {
+              return (
+                <p key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <ScrollText className="h-3 w-3 shrink-0" />
+                  <span>Trade Logs</span>
+                </p>
+              )
+            }
             if (block.type === "divider") return null
             return null
           })}
@@ -1751,6 +1959,7 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
       : type === "progress" ? { label: "", current: 0, goal: 100, unit: "", color: "primary" }
       : type === "bookmark" ? { url: "", title: "", description: "" }
       : type === "habit_tracker" ? { habits: [], checks: {} }
+      : type === "trade_logs" ? {}
       : {}
 
     const optimistic: PageBlock = { id: crypto.randomUUID(), pageId, type, data: defaultData, position }
@@ -1892,6 +2101,9 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
               )}
               {block.type === "habit_tracker" && (
                 <HabitTrackerBlock data={block.data} canEdit={canEdit} onChange={d => updateBlockData(block.id, d)} />
+              )}
+              {block.type === "trade_logs" && (
+                <TradeLogsBlock />
               )}
             </BlockWrapper>
           ))}
