@@ -21,7 +21,7 @@ export default function DatenschutzPage() {
             <p>
               Verantwortlicher im Sinne der DSGVO:<br /><br />
               Flux Network<br />
-              Inhaber: Bezo Alizada<br />
+              Inhaber: Bastian Kroha<br />
               Sandbrink 7<br />
               31558 Hagenburg<br />
               E-Mail: support@lumaspace.de
