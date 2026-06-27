@@ -41,11 +41,11 @@ export async function GET(req: NextRequest) {
 
     const { data: user } = await supabase
       .from("users")
-      .select("discord_user_id, name")
+      .select("discord_user_id, name, dc_notify_calendar")
       .eq("id", event.user_id)
       .maybeSingle()
 
-    if (!user?.discord_user_id) continue
+    if (!user?.discord_user_id || !user.dc_notify_calendar) continue
 
     const timeStr = event.time as string
     const minutesLabel = event.reminder_minutes === 1 ? "Minute" : "Minuten"
