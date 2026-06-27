@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
-import { Building2, Camera, GitBranch, Key, LinkIcon, MessageCircle, PanelLeft, Shield, User, Wallet } from "lucide-react"
+import { Bell, Building2, Camera, GitBranch, Key, LinkIcon, MessageCircle, PanelLeft, Shield, User, Wallet } from "lucide-react"
 
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
@@ -18,6 +18,7 @@ const CATEGORIES = [
   { id: "profil", label: "Profil", icon: User },
   { id: "sicherheit", label: "Sicherheit", icon: Shield },
   { id: "verknuepfungen", label: "Verknüpfungen", icon: LinkIcon },
+  { id: "benachrichtigungen", label: "Benachrichtigungen", icon: Bell },
   { id: "workspaces", label: "Workspaces", icon: Building2 },
 ] as const
 
@@ -72,6 +73,12 @@ export default function SettingsPage() {
   const [dcError, setDcError] = useState("")
   const [dcSuccess, setDcSuccess] = useState(false)
 
+  // Discord Notifications
+  const [dcNotifyCalendar, setDcNotifyCalendar] = useState(false)
+  const [dcNotifyPages, setDcNotifyPages] = useState(false)
+  const [dcNotifyDaily, setDcNotifyDaily] = useState(false)
+  const [dcNotifySaving, setDcNotifySaving] = useState(false)
+
   // Password
   const [current, setCurrent] = useState("")
   const [newPw, setNewPw] = useState("")
@@ -120,6 +127,9 @@ export default function SettingsPage() {
           setDcConnected(true)
           setDcUsername(data.username ?? "")
           setDcAvatar(data.avatar ?? null)
+          setDcNotifyCalendar(data.notifyCalendar ?? false)
+          setDcNotifyPages(data.notifyPages ?? false)
+          setDcNotifyDaily(data.notifyDaily ?? false)
         }
       })
       .catch(() => {})
@@ -761,6 +771,105 @@ export default function SettingsPage() {
                     </div>
                   )}
                 </div>
+              </section>
+            </div>
+
+            {/* ═══════════════════════════════════════════════════════
+                BENACHRICHTIGUNGEN
+            ═══════════════════════════════════════════════════════ */}
+            <div data-category="benachrichtigungen" className="mt-12 scroll-mt-6">
+              <div className="mb-6">
+                <h2 className="text-lg font-bold">Benachrichtigungen</h2>
+                <p className="text-sm text-muted-foreground">Steuere, welche Benachrichtigungen du per Discord erhältst.</p>
+              </div>
+
+              <section className="rounded-xl border bg-card p-5">
+                <div className="flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 fill-[#5865F2]">
+                    <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z" />
+                  </svg>
+                  <h3 className="text-sm font-semibold">Discord-Benachrichtigungen</h3>
+                </div>
+
+                {dcConnected ? (
+                  <div className="mt-4 flex flex-col gap-3">
+                    {[
+                      {
+                        id: "calendar",
+                        label: "Kalender-Erinnerungen",
+                        desc: "Erhalte eine DM vor deinen Terminen",
+                        value: dcNotifyCalendar,
+                        setter: setDcNotifyCalendar,
+                        key: "notifyCalendar",
+                      },
+                      {
+                        id: "pages",
+                        label: "Seiten-Aktivität",
+                        desc: "Benachrichtigung wenn jemand deine Seite bearbeitet",
+                        value: dcNotifyPages,
+                        setter: setDcNotifyPages,
+                        key: "notifyPages",
+                      },
+                      {
+                        id: "daily",
+                        label: "Tägliche Zusammenfassung",
+                        desc: "Jeden Morgen eine Übersicht deiner Events und Tasks",
+                        value: dcNotifyDaily,
+                        setter: setDcNotifyDaily,
+                        key: "notifyDaily",
+                      },
+                    ].map((item) => (
+                      <label
+                        key={item.id}
+                        className="flex items-center justify-between rounded-lg border bg-muted/30 p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{item.label}</p>
+                          <p className="text-xs text-muted-foreground">{item.desc}</p>
+                        </div>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={item.value}
+                          onClick={async () => {
+                            const newVal = !item.value
+                            item.setter(newVal)
+                            setDcNotifySaving(true)
+                            await fetch("/api/discord/notifications", {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ [item.key]: newVal }),
+                            })
+                            setDcNotifySaving(false)
+                          }}
+                          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                            item.value ? "bg-primary" : "bg-muted-foreground/30"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                              item.value ? "translate-x-[18px]" : "translate-x-[3px]"
+                            }`}
+                          />
+                        </button>
+                      </label>
+                    ))}
+                    {dcNotifySaving && (
+                      <p className="text-xs text-muted-foreground">Wird gespeichert…</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-muted-foreground/60">
+                    Verbinde Discord unter{" "}
+                    <button
+                      onClick={() => scrollToCategory("verknuepfungen")}
+                      className="text-primary underline-offset-2 hover:underline"
+                    >
+                      Verknüpfungen
+                    </button>
+                    , um Benachrichtigungen zu aktivieren.
+                  </p>
+                )}
               </section>
             </div>
 

@@ -214,6 +214,38 @@ export async function setDiscordToken(
   if (error) throw new Error(error.message)
 }
 
+export async function getDiscordNotifications(userId: string): Promise<{
+  notifyCalendar: boolean
+  notifyPages: boolean
+  notifyDaily: boolean
+} | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("dc_notify_calendar, dc_notify_pages, dc_notify_daily")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return {
+    notifyCalendar: data.dc_notify_calendar ?? false,
+    notifyPages: data.dc_notify_pages ?? false,
+    notifyDaily: data.dc_notify_daily ?? false,
+  }
+}
+
+export async function updateDiscordNotifications(
+  userId: string,
+  patch: { notifyCalendar?: boolean; notifyPages?: boolean; notifyDaily?: boolean }
+): Promise<void> {
+  const update: Record<string, boolean> = {}
+  if (patch.notifyCalendar !== undefined) update.dc_notify_calendar = patch.notifyCalendar
+  if (patch.notifyPages !== undefined) update.dc_notify_pages = patch.notifyPages
+  if (patch.notifyDaily !== undefined) update.dc_notify_daily = patch.notifyDaily
+
+  const { error } = await supabase.from("users").update(update).eq("id", userId)
+  if (error) throw new Error(error.message)
+}
+
 export async function removeDiscordToken(userId: string): Promise<void> {
   const { error } = await supabase
     .from("users")
