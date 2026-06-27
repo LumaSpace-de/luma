@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs"
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import DiscordProvider from "next-auth/providers/discord"
 
+import { supabase } from "./supabase"
 import { findUserByEmail } from "./users-db"
 
 export const authOptions: NextAuthOptions = {
@@ -36,6 +38,15 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    ...(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET
+      ? [
+          DiscordProvider({
+            clientId: process.env.DISCORD_CLIENT_ID,
+            clientSecret: process.env.DISCORD_CLIENT_SECRET,
+            authorization: { params: { scope: "identify email" } },
+          }),
+        ]
+      : []),
   ],
   session: { strategy: "jwt" },
   pages: {
@@ -43,6 +54,64 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "discord") {
+        const email = user.email
+        if (!email) return false
+
+        const { data: existing } = await supabase
+          .from("users")
+          .select("id, name, username, avatar_url")
+          .ilike("email", email)
+          .maybeSingle()
+
+        if (existing) {
+          user.id = existing.id
+          user.name = existing.name ?? user.name
+          user.username = existing.username ?? null
+          user.avatarUrl = existing.avatar_url ?? null
+
+          await supabase
+            .from("users")
+            .update({
+              discord_token: account.access_token,
+              discord_username: user.name,
+              discord_user_id: account.providerAccountId,
+              discord_avatar: user.image ?? null,
+            })
+            .eq("id", existing.id)
+
+          return true
+        }
+
+        const randomPw = crypto.randomUUID()
+        const hashed = await bcrypt.hash(randomPw, 10)
+        const name = user.name ?? email.split("@")[0]
+
+        const { data: newUser, error } = await supabase
+          .from("users")
+          .insert({
+            email: email.toLowerCase(),
+            password: hashed,
+            name,
+            avatar_url: user.image ?? null,
+            discord_token: account.access_token,
+            discord_username: user.name,
+            discord_user_id: account.providerAccountId,
+            discord_avatar: user.image ?? null,
+          })
+          .select("id, name, username, avatar_url")
+          .single()
+
+        if (error || !newUser) return false
+
+        user.id = newUser.id
+        user.username = newUser.username ?? null
+        user.avatarUrl = newUser.avatar_url ?? null
+        return true
+      }
+      return true
+    },
     jwt({ token, user }) {
       if (user) {
         token.id = user.id

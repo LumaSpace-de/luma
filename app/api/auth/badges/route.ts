@@ -6,6 +6,7 @@ import { BadgeDef, computeUserBadges } from "@/lib/badges"
 import { countFriends } from "@/lib/friends-db"
 import { getPagesByWorkspace } from "@/lib/pages-db"
 import { supabase } from "@/lib/supabase"
+import { getDiscordToken } from "@/lib/users-db"
 import { getWorkspacesByUser } from "@/lib/workspaces-db"
 
 export async function GET() {
@@ -39,6 +40,7 @@ export async function GET() {
   const pageCount = pageCounts.reduce((sum, pages) => sum + pages.length, 0)
 
   const friendCount = await countFriends(userId)
+  const discordData = await getDiscordToken(userId)
 
   const badges: BadgeDef[] = computeUserBadges({
     registrationRank,
@@ -46,6 +48,7 @@ export async function GET() {
     pageCount,
     ownedWorkspaceCount: ownedWorkspaces.length,
     friendCount,
+    discordConnected: !!discordData,
   })
 
   return NextResponse.json(badges)

@@ -60,7 +60,16 @@ export default function DatenschutzPage() {
             </p>
             <p className="mt-1">Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung).</p>
 
-            <h3 className="mb-1 mt-3 font-medium text-foreground/80">d) Nutzungsdaten</h3>
+            <h3 className="mb-1 mt-3 font-medium text-foreground/80">d) Bei Nutzung der Discord-Integration</h3>
+            <p>
+              Wenn du deinen Discord-Account verbindest, wird über den OAuth-Prozess ein Zugangstoken
+              von Discord (Discord Inc., USA) an uns übermittelt und serverseitig gespeichert. Wir erhalten
+              damit Zugriff auf deine öffentlichen Profilinformationen (Benutzername, Avatar). Du kannst
+              die Verbindung jederzeit in den Einstellungen trennen, wobei der Token gelöscht wird.
+            </p>
+            <p className="mt-1">Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung).</p>
+
+            <h3 className="mb-1 mt-3 font-medium text-foreground/80">e) Nutzungsdaten</h3>
             <p>
               Beim Zugriff auf LumaSpace werden automatisch technische Daten erhoben (IP-Adresse,
               Browser-Typ, Zugriffszeitpunkt). Diese Daten werden nicht mit personenbezogenen Daten
@@ -78,7 +87,7 @@ export default function DatenschutzPage() {
               <li>Bereitstellung und Betrieb des LumaSpace-Dienstes</li>
               <li>Authentifizierung und Kontoverwaltung</li>
               <li>Darstellung von Portfolio- und Handelsdaten (MEXC-Integration)</li>
-              <li>Verknüpfung mit Drittdiensten (GitHub, Kalender)</li>
+              <li>Verknüpfung mit Drittdiensten (GitHub, Discord, Kalender)</li>
               <li>Sicherheit und Missbrauchsprävention</li>
             </ul>
             <p className="mt-2">
@@ -100,6 +109,7 @@ export default function DatenschutzPage() {
               <li><strong>Vercel</strong> – Hosting, Edge-Funktionen (USA, SCC)</li>
               <li><strong>Supabase</strong> – Datenbank, Dateispeicher (EU – Frankfurt)</li>
               <li><strong>GitHub/Microsoft</strong> – OAuth-Authentifizierung (USA, SCC)</li>
+              <li><strong>Discord</strong> – OAuth-Authentifizierung, nur bei aktiver Verknüpfung (USA, SCC)</li>
               <li><strong>MEXC Global</strong> – Trading-API, nur bei aktiver Verknüpfung (Seychellen)</li>
               <li><strong>Hostinger</strong> – E-Mail-Versand für Passwort-Reset (EU – Litauen)</li>
             </ul>

@@ -80,7 +80,7 @@ export default function AgbPage() {
           <section>
             <h2 className="mb-2 text-base font-semibold text-foreground">§ 6 Drittanbieter-Integrationen</h2>
             <p>
-              LumaSpace ermöglicht die Verknüpfung mit Drittdiensten (GitHub, MEXC, Kalender-Apps).
+              LumaSpace ermöglicht die Verknüpfung mit Drittdiensten (GitHub, Discord, MEXC, Kalender-Apps).
               Für diese Dienste gelten deren eigene Nutzungsbedingungen und Datenschutzrichtlinien.
               Flux Network ist nicht verantwortlich für die Verfügbarkeit, Richtigkeit oder Sicherheit
               von Drittanbieterdiensten. Du kannst Verknüpfungen jederzeit in den Einstellungen trennen.
