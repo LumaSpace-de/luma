@@ -15,6 +15,7 @@ export interface UserStats {
   pageCount: number
   ownedWorkspaceCount: number
   friendCount: number
+  discordConnected: boolean
 }
 
 export const BADGE_CATALOG: BadgeDef[] = [
@@ -58,6 +59,14 @@ export const BADGE_CATALOG: BadgeDef[] = [
     color: "green",
     category: "achievement",
   },
+  {
+    id: "discord_linked",
+    name: "Discord",
+    description: "Discord-Account verknüpft",
+    icon: "Discord",
+    color: "indigo",
+    category: "status",
+  },
 ]
 
 export function computeUserBadges(stats: UserStats): BadgeDef[] {
@@ -68,6 +77,7 @@ export function computeUserBadges(stats: UserStats): BadgeDef[] {
   if (stats.pageCount >= 1) earned.add("first_page")
   if (stats.ownedWorkspaceCount >= 3) earned.add("workspace_builder")
   if (stats.friendCount >= 5) earned.add("social_butterfly")
+  if (stats.discordConnected) earned.add("discord_linked")
 
   return BADGE_CATALOG.filter((b) => earned.has(b.id))
 }
