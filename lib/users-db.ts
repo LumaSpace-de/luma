@@ -176,6 +176,52 @@ export async function removeMexcKeys(userId: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+// -- Discord token helpers --
+// SQL: ALTER TABLE users ADD COLUMN discord_token text, ADD COLUMN discord_username text, ADD COLUMN discord_user_id text, ADD COLUMN discord_avatar text;
+
+export async function getDiscordToken(userId: string): Promise<{ token: string; username: string; discordUserId: string; avatar: string | null } | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("discord_token, discord_username, discord_user_id, discord_avatar")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error || !data?.discord_token) return null
+  return {
+    token: data.discord_token,
+    username: data.discord_username ?? "",
+    discordUserId: data.discord_user_id ?? "",
+    avatar: data.discord_avatar ?? null,
+  }
+}
+
+export async function setDiscordToken(
+  userId: string,
+  token: string,
+  username: string,
+  discordUserId: string,
+  avatar: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({
+      discord_token: token,
+      discord_username: username,
+      discord_user_id: discordUserId,
+      discord_avatar: avatar,
+    })
+    .eq("id", userId)
+  if (error) throw new Error(error.message)
+}
+
+export async function removeDiscordToken(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({ discord_token: null, discord_username: null, discord_user_id: null, discord_avatar: null })
+    .eq("id", userId)
+  if (error) throw new Error(error.message)
+}
+
 export async function createUser(
   email: string,
   hashedPassword: string
