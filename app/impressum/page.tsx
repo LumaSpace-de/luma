@@ -37,7 +37,7 @@ export default function ImpressumPage() {
           <section>
             <h2 className="mb-2 text-base font-semibold text-foreground">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
             <p>
-              Bezo Alizada<br />
+              Bastian Kroha<br />
               Sandbrink 7<br />
               31558 Hagenburg
             </p>
