@@ -7,10 +7,12 @@ import { supabase } from "./supabase"
 //   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 //   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
 //   name TEXT NOT NULL,
+//   type TEXT NOT NULL DEFAULT 'text',
 //   created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 //   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 //   UNIQUE (workspace_id, name)
 // );
+// -- ALTER TABLE community_channels ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'text';
 //
 // CREATE TABLE IF NOT EXISTS community_posts (
 //   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -30,10 +32,13 @@ import { supabase } from "./supabase"
 
 const DEFAULT_CHANNEL_NAME = "generell"
 
+export type ChannelType = "text" | "news" | "voice"
+
 export interface CommunityChannel {
   id: string
   workspaceId: string
   name: string
+  type: ChannelType
   createdAt: string
 }
 
@@ -70,11 +75,12 @@ function toAuthor(u: { id: string; name: string | null; username: string | null;
   }
 }
 
-function toChannel(c: { id: string; workspace_id: string; name: string; created_at: string }): CommunityChannel {
+function toChannel(c: { id: string; workspace_id: string; name: string; type?: string; created_at: string }): CommunityChannel {
   return {
     id: c.id,
     workspaceId: c.workspace_id,
     name: c.name,
+    type: (c.type as ChannelType) ?? "text",
     createdAt: c.created_at,
   }
 }
@@ -114,23 +120,23 @@ async function ensureDefaultChannel(workspaceId: string, createdBy: string): Pro
 export async function getCommunityChannels(workspaceId: string): Promise<CommunityChannel[]> {
   const { data, error } = await supabase
     .from("community_channels")
-    .select("id, workspace_id, name, created_at")
+    .select("id, workspace_id, name, type, created_at")
     .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: true })
 
   if (error || !data) return []
-  return data.map((c) => toChannel(c as { id: string; workspace_id: string; name: string; created_at: string }))
+  return data.map((c) => toChannel(c as { id: string; workspace_id: string; name: string; type?: string; created_at: string }))
 }
 
-export async function createCommunityChannel(workspaceId: string, createdBy: string, name: string): Promise<CommunityChannel> {
+export async function createCommunityChannel(workspaceId: string, createdBy: string, name: string, type: ChannelType = "text"): Promise<CommunityChannel> {
   const { data, error } = await supabase
     .from("community_channels")
-    .insert({ workspace_id: workspaceId, name, created_by: createdBy })
-    .select("id, workspace_id, name, created_at")
+    .insert({ workspace_id: workspaceId, name, type, created_by: createdBy })
+    .select("id, workspace_id, name, type, created_at")
     .single()
 
   if (error) throw new Error(error.code === "23505" ? "Kanalname bereits vergeben" : error.message)
-  return toChannel(data as { id: string; workspace_id: string; name: string; created_at: string })
+  return toChannel(data as { id: string; workspace_id: string; name: string; type?: string; created_at: string })
 }
 
 export async function deleteCommunityChannel(id: string, workspaceId: string): Promise<void> {

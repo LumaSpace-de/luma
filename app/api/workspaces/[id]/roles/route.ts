@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth"
 import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
-import { type ChannelType, createCommunityChannel, getCommunityChannels, isCommunityEnabled } from "@/lib/community-db"
+import { createWorkspaceRole, getWorkspaceRoles } from "@/lib/roles-db"
 import { getUserRoleInWorkspace } from "@/lib/workspaces-db"
 
 export async function GET(
@@ -19,13 +19,8 @@ export async function GET(
     return NextResponse.json({ error: "Nicht berechtigt" }, { status: 403 })
   }
 
-  const enabled = await isCommunityEnabled(params.id)
-  if (!enabled) {
-    return NextResponse.json({ error: "Community ist für diesen Workspace nicht aktiviert" }, { status: 404 })
-  }
-
-  const channels = await getCommunityChannels(params.id)
-  return NextResponse.json({ channels })
+  const roles = await getWorkspaceRoles(params.id)
+  return NextResponse.json({ roles })
 }
 
 export async function POST(
@@ -37,30 +32,24 @@ export async function POST(
     return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
   }
 
-  const role = await getUserRoleInWorkspace(session.user.id, params.id)
-  if (!role || role === "viewer") {
+  const userRole = await getUserRoleInWorkspace(session.user.id, params.id)
+  if (userRole !== "owner" && userRole !== "admin") {
     return NextResponse.json({ error: "Nicht berechtigt" }, { status: 403 })
   }
 
-  const enabled = await isCommunityEnabled(params.id)
-  if (!enabled) {
-    return NextResponse.json({ error: "Community ist für diesen Workspace nicht aktiviert" }, { status: 404 })
-  }
-
   const body = await req.json().catch(() => null)
-  const name = typeof body?.name === "string"
-    ? body.name.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 40)
-    : ""
+  const name = typeof body?.name === "string" ? body.name.trim().slice(0, 30) : ""
   if (!name) {
     return NextResponse.json({ error: "Name darf nicht leer sein" }, { status: 400 })
   }
 
-  const validTypes: ChannelType[] = ["text", "news", "voice"]
-  const type: ChannelType = validTypes.includes(body?.type) ? body.type : "text"
+  const validColors = ["gray", "red", "orange", "yellow", "green", "blue", "purple", "pink", "indigo"]
+  const color = validColors.includes(body?.color) ? body.color : "gray"
+  const permissions = typeof body?.permissions === "object" ? body.permissions : {}
 
   try {
-    const channel = await createCommunityChannel(params.id, session.user.id, name, type)
-    return NextResponse.json({ channel })
+    const role = await createWorkspaceRole(params.id, name, color, permissions)
+    return NextResponse.json({ role })
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Fehler"
     return NextResponse.json({ error: msg }, { status: 400 })
