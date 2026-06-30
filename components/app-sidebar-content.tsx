@@ -324,6 +324,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
   const [aiOpen, setAiOpen] = useState(false)
 
   const [channels, setChannels] = useState<CommunityChannel[]>([])
+  const [communityExpanded, setCommunityExpanded] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
 
   const [templatesOpen, setTemplatesOpen] = useState(false)
@@ -775,45 +776,53 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
             />
           )}
 
-          {/* Community channels */}
+          {/* Community — merged into the same list as pages, no separate category */}
           {activeWorkspace.communityEnabled && (
-            <div className="mt-3">
-              <div className="mb-1 flex items-center justify-between px-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Community
-                </p>
+            <div>
+              <div
+                className={cn(
+                  "group flex items-center gap-1 rounded-md py-1 pr-1 text-sm transition-colors",
+                  pathname === `/community/${activeWorkspace.id}`
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                )}
+                style={{ paddingLeft: "8px" }}
+              >
+                <button
+                  className="flex h-4 w-4 shrink-0 items-center justify-center"
+                  onClick={() => setCommunityExpanded((v) => !v)}
+                >
+                  {channels.length > 0 ? (
+                    communityExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />
+                  ) : (
+                    <span className="h-3 w-3" />
+                  )}
+                </button>
                 <Link
                   href={`/community/${activeWorkspace.id}`}
-                  className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  title="Community öffnen"
+                  onClick={onClose}
+                  className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-sm"
                 >
-                  <Users className="h-3.5 w-3.5" />
+                  <Users className="h-3.5 w-3.5 shrink-0 opacity-40" />
+                  <span className="truncate">Community</span>
                 </Link>
               </div>
-              {channels.length === 0 ? (
-                <p className="px-2 text-xs text-muted-foreground/50">Keine Kanäle</p>
-              ) : (
-                channels.map((ch) => {
-                  const href = `/community/${activeWorkspace.id}?c=${ch.id}`
-                  const active = pathname === `/community/${activeWorkspace.id}`
-                  return (
-                    <Link
-                      key={ch.id}
-                      href={href}
-                      onClick={onClose}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors",
-                        active
-                          ? "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                          : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                      )}
-                    >
-                      <Hash className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{ch.name}</span>
-                    </Link>
-                  )
-                })
-              )}
+
+              {communityExpanded && channels.map((ch) => {
+                const href = `/community/${activeWorkspace.id}?c=${ch.id}`
+                return (
+                  <Link
+                    key={ch.id}
+                    href={href}
+                    onClick={onClose}
+                    className="flex items-center gap-1.5 rounded-md py-1 pr-1 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                    style={{ paddingLeft: "20px" }}
+                  >
+                    <Hash className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{ch.name}</span>
+                  </Link>
+                )
+              })}
             </div>
           )}
         </div>
@@ -826,6 +835,7 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         onOpenChange={setTemplatesOpen}
         workspaceId={templatesWorkspaceId ?? activeWorkspace?.id ?? null}
         parentId={templatesParentId}
+        allowCommunity={templatesWorkspaceId !== privateWorkspace?.id}
         onCreated={(page) => {
           const newPage: Page = { id: page.id, title: page.title, parentId: templatesParentId, icon: null }
           if (templatesWorkspaceId === privateWorkspace?.id) {
@@ -833,6 +843,14 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
           } else {
             setPages((prev) => [...prev, newPage])
           }
+        }}
+        onCommunityEnabled={(workspaceId) => {
+          setWorkspaces((prev) => prev.map((w) => (w.id === workspaceId ? { ...w, communityEnabled: true } : w)))
+          setActiveWorkspace((prev) => (prev && prev.id === workspaceId ? { ...prev, communityEnabled: true } : prev))
+          fetch(`/api/workspaces/${workspaceId}/community/channels`)
+            .then((r) => r.json())
+            .then((data) => { if (Array.isArray(data?.channels)) setChannels(data.channels) })
+            .catch(() => {})
         }}
       />
 
