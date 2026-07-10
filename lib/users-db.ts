@@ -254,6 +254,35 @@ export async function removeDiscordToken(userId: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+// -- Anthropic API key helpers --
+// SQL: ALTER TABLE users ADD COLUMN IF NOT EXISTS anthropic_api_key TEXT;
+
+export async function getAnthropicApiKey(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("anthropic_api_key")
+    .eq("id", userId)
+    .maybeSingle()
+  if (error || !data?.anthropic_api_key) return null
+  return data.anthropic_api_key
+}
+
+export async function setAnthropicApiKey(userId: string, key: string): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({ anthropic_api_key: key })
+    .eq("id", userId)
+  if (error) throw new Error(error.message)
+}
+
+export async function removeAnthropicApiKey(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from("users")
+    .update({ anthropic_api_key: null })
+    .eq("id", userId)
+  if (error) throw new Error(error.message)
+}
+
 export async function createUser(
   email: string,
   hashedPassword: string

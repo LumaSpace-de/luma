@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
-import { Bell, Building2, Camera, GitBranch, Key, LinkIcon, MessageCircle, PanelLeft, Shield, User, Wallet } from "lucide-react"
+import { Bell, Bot, Building2, Camera, GitBranch, Key, LinkIcon, MessageCircle, PanelLeft, Shield, Sparkles, User, Wallet } from "lucide-react"
 
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
@@ -65,6 +65,13 @@ export default function SettingsPage() {
   const [mexcError, setMexcError] = useState("")
   const [mexcSuccess, setMexcSuccess] = useState(false)
 
+  // Claude AI
+  const [claudeConnected, setClaudeConnected] = useState(false)
+  const [claudeKey, setClaudeKey] = useState("")
+  const [claudeLoading, setClaudeLoading] = useState(false)
+  const [claudeError, setClaudeError] = useState("")
+  const [claudeSuccess, setClaudeSuccess] = useState(false)
+
   // Discord
   const [dcConnected, setDcConnected] = useState(false)
   const [dcUsername, setDcUsername] = useState("")
@@ -113,6 +120,13 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data?.connected) setMexcConnected(true)
+      })
+      .catch(() => {})
+
+    fetch("/api/ai/key")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.connected) setClaudeConnected(true)
       })
       .catch(() => {})
 
@@ -769,6 +783,98 @@ export default function SettingsPage() {
                         </a>
                       </Button>
                     </div>
+                  )}
+                </div>
+              </section>
+              {/* Claude AI */}
+              <section className="mt-4 rounded-xl border bg-card p-5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-violet-400" />
+                  <h3 className="text-sm font-semibold">Claude AI</h3>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Verbinde deinen Anthropic API Key, um Claude direkt in LumaSpace zu nutzen.
+                  API Key erstellen unter{" "}
+                  <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline">
+                    console.anthropic.com
+                  </a>.
+                </p>
+
+                <div className="mt-4">
+                  {claudeConnected ? (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+                        <Bot className="h-5 w-5 text-violet-400" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Claude AI verbunden</p>
+                          <p className="text-xs text-muted-foreground">Anthropic API Key ist gespeichert</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          setClaudeLoading(true)
+                          await fetch("/api/ai/key", { method: "DELETE" })
+                          setClaudeConnected(false)
+                          setClaudeLoading(false)
+                        }}
+                        disabled={claudeLoading}
+                      >
+                        {claudeLoading ? "Wird getrennt…" : "Verbindung trennen"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault()
+                        setClaudeError("")
+                        setClaudeSuccess(false)
+                        setClaudeLoading(true)
+
+                        const res = await fetch("/api/ai/key", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ apiKey: claudeKey }),
+                        })
+                        const data = await res.json()
+
+                        if (!res.ok) {
+                          setClaudeError(data.error || "Verbindung fehlgeschlagen")
+                        } else {
+                          setClaudeSuccess(true)
+                          setClaudeConnected(true)
+                          setClaudeKey("")
+                        }
+                        setClaudeLoading(false)
+                      }}
+                      className="flex flex-col gap-3"
+                    >
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="claude-key" className="text-xs">API Key</Label>
+                        <Input
+                          id="claude-key"
+                          type="password"
+                          placeholder="sk-ant-..."
+                          value={claudeKey}
+                          onChange={(e) => setClaudeKey(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      {claudeError && (
+                        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{claudeError}</p>
+                      )}
+                      {claudeSuccess && (
+                        <p className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-500">Claude AI erfolgreich verbunden</p>
+                      )}
+
+                      <Button type="submit" size="sm" className="gap-2" disabled={claudeLoading}>
+                        <Sparkles className="h-4 w-4" />
+                        {claudeLoading ? "Wird verbunden…" : "Claude AI verbinden"}
+                      </Button>
+                    </form>
                   )}
                 </div>
               </section>
