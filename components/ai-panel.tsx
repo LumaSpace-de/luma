@@ -12,10 +12,12 @@ interface Message {
 }
 
 export function AiPanel({ onClose }: { onClose: () => void }) {
-  const [connected, setConnected] = useState<boolean | null>(null)
+  const [status, setStatus] = useState<"loading" | "disconnected" | "connecting" | "connected">("loading")
+  const [platform, setPlatform] = useState(false)
+  const [showKeyForm, setShowKeyForm] = useState(false)
   const [apiKey, setApiKey] = useState("")
-  const [keyLoading, setKeyLoading] = useState(false)
   const [keyError, setKeyError] = useState("")
+  const [keyLoading, setKeyLoading] = useState(false)
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -26,15 +28,41 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     fetch("/api/ai/key")
       .then((r) => r.json())
-      .then((d) => setConnected(!!d.connected))
-      .catch(() => setConnected(false))
+      .then((d) => {
+        setPlatform(!!d.platform)
+        setStatus(d.connected ? "connected" : "disconnected")
+      })
+      .catch(() => setStatus("disconnected"))
   }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  async function handleConnect(e: React.FormEvent) {
+  async function handleConnect() {
+    setStatus("connecting")
+    setKeyError("")
+    const res = await fetch("/api/ai/key", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    })
+    const data = await res.json()
+
+    if (data.needsKey) {
+      setStatus("disconnected")
+      setShowKeyForm(true)
+      return
+    }
+    if (res.ok && data.success) {
+      setPlatform(!!data.platform)
+      setStatus("connected")
+      return
+    }
+    setStatus("disconnected")
+  }
+
+  async function handleKeySubmit(e: React.FormEvent) {
     e.preventDefault()
     setKeyError("")
     setKeyLoading(true)
@@ -44,18 +72,22 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
       body: JSON.stringify({ apiKey: apiKey.trim() }),
     })
     const data = await res.json()
-    if (res.ok) {
-      setConnected(true)
+    if (res.ok && data.success) {
       setApiKey("")
+      setShowKeyForm(false)
+      setPlatform(false)
+      setStatus("connected")
     } else {
-      setKeyError(data.error ?? "Fehler")
+      setKeyError(data.error ?? "Fehler beim Verbinden")
     }
     setKeyLoading(false)
   }
 
   async function handleDisconnect() {
+    if (platform) return
     await fetch("/api/ai/key", { method: "DELETE" })
-    setConnected(false)
+    setStatus("disconnected")
+    setShowKeyForm(false)
     setMessages([])
   }
 
@@ -68,7 +100,6 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
     setMessages(newMessages)
     setInput("")
     setStreaming(true)
-
     setMessages((prev) => [...prev, { role: "assistant", content: "" }])
 
     try {
@@ -81,11 +112,11 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
       })
 
       if (!res.ok || !res.body) {
-        const err = await res.json().catch(() => ({ error: "Fehler beim Verbinden" }))
+        const err = await res.json().catch(() => ({ error: "Fehler" }))
         setMessages((prev) => {
-          const updated = [...prev]
-          updated[updated.length - 1] = { role: "assistant", content: `Fehler: ${err.error ?? "Unbekannt"}` }
-          return updated
+          const u = [...prev]
+          u[u.length - 1] = { role: "assistant", content: `Fehler: ${err.error ?? "Unbekannt"}` }
+          return u
         })
         setStreaming(false)
         return
@@ -99,19 +130,16 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
         if (done) break
         const chunk = decoder.decode(value)
         setMessages((prev) => {
-          const updated = [...prev]
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: updated[updated.length - 1].content + chunk,
-          }
-          return updated
+          const u = [...prev]
+          u[u.length - 1] = { role: "assistant", content: u[u.length - 1].content + chunk }
+          return u
         })
       }
     } catch {
       setMessages((prev) => {
-        const updated = [...prev]
-        updated[updated.length - 1] = { role: "assistant", content: "Verbindungsfehler" }
-        return updated
+        const u = [...prev]
+        u[u.length - 1] = { role: "assistant", content: "Verbindungsfehler" }
+        return u
       })
     }
 
@@ -127,7 +155,7 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
           <Sparkles className="h-3.5 w-3.5 text-violet-400" />
         </div>
         <span className="flex-1 text-sm font-semibold">Claude AI</span>
-        {connected && (
+        {status === "connected" && !platform && (
           <button
             type="button"
             onClick={handleDisconnect}
@@ -141,54 +169,88 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
         </Button>
       </div>
 
-      {connected === null ? (
+      {/* Body */}
+      {status === "loading" ? (
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
-      ) : !connected ? (
-        /* Connect form */
+      ) : status !== "connected" ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-5 p-6">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-600/20">
             <Sparkles className="h-7 w-7 text-violet-400" />
           </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold">Claude AI verbinden</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Gib deinen Anthropic API Key ein, um Claude direkt in LumaSpace zu nutzen.
-            </p>
-          </div>
-          <form onSubmit={handleConnect} className="flex w-full flex-col gap-2">
-            <div className="relative">
-              <Key className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <input
-                type="password"
-                placeholder="sk-ant-..."
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                required
-              />
-            </div>
-            {keyError && <p className="text-[11px] text-destructive">{keyError}</p>}
-            <Button type="submit" size="sm" disabled={keyLoading || !apiKey.trim()} className="gap-2">
-              {keyLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              Verbinden
-            </Button>
-            <p className="text-center text-[10px] text-muted-foreground">
-              API Key erhältlich unter{" "}
-              <a
-                href="https://console.anthropic.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary underline-offset-2 hover:underline"
+
+          {!showKeyForm ? (
+            <>
+              <div className="text-center">
+                <p className="text-sm font-semibold">Claude AI</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Verbinde Claude AI, um direkt in LumaSpace mit dem KI-Assistenten zu chatten.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                className="gap-2"
+                onClick={handleConnect}
+                disabled={status === "connecting"}
               >
-                console.anthropic.com
-              </a>
-            </p>
-          </form>
+                {status === "connecting" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                Mit Claude AI verbinden
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="text-center">
+                <p className="text-sm font-semibold">API Key eingeben</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Erstelle einen Key unter{" "}
+                  <a
+                    href="https://console.anthropic.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline-offset-2 hover:underline"
+                  >
+                    console.anthropic.com
+                  </a>
+                </p>
+              </div>
+              <form onSubmit={handleKeySubmit} className="flex w-full flex-col gap-2">
+                <div className="relative">
+                  <Key className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="password"
+                    placeholder="sk-ant-..."
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    required
+                    autoFocus
+                  />
+                </div>
+                {keyError && <p className="text-[11px] text-destructive">{keyError}</p>}
+                <div className="flex gap-2">
+                  <Button type="submit" size="sm" className="flex-1 gap-2" disabled={keyLoading || !apiKey.trim()}>
+                    {keyLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                    Verbinden
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowKeyForm(false)}
+                  >
+                    Zurück
+                  </Button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       ) : (
-        /* Chat UI */
         <>
           <div className="flex-1 space-y-3 overflow-y-auto p-3">
             {messages.length === 0 ? (

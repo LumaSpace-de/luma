@@ -9,8 +9,12 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
 
-  const apiKey = await getAnthropicApiKey(session.user.id)
-  if (!apiKey) return NextResponse.json({ error: "Kein Claude API Key gespeichert" }, { status: 402 })
+  const apiKey =
+    process.env.ANTHROPIC_API_KEY ?? (await getAnthropicApiKey(session.user.id))
+
+  if (!apiKey) {
+    return NextResponse.json({ error: "Claude AI ist nicht verbunden" }, { status: 402 })
+  }
 
   const body = await req.json()
   const messages: { role: "user" | "assistant"; content: string }[] = body?.messages ?? []
@@ -24,7 +28,8 @@ export async function POST(req: NextRequest) {
   const stream = anthropic.messages.stream({
     model: "claude-opus-4-8",
     max_tokens: 2048,
-    system: "Du bist ein hilfreicher Assistent in LumaSpace. Antworte auf Deutsch, außer der Nutzer schreibt in einer anderen Sprache.",
+    system:
+      "Du bist ein hilfreicher Assistent in LumaSpace. Antworte auf Deutsch, außer der Nutzer schreibt in einer anderen Sprache.",
     messages,
   })
 
