@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 
+import { AiPanel } from "@/components/ai-panel"
 import { TemplatesDialog } from "@/components/templates-dialog"
 import {
   BarChart2,
@@ -473,7 +474,8 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
   const canDelete = activeRole === "owner" || activeRole === "admin"
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden">
+    <div className="relative flex h-full w-full flex-col overflow-hidden">
+      {aiOpen && <AiPanel onClose={() => setAiOpen(false)} />}
       {/* Workspace switcher — top */}
       <div className="border-b p-3">
         {activeWorkspace ? (
