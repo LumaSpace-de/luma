@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
-import { Bell, Bot, Building2, Camera, GitBranch, Key, LinkIcon, MessageCircle, PanelLeft, Shield, Sparkles, User, Wallet } from "lucide-react"
+import { Bell, Bot, Building2, Camera, GitBranch, Key, LinkIcon, Loader2, MessageCircle, PanelLeft, Shield, Sparkles, User, Wallet } from "lucide-react"
 
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
@@ -67,6 +67,8 @@ export default function SettingsPage() {
 
   // Claude AI
   const [claudeConnected, setClaudeConnected] = useState(false)
+  const [claudePlatform, setClaudePlatform] = useState(false)
+  const [claudeShowKey, setClaudeShowKey] = useState(false)
   const [claudeKey, setClaudeKey] = useState("")
   const [claudeLoading, setClaudeLoading] = useState(false)
   const [claudeError, setClaudeError] = useState("")
@@ -127,6 +129,7 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data?.connected) setClaudeConnected(true)
+        if (data?.platform) setClaudePlatform(true)
       })
       .catch(() => {})
 
@@ -793,11 +796,7 @@ export default function SettingsPage() {
                   <h3 className="text-sm font-semibold">Claude AI</h3>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Verbinde deinen Anthropic API Key, um Claude direkt in LumaSpace zu nutzen.
-                  API Key erstellen unter{" "}
-                  <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline">
-                    console.anthropic.com
-                  </a>.
+                  Verbinde Claude AI mit LumaSpace, um den KI-Assistenten direkt zu nutzen.
                 </p>
 
                 <div className="mt-4">
@@ -807,52 +806,66 @@ export default function SettingsPage() {
                         <Bot className="h-5 w-5 text-violet-400" />
                         <div className="flex-1">
                           <p className="text-sm font-medium">Claude AI verbunden</p>
-                          <p className="text-xs text-muted-foreground">Anthropic API Key ist gespeichert</p>
+                          <p className="text-xs text-muted-foreground">
+                            {claudePlatform ? "Plattform-Verbindung aktiv" : "Eigener API Key gespeichert"}
+                          </p>
                         </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={async () => {
-                          setClaudeLoading(true)
-                          await fetch("/api/ai/key", { method: "DELETE" })
-                          setClaudeConnected(false)
-                          setClaudeLoading(false)
-                        }}
-                        disabled={claudeLoading}
-                      >
-                        {claudeLoading ? "Wird getrennt…" : "Verbindung trennen"}
-                      </Button>
+                      {!claudePlatform && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={async () => {
+                            setClaudeLoading(true)
+                            await fetch("/api/ai/key", { method: "DELETE" })
+                            setClaudeConnected(false)
+                            setClaudeLoading(false)
+                          }}
+                          disabled={claudeLoading}
+                        >
+                          {claudeLoading ? "Wird getrennt…" : "Verbindung trennen"}
+                        </Button>
+                      )}
                     </div>
-                  ) : (
+                  ) : claudeShowKey ? (
                     <form
                       onSubmit={async (e) => {
                         e.preventDefault()
                         setClaudeError("")
                         setClaudeSuccess(false)
                         setClaudeLoading(true)
-
                         const res = await fetch("/api/ai/key", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ apiKey: claudeKey }),
                         })
                         const data = await res.json()
-
-                        if (!res.ok) {
-                          setClaudeError(data.error || "Verbindung fehlgeschlagen")
-                        } else {
+                        if (res.ok && data.success) {
                           setClaudeSuccess(true)
                           setClaudeConnected(true)
+                          setClaudePlatform(false)
+                          setClaudeShowKey(false)
                           setClaudeKey("")
+                        } else {
+                          setClaudeError(data.error || "Verbindung fehlgeschlagen")
                         }
                         setClaudeLoading(false)
                       }}
                       className="flex flex-col gap-3"
                     >
                       <div className="flex flex-col gap-1.5">
-                        <Label htmlFor="claude-key" className="text-xs">API Key</Label>
+                        <Label htmlFor="claude-key" className="text-xs">
+                          API Key{" "}
+                          <a
+                            href="https://console.anthropic.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline-offset-2 hover:underline"
+                          >
+                            (console.anthropic.com)
+                          </a>
+                        </Label>
                         <Input
                           id="claude-key"
                           type="password"
@@ -860,21 +873,70 @@ export default function SettingsPage() {
                           value={claudeKey}
                           onChange={(e) => setClaudeKey(e.target.value)}
                           required
+                          autoFocus
                         />
                       </div>
-
+                      {claudeError && (
+                        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{claudeError}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm" className="gap-2" disabled={claudeLoading || !claudeKey.trim()}>
+                          <Sparkles className="h-4 w-4" />
+                          {claudeLoading ? "Wird verbunden…" : "Verbinden"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setClaudeShowKey(false); setClaudeError("") }}
+                        >
+                          Abbrechen
+                        </Button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="flex flex-col gap-3">
                       {claudeError && (
                         <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{claudeError}</p>
                       )}
                       {claudeSuccess && (
                         <p className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-500">Claude AI erfolgreich verbunden</p>
                       )}
-
-                      <Button type="submit" size="sm" className="gap-2" disabled={claudeLoading}>
-                        <Sparkles className="h-4 w-4" />
-                        {claudeLoading ? "Wird verbunden…" : "Claude AI verbinden"}
+                      <Button
+                        size="sm"
+                        className="gap-2"
+                        disabled={claudeLoading}
+                        onClick={async () => {
+                          setClaudeError("")
+                          setClaudeSuccess(false)
+                          setClaudeLoading(true)
+                          const res = await fetch("/api/ai/key", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({}),
+                          })
+                          const data = await res.json()
+                          setClaudeLoading(false)
+                          if (data.needsKey) {
+                            setClaudeShowKey(true)
+                            return
+                          }
+                          if (res.ok && data.success) {
+                            setClaudeConnected(true)
+                            setClaudePlatform(!!data.platform)
+                          } else {
+                            setClaudeError(data.error || "Verbindung fehlgeschlagen")
+                          }
+                        }}
+                      >
+                        {claudeLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
+                        {claudeLoading ? "Wird verbunden…" : "Mit Claude AI verbinden"}
                       </Button>
-                    </form>
+                    </div>
                   )}
                 </div>
               </section>
