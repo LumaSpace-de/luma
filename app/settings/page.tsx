@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
-import { Bell, Bot, Building2, Camera, GitBranch, Key, LinkIcon, Loader2, MessageCircle, PanelLeft, Shield, Sparkles, User, Wallet } from "lucide-react"
+import { Bell, Bot, Building2, Camera, GitBranch, LinkIcon, Loader2, MessageCircle, PanelLeft, Shield, Sparkles, User, Wallet } from "lucide-react"
 
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
@@ -67,9 +67,6 @@ export default function SettingsPage() {
 
   // Claude AI
   const [claudeConnected, setClaudeConnected] = useState(false)
-  const [claudePlatform, setClaudePlatform] = useState(false)
-  const [claudeShowKey, setClaudeShowKey] = useState(false)
-  const [claudeKey, setClaudeKey] = useState("")
   const [claudeLoading, setClaudeLoading] = useState(false)
   const [claudeError, setClaudeError] = useState("")
   const [claudeSuccess, setClaudeSuccess] = useState(false)
@@ -125,11 +122,14 @@ export default function SettingsPage() {
       })
       .catch(() => {})
 
-    fetch("/api/ai/key")
+    const claudeParam = searchParams.get("claude")
+    if (claudeParam === "error") setClaudeError("Claude-Verbindung fehlgeschlagen")
+    if (claudeParam === "connected") setClaudeSuccess(true)
+
+    fetch("/api/claude/status")
       .then((r) => r.json())
       .then((data) => {
         if (data?.connected) setClaudeConnected(true)
-        if (data?.platform) setClaudePlatform(true)
       })
       .catch(() => {})
 
@@ -806,94 +806,24 @@ export default function SettingsPage() {
                         <Bot className="h-5 w-5 text-violet-400" />
                         <div className="flex-1">
                           <p className="text-sm font-medium">Claude AI verbunden</p>
-                          <p className="text-xs text-muted-foreground">
-                            {claudePlatform ? "Plattform-Verbindung aktiv" : "Eigener API Key gespeichert"}
-                          </p>
+                          <p className="text-xs text-muted-foreground">OAuth-Verbindung aktiv</p>
                         </div>
                       </div>
-                      {!claudePlatform && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={async () => {
-                            setClaudeLoading(true)
-                            await fetch("/api/ai/key", { method: "DELETE" })
-                            setClaudeConnected(false)
-                            setClaudeLoading(false)
-                          }}
-                          disabled={claudeLoading}
-                        >
-                          {claudeLoading ? "Wird getrennt…" : "Verbindung trennen"}
-                        </Button>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          setClaudeLoading(true)
+                          await fetch("/api/claude/disconnect", { method: "POST" })
+                          setClaudeConnected(false)
+                          setClaudeLoading(false)
+                        }}
+                        disabled={claudeLoading}
+                      >
+                        {claudeLoading ? "Wird getrennt…" : "Verbindung trennen"}
+                      </Button>
                     </div>
-                  ) : claudeShowKey ? (
-                    <form
-                      onSubmit={async (e) => {
-                        e.preventDefault()
-                        setClaudeError("")
-                        setClaudeSuccess(false)
-                        setClaudeLoading(true)
-                        const res = await fetch("/api/ai/key", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ apiKey: claudeKey }),
-                        })
-                        const data = await res.json()
-                        if (res.ok && data.success) {
-                          setClaudeSuccess(true)
-                          setClaudeConnected(true)
-                          setClaudePlatform(false)
-                          setClaudeShowKey(false)
-                          setClaudeKey("")
-                        } else {
-                          setClaudeError(data.error || "Verbindung fehlgeschlagen")
-                        }
-                        setClaudeLoading(false)
-                      }}
-                      className="flex flex-col gap-3"
-                    >
-                      <div className="flex flex-col gap-1.5">
-                        <Label htmlFor="claude-key" className="text-xs">
-                          API Key{" "}
-                          <a
-                            href="https://console.anthropic.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary underline-offset-2 hover:underline"
-                          >
-                            (console.anthropic.com)
-                          </a>
-                        </Label>
-                        <Input
-                          id="claude-key"
-                          type="password"
-                          placeholder="sk-ant-..."
-                          value={claudeKey}
-                          onChange={(e) => setClaudeKey(e.target.value)}
-                          required
-                          autoFocus
-                        />
-                      </div>
-                      {claudeError && (
-                        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{claudeError}</p>
-                      )}
-                      <div className="flex gap-2">
-                        <Button type="submit" size="sm" className="gap-2" disabled={claudeLoading || !claudeKey.trim()}>
-                          <Sparkles className="h-4 w-4" />
-                          {claudeLoading ? "Wird verbunden…" : "Verbinden"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setClaudeShowKey(false); setClaudeError("") }}
-                        >
-                          Abbrechen
-                        </Button>
-                      </div>
-                    </form>
                   ) : (
                     <div className="flex flex-col gap-3">
                       {claudeError && (
@@ -902,39 +832,11 @@ export default function SettingsPage() {
                       {claudeSuccess && (
                         <p className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-500">Claude AI erfolgreich verbunden</p>
                       )}
-                      <Button
-                        size="sm"
-                        className="gap-2"
-                        disabled={claudeLoading}
-                        onClick={async () => {
-                          setClaudeError("")
-                          setClaudeSuccess(false)
-                          setClaudeLoading(true)
-                          const res = await fetch("/api/ai/key", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({}),
-                          })
-                          const data = await res.json()
-                          setClaudeLoading(false)
-                          if (data.needsKey) {
-                            setClaudeShowKey(true)
-                            return
-                          }
-                          if (res.ok && data.success) {
-                            setClaudeConnected(true)
-                            setClaudePlatform(!!data.platform)
-                          } else {
-                            setClaudeError(data.error || "Verbindung fehlgeschlagen")
-                          }
-                        }}
-                      >
-                        {claudeLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
+                      <Button asChild size="sm" className="gap-2">
+                        <a href="/api/claude/authorize">
                           <Sparkles className="h-4 w-4" />
-                        )}
-                        {claudeLoading ? "Wird verbunden…" : "Mit Claude AI verbinden"}
+                          Mit Claude AI verbinden
+                        </a>
                       </Button>
                     </div>
                   )}

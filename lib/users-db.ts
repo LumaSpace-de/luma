@@ -254,31 +254,38 @@ export async function removeDiscordToken(userId: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
-// -- Anthropic API key helpers --
-// SQL: ALTER TABLE users ADD COLUMN IF NOT EXISTS anthropic_api_key TEXT;
+// -- Anthropic OAuth token helpers --
+// SQL: ALTER TABLE users
+//   ADD COLUMN IF NOT EXISTS anthropic_access_token TEXT,
+//   ADD COLUMN IF NOT EXISTS anthropic_refresh_token TEXT,
+//   ADD COLUMN IF NOT EXISTS anthropic_token_expiry BIGINT;
 
-export async function getAnthropicApiKey(userId: string): Promise<string | null> {
+export async function getAnthropicToken(userId: string): Promise<{ accessToken: string; refreshToken: string | null; expiresAt: number | null } | null> {
   const { data, error } = await supabase
     .from("users")
-    .select("anthropic_api_key")
+    .select("anthropic_access_token, anthropic_refresh_token, anthropic_token_expiry")
     .eq("id", userId)
     .maybeSingle()
-  if (error || !data?.anthropic_api_key) return null
-  return data.anthropic_api_key
+  if (error || !data?.anthropic_access_token) return null
+  return {
+    accessToken: data.anthropic_access_token,
+    refreshToken: data.anthropic_refresh_token ?? null,
+    expiresAt: data.anthropic_token_expiry ?? null,
+  }
 }
 
-export async function setAnthropicApiKey(userId: string, key: string): Promise<void> {
+export async function setAnthropicToken(userId: string, accessToken: string, refreshToken: string | null, expiresAt: number | null): Promise<void> {
   const { error } = await supabase
     .from("users")
-    .update({ anthropic_api_key: key })
+    .update({ anthropic_access_token: accessToken, anthropic_refresh_token: refreshToken, anthropic_token_expiry: expiresAt })
     .eq("id", userId)
   if (error) throw new Error(error.message)
 }
 
-export async function removeAnthropicApiKey(userId: string): Promise<void> {
+export async function removeAnthropicToken(userId: string): Promise<void> {
   const { error } = await supabase
     .from("users")
-    .update({ anthropic_api_key: null })
+    .update({ anthropic_access_token: null, anthropic_refresh_token: null, anthropic_token_expiry: null })
     .eq("id", userId)
   if (error) throw new Error(error.message)
 }

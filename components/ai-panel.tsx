@@ -1,6 +1,6 @@
 "use client"
 
-import { Bot, Key, Loader2, Send, Sparkles, X } from "lucide-react"
+import { Bot, Loader2, Send, Sparkles, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -12,12 +12,7 @@ interface Message {
 }
 
 export function AiPanel({ onClose }: { onClose: () => void }) {
-  const [status, setStatus] = useState<"loading" | "disconnected" | "connecting" | "connected">("loading")
-  const [platform, setPlatform] = useState(false)
-  const [showKeyForm, setShowKeyForm] = useState(false)
-  const [apiKey, setApiKey] = useState("")
-  const [keyError, setKeyError] = useState("")
-  const [keyLoading, setKeyLoading] = useState(false)
+  const [status, setStatus] = useState<"loading" | "disconnected" | "connected">("loading")
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -26,12 +21,9 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    fetch("/api/ai/key")
+    fetch("/api/claude/status")
       .then((r) => r.json())
-      .then((d) => {
-        setPlatform(!!d.platform)
-        setStatus(d.connected ? "connected" : "disconnected")
-      })
+      .then((d) => setStatus(d.connected ? "connected" : "disconnected"))
       .catch(() => setStatus("disconnected"))
   }, [])
 
@@ -39,55 +31,9 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  async function handleConnect() {
-    setStatus("connecting")
-    setKeyError("")
-    const res = await fetch("/api/ai/key", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    })
-    const data = await res.json()
-
-    if (data.needsKey) {
-      setStatus("disconnected")
-      setShowKeyForm(true)
-      return
-    }
-    if (res.ok && data.success) {
-      setPlatform(!!data.platform)
-      setStatus("connected")
-      return
-    }
-    setStatus("disconnected")
-  }
-
-  async function handleKeySubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setKeyError("")
-    setKeyLoading(true)
-    const res = await fetch("/api/ai/key", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey: apiKey.trim() }),
-    })
-    const data = await res.json()
-    if (res.ok && data.success) {
-      setApiKey("")
-      setShowKeyForm(false)
-      setPlatform(false)
-      setStatus("connected")
-    } else {
-      setKeyError(data.error ?? "Fehler beim Verbinden")
-    }
-    setKeyLoading(false)
-  }
-
   async function handleDisconnect() {
-    if (platform) return
-    await fetch("/api/ai/key", { method: "DELETE" })
+    await fetch("/api/claude/disconnect", { method: "POST" })
     setStatus("disconnected")
-    setShowKeyForm(false)
     setMessages([])
   }
 
@@ -155,7 +101,7 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
           <Sparkles className="h-3.5 w-3.5 text-violet-400" />
         </div>
         <span className="flex-1 text-sm font-semibold">Claude AI</span>
-        {status === "connected" && !platform && (
+        {status === "connected" && (
           <button
             type="button"
             onClick={handleDisconnect}
@@ -174,81 +120,23 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
-      ) : status !== "connected" ? (
+      ) : status === "disconnected" ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-5 p-6">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-600/20">
             <Sparkles className="h-7 w-7 text-violet-400" />
           </div>
-
-          {!showKeyForm ? (
-            <>
-              <div className="text-center">
-                <p className="text-sm font-semibold">Claude AI</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Verbinde Claude AI, um direkt in LumaSpace mit dem KI-Assistenten zu chatten.
-                </p>
-              </div>
-              <Button
-                size="sm"
-                className="gap-2"
-                onClick={handleConnect}
-                disabled={status === "connecting"}
-              >
-                {status === "connecting" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-3.5 w-3.5" />
-                )}
-                Mit Claude AI verbinden
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="text-center">
-                <p className="text-sm font-semibold">API Key eingeben</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Erstelle einen Key unter{" "}
-                  <a
-                    href="https://console.anthropic.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline-offset-2 hover:underline"
-                  >
-                    console.anthropic.com
-                  </a>
-                </p>
-              </div>
-              <form onSubmit={handleKeySubmit} className="flex w-full flex-col gap-2">
-                <div className="relative">
-                  <Key className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="password"
-                    placeholder="sk-ant-..."
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    required
-                    autoFocus
-                  />
-                </div>
-                {keyError && <p className="text-[11px] text-destructive">{keyError}</p>}
-                <div className="flex gap-2">
-                  <Button type="submit" size="sm" className="flex-1 gap-2" disabled={keyLoading || !apiKey.trim()}>
-                    {keyLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                    Verbinden
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowKeyForm(false)}
-                  >
-                    Zurück
-                  </Button>
-                </div>
-              </form>
-            </>
-          )}
+          <div className="text-center">
+            <p className="text-sm font-semibold">Claude AI</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Verbinde Claude AI, um direkt in LumaSpace mit dem KI-Assistenten zu chatten.
+            </p>
+          </div>
+          <Button size="sm" className="gap-2" asChild>
+            <a href="/api/claude/authorize">
+              <Sparkles className="h-3.5 w-3.5" />
+              Mit Claude AI verbinden
+            </a>
+          </Button>
         </div>
       ) : (
         <>
