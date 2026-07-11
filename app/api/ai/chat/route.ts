@@ -3,15 +3,14 @@ import { getServerSession } from "next-auth"
 import { NextRequest, NextResponse } from "next/server"
 
 import { authOptions } from "@/lib/auth"
-import { getAnthropicToken } from "@/lib/users-db"
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 })
 
-  const token = await getAnthropicToken(session.user.id)
-  if (!token) {
-    return NextResponse.json({ error: "Claude AI ist nicht verbunden" }, { status: 402 })
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    return NextResponse.json({ error: "Claude AI ist nicht konfiguriert" }, { status: 402 })
   }
 
   const body = await req.json()
@@ -21,10 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Keine Nachrichten" }, { status: 400 })
   }
 
-  const anthropic = new Anthropic({
-    apiKey: "oauth-placeholder",
-    authToken: token.accessToken,
-  })
+  const anthropic = new Anthropic({ apiKey })
 
   const stream = anthropic.messages.stream({
     model: "claude-opus-4-8",

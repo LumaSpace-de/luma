@@ -67,7 +67,6 @@ export default function SettingsPage() {
 
   // Claude AI
   const [claudeConnected, setClaudeConnected] = useState(false)
-  const [claudeLoading, setClaudeLoading] = useState(false)
   const [claudeError, setClaudeError] = useState("")
   const [claudeSuccess, setClaudeSuccess] = useState(false)
 
@@ -801,28 +800,12 @@ export default function SettingsPage() {
 
                 <div className="mt-4">
                   {claudeConnected ? (
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
-                        <Bot className="h-5 w-5 text-violet-400" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Claude AI verbunden</p>
-                          <p className="text-xs text-muted-foreground">OAuth-Verbindung aktiv</p>
-                        </div>
+                    <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+                      <Bot className="h-5 w-5 text-violet-400" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Claude AI aktiv</p>
+                        <p className="text-xs text-muted-foreground">Plattform-Verbindung konfiguriert</p>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={async () => {
-                          setClaudeLoading(true)
-                          await fetch("/api/claude/disconnect", { method: "POST" })
-                          setClaudeConnected(false)
-                          setClaudeLoading(false)
-                        }}
-                        disabled={claudeLoading}
-                      >
-                        {claudeLoading ? "Wird getrennt…" : "Verbindung trennen"}
-                      </Button>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">

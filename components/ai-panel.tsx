@@ -31,12 +31,6 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  async function handleDisconnect() {
-    await fetch("/api/claude/disconnect", { method: "POST" })
-    setStatus("disconnected")
-    setMessages([])
-  }
-
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
     const text = input.trim()
@@ -101,15 +95,6 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
           <Sparkles className="h-3.5 w-3.5 text-violet-400" />
         </div>
         <span className="flex-1 text-sm font-semibold">Claude AI</span>
-        {status === "connected" && (
-          <button
-            type="button"
-            onClick={handleDisconnect}
-            className="text-[11px] text-muted-foreground transition-colors hover:text-destructive"
-          >
-            trennen
-          </button>
-        )}
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
