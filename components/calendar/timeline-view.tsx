@@ -100,9 +100,14 @@ export function TimelineView({ currentDate, daysCount, events, onEventClick, onH
           {/* Day columns */}
           {days.map((day) => {
             const isToday = isSameDay(day, now)
-            const dayEvents = events.filter((e) => isSameDay(new Date(e.date), day))
-            const timedEvents = dayEvents.filter((e) => e.time)
-            const allDayEvents = dayEvents.filter((e) => !e.time)
+            const dayStr = format(day, "yyyy-MM-dd")
+            const dayEvents = events.filter((e) => {
+              const eventEnd = e.endDate ?? e.date
+              return e.date <= dayStr && eventEnd >= dayStr
+            })
+            const isMultiDayEvent = (e: CalendarEvent) => !!e.endDate && e.endDate !== e.date
+            const timedEvents = dayEvents.filter((e) => e.time && !isMultiDayEvent(e))
+            const allDayEvents = dayEvents.filter((e) => !e.time || isMultiDayEvent(e))
 
             return (
               <div key={day.toISOString()} className="relative border-l border-border/50">
@@ -136,19 +141,27 @@ export function TimelineView({ currentDate, daysCount, events, onEventClick, onH
                 )}
 
                 {/* All-day events strip */}
-                {allDayEvents.map((event, i) => (
-                  <button
-                    key={event.id}
-                    onClick={() => onEventClick(event)}
-                    className={cn(
-                      "absolute left-0.5 right-0.5 z-10 truncate rounded border-l-2 px-1 py-0.5 text-left text-[10px] font-medium",
-                      COLOR_BG[event.color] ?? COLOR_BG.blue
-                    )}
-                    style={{ top: `${2 + i * 18}px`, height: "16px" }}
-                  >
-                    {event.title}
-                  </button>
-                ))}
+                {allDayEvents.map((event, i) => {
+                  const isContinuation = isMultiDayEvent(event) && event.date !== dayStr
+                  const isEndDay = isMultiDayEvent(event) && (event.endDate ?? event.date) === dayStr
+                  return (
+                    <button
+                      key={event.id}
+                      onClick={() => onEventClick(event)}
+                      className={cn(
+                        "absolute left-0.5 right-0.5 z-10 flex items-center gap-0.5 truncate rounded border-l-2 px-1 py-0.5 text-left text-[10px] font-medium",
+                        COLOR_BG[event.color] ?? COLOR_BG.blue
+                      )}
+                      style={{ top: `${2 + i * 18}px`, height: "16px" }}
+                    >
+                      {isContinuation && <span className="shrink-0 opacity-50">▸</span>}
+                      <span className="truncate">{event.title}</span>
+                      {isMultiDayEvent(event) && !isContinuation && !isEndDay && (
+                        <span className="ml-auto shrink-0 opacity-40">→</span>
+                      )}
+                    </button>
+                  )
+                })}
 
                 {/* Timed events */}
                 {timedEvents.map((event) => {
