@@ -113,35 +113,25 @@ export function CalendarDay({
               }}
               onClick={(e) => { e.stopPropagation(); onEventClick(event) }}
               className={cn(
-                "flex w-full flex-col px-1.5 py-0.5 text-left text-xs text-white transition-opacity hover:opacity-90",
+                "flex h-5 w-full items-center gap-1 px-1.5 text-left text-xs text-white transition-opacity hover:opacity-90",
                 onEventDrop && !event.recurrenceParentId && !isContinuation && "cursor-grab active:cursor-grabbing",
                 colorMap[event.color],
-                isStart ? "rounded-l-md" : "rounded-l-none",
-                (isEnd || !isMultiDay) ? "rounded-r-md" : "rounded-r-none"
+                "rounded-md"
               )}
             >
-              {isContinuation ? (
-                <div className="flex items-center gap-1">
-                  <span className="shrink-0 text-white/50">▸</span>
-                  <span className="truncate font-medium">{event.title}</span>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="truncate font-medium">{event.title}</span>
-                    {event.time && !isMultiDay && <span className="shrink-0 text-white/80">{event.time}</span>}
-                    {isMultiDay && !isEnd && <span className="shrink-0 text-white/50">→</span>}
-                  </div>
-                  {label && (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <span
-                        className="h-1.5 w-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: label.color }}
-                      />
-                      <span className="truncate text-[10px] text-white/70">{label.name}</span>
-                    </div>
-                  )}
-                </>
+              {isContinuation && <span className="shrink-0 text-white/50 text-[10px]">▸</span>}
+              <span className="truncate font-medium leading-none">{event.title}</span>
+              {!isContinuation && event.time && !isMultiDay && (
+                <span className="ml-auto shrink-0 text-white/80">{event.time}</span>
+              )}
+              {isMultiDay && isStart && !isEnd && (
+                <span className="ml-auto shrink-0 text-white/50 text-[10px]">→</span>
+              )}
+              {label && !isContinuation && (
+                <span
+                  className="ml-1 h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: label.color }}
+                />
               )}
             </button>
           )
