@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     id: body.id ?? crypto.randomUUID(),
     title: body.title.trim(),
     date: body.date,
+    endDate: body.endDate ?? undefined,
     time: body.time ?? undefined,
     endTime: body.endTime ?? undefined,
     location: body.location ?? undefined,

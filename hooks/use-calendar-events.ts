@@ -52,6 +52,7 @@ export function useCalendarEvents() {
   async function addEvent(data: {
     title: string
     date: string
+    endDate?: string
     time?: string
     endTime?: string
     location?: string

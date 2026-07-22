@@ -21,6 +21,7 @@ import { CalendarEvent, EventColor, RecurrenceFrequency } from "@/types/calendar
 // ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS page_id UUID REFERENCES pages(id) ON DELETE SET NULL;
 // ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS page_title TEXT;
 // ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS reminder_minutes INTEGER;
+// ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS end_date TEXT;
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS calendar_ics_token TEXT;
 
 function rowToEvent(row: Record<string, unknown>): CalendarEvent {
@@ -28,6 +29,7 @@ function rowToEvent(row: Record<string, unknown>): CalendarEvent {
     id: row.id as string,
     title: row.title as string,
     date: row.date as string,
+    endDate: (row.end_date as string | null) ?? undefined,
     time: (row.time as string | null) ?? undefined,
     endTime: (row.end_time as string | null) ?? undefined,
     location: (row.location as string | null) ?? undefined,
@@ -64,6 +66,7 @@ export async function createCalendarEvent(
       user_id: userId,
       title: event.title,
       date: event.date,
+      end_date: event.endDate ?? null,
       time: event.time ?? null,
       end_time: event.endTime ?? null,
       location: event.location ?? null,
@@ -91,6 +94,7 @@ export async function updateCalendarEvent(
   const update: Record<string, unknown> = {}
   if (patch.title !== undefined) update.title = patch.title
   if (patch.date !== undefined) update.date = patch.date
+  if ("endDate" in patch) update.end_date = patch.endDate ?? null
   if (patch.time !== undefined) update.time = patch.time ?? null
   if (patch.endTime !== undefined) update.end_time = patch.endTime ?? null
   if (patch.location !== undefined) update.location = patch.location ?? null

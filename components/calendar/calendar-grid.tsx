@@ -5,7 +5,7 @@ import {
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
-  isSameDay,
+  format,
   isSameMonth,
   startOfMonth,
   startOfWeek,
@@ -83,7 +83,11 @@ export function CalendarGrid({
           <CalendarDay
             key={day.toISOString()}
             date={day}
-            events={events.filter((e) => isSameDay(new Date(e.date), day))}
+            events={events.filter((e) => {
+              const dayStr = format(day, "yyyy-MM-dd")
+              const eventEnd = e.endDate ?? e.date
+              return dayStr >= e.date && dayStr <= eventEnd
+            })}
             labels={labels}
             isCurrentMonth={isSameMonth(day, currentDate)}
             isSelected={selectedDate ? isSameDay(day, selectedDate) : false}

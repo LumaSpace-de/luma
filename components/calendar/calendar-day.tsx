@@ -1,6 +1,7 @@
 "use client"
 
 import { format, isToday } from "date-fns"
+
 import { useState } from "react"
 
 import { cn } from "@/lib/utils"
@@ -95,10 +96,16 @@ export function CalendarDay({
       <div className="flex w-full flex-col gap-0.5">
         {visible.map((event) => {
           const label = event.labelId ? labels.find((l) => l.id === event.labelId) : null
+          const dayStr = format(date, "yyyy-MM-dd")
+          const eventEnd = event.endDate ?? event.date
+          const isMultiDay = !!event.endDate && event.endDate !== event.date
+          const isStart = event.date === dayStr
+          const isEnd = eventEnd === dayStr
+          const isContinuation = isMultiDay && !isStart
           return (
             <button
               key={event.id}
-              draggable={!!onEventDrop && !event.recurrenceParentId}
+              draggable={!!onEventDrop && !event.recurrenceParentId && !isContinuation}
               onDragStart={(e) => {
                 e.stopPropagation()
                 e.dataTransfer.setData("text/plain", event.recurrenceParentId ?? event.id)
@@ -106,23 +113,35 @@ export function CalendarDay({
               }}
               onClick={(e) => { e.stopPropagation(); onEventClick(event) }}
               className={cn(
-                "flex w-full flex-col rounded-md px-1.5 py-0.5 text-left text-xs text-white transition-opacity hover:opacity-90",
-                onEventDrop && !event.recurrenceParentId && "cursor-grab active:cursor-grabbing",
-                colorMap[event.color]
+                "flex w-full flex-col px-1.5 py-0.5 text-left text-xs text-white transition-opacity hover:opacity-90",
+                onEventDrop && !event.recurrenceParentId && !isContinuation && "cursor-grab active:cursor-grabbing",
+                colorMap[event.color],
+                isStart ? "rounded-l-md" : "rounded-l-none",
+                (isEnd || !isMultiDay) ? "rounded-r-md" : "rounded-r-none"
               )}
             >
-              <div className="flex items-center justify-between gap-1">
-                <span className="truncate font-medium">{event.title}</span>
-                {event.time && <span className="shrink-0 text-white/80">{event.time}</span>}
-              </div>
-              {label && (
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full shrink-0"
-                    style={{ backgroundColor: label.color }}
-                  />
-                  <span className="truncate text-[10px] text-white/70">{label.name}</span>
+              {isContinuation ? (
+                <div className="flex items-center gap-1">
+                  <span className="shrink-0 text-white/50">▸</span>
+                  <span className="truncate font-medium">{event.title}</span>
                 </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="truncate font-medium">{event.title}</span>
+                    {event.time && !isMultiDay && <span className="shrink-0 text-white/80">{event.time}</span>}
+                    {isMultiDay && !isEnd && <span className="shrink-0 text-white/50">→</span>}
+                  </div>
+                  {label && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span
+                        className="h-1.5 w-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: label.color }}
+                      />
+                      <span className="truncate text-[10px] text-white/70">{label.name}</span>
+                    </div>
+                  )}
+                </>
               )}
             </button>
           )

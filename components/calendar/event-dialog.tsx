@@ -1,7 +1,6 @@
 "use client"
 
 import { format } from "date-fns"
-import { de } from "date-fns/locale"
 import { Bell, FileText, MapPin, Plus, Repeat, Trash2, X } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
@@ -71,6 +70,7 @@ interface EventDialogProps {
   onSave: (data: {
     title: string
     date: string
+    endDate?: string
     time?: string
     endTime?: string
     location?: string
@@ -91,6 +91,8 @@ export function EventDialog({
 }: EventDialogProps) {
   const [title, setTitle]           = useState("")
   const [color, setColor]           = useState<EventColor>("blue")
+  const [startDate, setStartDate]   = useState("")
+  const [endDate, setEndDate]       = useState("")
   const [time, setTime]             = useState("09:00")
   const [endTime, setEndTime]       = useState("10:00")
   const [location, setLocation]     = useState("")
@@ -161,6 +163,8 @@ export function EventDialog({
     if (event) {
       setTitle(event.title)
       setColor(event.color)
+      setStartDate(event.date)
+      setEndDate(event.endDate ?? event.date)
       setTime(event.time ?? "09:00")
       setEndTime(event.endTime ?? "10:00")
       setLocation(event.location ?? "")
@@ -173,6 +177,11 @@ export function EventDialog({
     } else {
       setTitle("")
       setColor("blue")
+      const d = selectedDate
+        ? format(selectedDate, "yyyy-MM-dd")
+        : format(new Date(), "yyyy-MM-dd")
+      setStartDate(d)
+      setEndDate(d)
       setTime("09:00")
       setEndTime("10:00")
       setLocation("")
@@ -188,7 +197,7 @@ export function EventDialog({
     setNewLabelColor(LABEL_COLORS[0])
     setShowPagePicker(false)
     setPageSearch("")
-  }, [event, open])
+  }, [event, open, selectedDate])
 
   useEffect(() => {
     if (!showPagePicker || pageOptions.length > 0 || pagesLoading) return
@@ -217,15 +226,18 @@ export function EventDialog({
     e.preventDefault()
     if (!title.trim()) return
 
+    const isMultiDay = endDate > startDate
     const payload = {
       title,
       color,
+      date:        startDate,
+      endDate:     isMultiDay ? endDate : undefined,
       time:        time || undefined,
       endTime:     endTime || undefined,
       location:    location.trim() || undefined,
       description: description.trim() || undefined,
       labelId:     labelId || undefined,
-      recurrence:  recurrence,
+      recurrence,
       reminderMinutes: reminderMinutes || undefined,
       pageId:      pageId || undefined,
       pageTitle:   pageId ? pageTitle : undefined,
@@ -233,8 +245,8 @@ export function EventDialog({
 
     if (event) {
       onUpdate(event.id, payload)
-    } else if (selectedDate) {
-      onSave({ ...payload, date: format(selectedDate, "yyyy-MM-dd") })
+    } else {
+      onSave(payload)
     }
     onClose()
   }
@@ -274,16 +286,11 @@ export function EventDialog({
     )
   }
 
-  const dateLabel = selectedDate
-    ? format(selectedDate, "EEEE, d. MMMM yyyy", { locale: de })
-    : ""
-
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{event ? "Event bearbeiten" : "Neues Event"}</DialogTitle>
-          {dateLabel && <p className="text-sm text-muted-foreground">{dateLabel}</p>}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -421,17 +428,31 @@ export function EventDialog({
             )}
           </div>
 
-          {/* Time range */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex gap-3">
+          {/* Date + Time range */}
+          <div className="flex flex-col gap-2">
+            {/* Start */}
+            <div className="flex gap-2">
               <div className="flex flex-1 flex-col gap-1.5">
-                <Label htmlFor="event-time">Von</Label>
+                <Label htmlFor="event-start-date">Von</Label>
+                <input
+                  id="event-start-date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value)
+                    if (endDate < e.target.value) setEndDate(e.target.value)
+                  }}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5">
+                <Label htmlFor="event-time">&nbsp;</Label>
                 <select
                   id="event-time"
                   value={time}
                   onChange={(e) => {
                     setTime(e.target.value)
-                    if (e.target.value >= endTime) {
+                    if (startDate === endDate && e.target.value >= endTime) {
                       const idx = TIME_OPTIONS.indexOf(e.target.value)
                       setEndTime(TIME_OPTIONS[Math.min(idx + 2, TIME_OPTIONS.length - 1)])
                     }
@@ -443,30 +464,50 @@ export function EventDialog({
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* End */}
+            <div className="flex gap-2">
               <div className="flex flex-1 flex-col gap-1.5">
-                <Label htmlFor="event-endtime">Bis</Label>
+                <Label htmlFor="event-end-date">Bis</Label>
+                <input
+                  id="event-end-date"
+                  type="date"
+                  value={endDate}
+                  min={startDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5">
+                <Label htmlFor="event-endtime">&nbsp;</Label>
                 <select
                   id="event-endtime"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
-                  {TIME_OPTIONS.filter((t) => t > time).map((t) => (
+                  {(startDate === endDate ? TIME_OPTIONS.filter((t) => t > time) : TIME_OPTIONS).map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
               </div>
             </div>
-            {time && endTime && endTime > time && (() => {
-              const [sh, sm] = time.split(":").map(Number)
-              const [eh, em] = endTime.split(":").map(Number)
-              const diff = (eh * 60 + em - sh * 60 - sm) / 60
-              const label = diff % 1 === 0 ? `${diff}h` : `${diff.toFixed(1).replace(".", ",")}h`
-              return (
-                <span className="mt-1 text-xs text-muted-foreground">
-                  = {label} Dauer
-                </span>
-              )
+
+            {/* Duration hint */}
+            {startDate && endDate && (() => {
+              if (endDate > startDate) {
+                const days = Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1
+                return <span className="text-xs text-muted-foreground">= {days} Tage</span>
+              }
+              if (time && endTime && endTime > time) {
+                const [sh, sm] = time.split(":").map(Number)
+                const [eh, em] = endTime.split(":").map(Number)
+                const diff = (eh * 60 + em - sh * 60 - sm) / 60
+                const label = diff % 1 === 0 ? `${diff}h` : `${diff.toFixed(1).replace(".", ",")}h`
+                return <span className="text-xs text-muted-foreground">= {label} Dauer</span>
+              }
+              return null
             })()}
           </div>
 

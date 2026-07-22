@@ -11,7 +11,8 @@ export interface CalendarLabel {
 export interface CalendarEvent {
   id: string
   title: string
-  date: string
+  date: string       // "yyyy-MM-dd" — start date
+  endDate?: string   // "yyyy-MM-dd" — end date (multi-day events only)
   time?: string
   endTime?: string
   location?: string

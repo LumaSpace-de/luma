@@ -53,8 +53,12 @@ export function DayPanel({
   const router = useRouter()
   const today = isToday(date)
 
+  const dayStr = format(date, "yyyy-MM-dd")
   const dayEvents = events
-    .filter((e) => e.date === format(date, "yyyy-MM-dd"))
+    .filter((e) => {
+      const eventEnd = e.endDate ?? e.date
+      return e.date <= dayStr && eventEnd >= dayStr
+    })
     .sort((a, b) => {
       if (!a.time && !b.time) return 0
       if (!a.time) return -1

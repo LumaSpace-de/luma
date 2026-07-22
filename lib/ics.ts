@@ -37,7 +37,12 @@ function eventToVEvent(event: CalendarEvent, stamp: string): string {
 
   const baseDate = parseISO(event.date)
 
-  if (event.time) {
+  if (event.endDate && event.endDate !== event.date) {
+    // Multi-day event: all-day spanning
+    const endDateObj = parseISO(event.endDate)
+    lines.push(`DTSTART;VALUE=DATE:${format(baseDate, "yyyyMMdd")}`)
+    lines.push(`DTEND;VALUE=DATE:${format(addDays(endDateObj, 1), "yyyyMMdd")}`)
+  } else if (event.time) {
     const [h, m] = event.time.split(":").map(Number)
     const startStr = `${format(baseDate, "yyyyMMdd")}T${String(h).padStart(2, "0")}${String(m ?? 0).padStart(2, "0")}00`
     lines.push(`DTSTART:${startStr}`)
