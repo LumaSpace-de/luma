@@ -442,7 +442,7 @@ export function EventDialog({
                     setStartDate(e.target.value)
                     if (endDate < e.target.value) setEndDate(e.target.value)
                   }}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="flex h-9 w-full appearance-none rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
               <div className="flex flex-1 flex-col gap-1.5">
@@ -457,7 +457,7 @@ export function EventDialog({
                       setEndTime(TIME_OPTIONS[Math.min(idx + 2, TIME_OPTIONS.length - 1)])
                     }
                   }}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="flex h-9 w-full appearance-none rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   {TIME_OPTIONS.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -476,7 +476,7 @@ export function EventDialog({
                   value={endDate}
                   min={startDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="flex h-9 w-full appearance-none rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
               <div className="flex flex-1 flex-col gap-1.5">
@@ -485,7 +485,7 @@ export function EventDialog({
                   id="event-endtime"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="flex h-9 w-full appearance-none rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   {(startDate === endDate ? TIME_OPTIONS.filter((t) => t > time) : TIME_OPTIONS).map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -601,7 +601,7 @@ export function EventDialog({
                 id="event-recurrence"
                 value={recurrence}
                 onChange={(e) => setRecurrence(e.target.value as RecurrenceFrequency)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="flex h-9 w-full appearance-none rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {RECURRENCE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -617,7 +617,7 @@ export function EventDialog({
                 id="event-reminder"
                 value={reminderMinutes}
                 onChange={(e) => setReminderMinutes(Number(e.target.value))}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="flex h-9 w-full appearance-none rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {REMINDER_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
