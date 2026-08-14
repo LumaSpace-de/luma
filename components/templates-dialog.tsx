@@ -68,14 +68,6 @@ const templates = [
     color: "text-pink-400",
     bg: "bg-pink-500/10",
   },
-  {
-    icon: MessageSquare,
-    label: "Community",
-    template: "community",
-    description: "Kanäle, Beiträge & Mitglieder für den Workspace.",
-    color: "text-indigo-400",
-    bg: "bg-indigo-500/10",
-  },
 ]
 
 interface TemplatesDialogProps {
@@ -83,9 +75,7 @@ interface TemplatesDialogProps {
   onOpenChange: (open: boolean) => void
   workspaceId: string | null
   parentId?: string | null
-  allowCommunity?: boolean
   onCreated?: (page: { id: string; title: string }) => void
-  onCommunityEnabled?: (workspaceId: string) => void
 }
 
 export function TemplatesDialog({
@@ -93,36 +83,16 @@ export function TemplatesDialog({
   onOpenChange,
   workspaceId,
   parentId,
-  allowCommunity = true,
   onCreated,
-  onCommunityEnabled,
 }: TemplatesDialogProps) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
 
-  const visibleTemplates = templates.filter((tpl) => {
-    if (tpl.template === "community") return allowCommunity && !parentId
-    return true
-  })
+  const visibleTemplates = templates
 
   async function handleSelect(tpl: (typeof templates)[number]) {
     if (!workspaceId) return
     setLoading(tpl.template)
-
-    if (tpl.template === "community") {
-      const res = await fetch(`/api/workspaces/${workspaceId}/community`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: true }),
-      })
-      if (res.ok) {
-        onCommunityEnabled?.(workspaceId)
-        onOpenChange(false)
-        router.push(`/community/${workspaceId}`)
-      }
-      setLoading(null)
-      return
-    }
 
     const res = await fetch("/api/pages", {
       method: "POST",
