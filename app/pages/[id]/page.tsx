@@ -2,9 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
-
 import { MoreHorizontal, PanelLeft, Smile, Trash2, X } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -43,11 +41,18 @@ export default function PageView({ params }: { params: { id: string } }) {
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const titleRef = useRef<HTMLTextAreaElement>(null)
+  const contentRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-resize textarea on content change
   useEffect(() => {
-    const ta = textareaRef.current
+    const ta = titleRef.current
+    if (!ta) return
+    ta.style.height = "auto"
+    ta.style.height = `${ta.scrollHeight}px`
+  }, [title])
+
+  useEffect(() => {
+    const ta = contentRef.current
     if (!ta) return
     ta.style.height = "auto"
     ta.style.height = `${ta.scrollHeight}px`
@@ -109,45 +114,49 @@ export default function PageView({ params }: { params: { id: string } }) {
   if (!page) {
     return (
       <div className="flex h-full flex-col">
-        <div className="flex h-12 shrink-0 items-center border-b px-4">
+        <div className="flex h-11 shrink-0 items-center border-b px-3">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
             <PanelLeft className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
                 className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30"
-                style={{ animation: `luma-pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
+                style={{ animation: `lp 1.2s ease-in-out ${i * 0.2}s infinite` }}
               />
             ))}
           </div>
-          <style>{`@keyframes luma-pulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}`}</style>
+          <style>{`@keyframes lp{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}`}</style>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex h-12 shrink-0 items-center justify-between border-b px-4">
+    <div
+      className="flex h-full flex-col overflow-hidden"
+      onClick={() => setIconPickerOpen(false)}
+    >
+      {/* Top bar */}
+      <div className="flex h-11 shrink-0 items-center justify-between border-b px-3">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
           <PanelLeft className="h-4 w-4" />
         </Button>
-
-        <div className="flex items-center gap-1">
-          {saving && <span className="text-xs text-muted-foreground/60">Speichert…</span>}
+        <div className="flex items-center gap-2">
+          {saving && (
+            <span className="text-[11px] text-muted-foreground/40">Speichert…</span>
+          )}
           {canDelete && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   className="gap-2 text-destructive focus:text-destructive"
                   onClick={handleDelete}
@@ -155,99 +164,107 @@ export default function PageView({ params }: { params: { id: string } }) {
                   <Trash2 className="h-4 w-4" />
                   Seite löschen
                 </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
 
-      {/* Editor */}
-      <div className="flex-1 overflow-auto" onClick={() => setIconPickerOpen(false)}>
-        <div className="mx-auto max-w-5xl px-6 py-10">
-          {/* Icon picker — only for members/admins/owners */}
-          {canEdit && <div className="relative mb-3" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setIconPickerOpen((o) => !o)}
-              className={cn(
-                "flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm transition-colors hover:bg-accent/60",
-                icon ? "text-foreground" : "text-muted-foreground/40"
-              )}
-              title={icon ? "Icon ändern" : "Icon hinzufügen"}
-            >
-              {icon ? (
-                <span className="text-2xl leading-none">{icon}</span>
-              ) : (
-                <>
-                  <Smile className="h-4 w-4" />
-                  <span className="text-xs">Icon hinzufügen</span>
-                </>
-              )}
-            </button>
+      {/* Page body */}
+      <div className="flex-1 overflow-auto">
+        <div className="mx-auto max-w-[720px] px-8 pb-32 pt-14">
 
-            {iconPickerOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 rounded-xl border bg-popover p-3 shadow-xl">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Icon wählen</span>
-                  {icon && (
-                    <button
-                      onClick={() => handleIconSelect(null)}
-                      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent"
-                    >
-                      <X className="h-3 w-3" />
-                      Entfernen
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-6 gap-1">
-                  {EMOJI_OPTIONS.map((e) => (
-                    <button
-                      key={e}
-                      onClick={() => handleIconSelect(e)}
-                      className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-md text-lg transition-colors hover:bg-accent",
-                        icon === e && "ring-2 ring-primary"
+          {/* Icon */}
+          <div className="relative mb-5" onClick={(e) => e.stopPropagation()}>
+            {canEdit ? (
+              <>
+                {icon ? (
+                  <button
+                    onClick={() => setIconPickerOpen((o) => !o)}
+                    className="rounded-xl p-1 transition-colors hover:bg-accent/50"
+                    title="Icon ändern"
+                  >
+                    <span className="text-[56px] leading-none">{icon}</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIconPickerOpen((o) => !o)}
+                    className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground/30 transition-colors hover:bg-accent/40 hover:text-muted-foreground/60"
+                  >
+                    <Smile className="h-3.5 w-3.5" />
+                    Icon hinzufügen
+                  </button>
+                )}
+
+                {iconPickerOpen && (
+                  <div className="absolute left-0 top-full z-50 mt-2 w-[220px] rounded-xl border bg-popover p-3 shadow-2xl">
+                    <div className="mb-2.5 flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">Icon</span>
+                      {icon && (
+                        <button
+                          onClick={() => handleIconSelect(null)}
+                          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent"
+                        >
+                          <X className="h-3 w-3" />
+                          Entfernen
+                        </button>
                       )}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>}
-
-          {/* Icon display for viewers */}
-          {!canEdit && icon && (
-            <div className="mb-3 px-2">
-              <span className="text-2xl leading-none">{icon}</span>
-            </div>
-          )}
+                    </div>
+                    <div className="grid grid-cols-6 gap-1">
+                      {EMOJI_OPTIONS.map((e) => (
+                        <button
+                          key={e}
+                          onClick={() => handleIconSelect(e)}
+                          className={cn(
+                            "flex h-8 w-8 items-center justify-center rounded-lg text-lg transition-colors hover:bg-accent",
+                            icon === e && "bg-accent ring-2 ring-primary"
+                          )}
+                        >
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : icon ? (
+              <span className="text-[56px] leading-none">{icon}</span>
+            ) : null}
+          </div>
 
           {/* Title */}
-          <input
-            className="w-full bg-transparent text-3xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/30 disabled:cursor-default"
-            placeholder="Titel…"
+          <textarea
+            ref={titleRef}
+            className="mb-3 w-full resize-none bg-transparent text-[2.6rem] font-bold leading-[1.15] tracking-tight outline-none placeholder:text-muted-foreground/20 disabled:cursor-default"
+            placeholder="Ohne Titel"
             value={title}
             disabled={!canEdit}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => canEdit && saveTitle(title)}
-          />
-
-          <div className="mt-1 h-px bg-border/40" />
-
-          {/* Content */}
-          <textarea
-            className="mt-4 w-full resize-none bg-transparent text-sm leading-relaxed text-foreground/90 outline-none placeholder:text-muted-foreground/30 disabled:cursor-default"
-            rows={3}
-            placeholder={canEdit ? "Fange an zu schreiben… Ziele, Notizen, Ideen" : ""}
-            value={content}
-            disabled={!canEdit}
+            rows={1}
             onChange={(e) => {
-              if (!canEdit) return
-              setContent(e.target.value)
-              saveContent(e.target.value)
+              setTitle(e.target.value)
+              if (canEdit) saveTitle(e.target.value)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.preventDefault()
             }}
           />
+
+          {/* Description / intro */}
+          {(canEdit || content) && (
+            <textarea
+              ref={contentRef}
+              className="mb-10 w-full resize-none bg-transparent text-[15px] leading-relaxed text-muted-foreground/60 outline-none placeholder:text-muted-foreground/25 disabled:cursor-default"
+              rows={1}
+              placeholder={canEdit ? "Beschreibung hinzufügen…" : ""}
+              value={content}
+              disabled={!canEdit}
+              onChange={(e) => {
+                if (!canEdit) return
+                setContent(e.target.value)
+                saveContent(e.target.value)
+              }}
+            />
+          )}
 
           {/* Blocks */}
           <PageBlocks pageId={params.id} canEdit={canEdit} workspaceId={page.workspaceId} />
