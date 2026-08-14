@@ -114,7 +114,7 @@ export default function PageView({ params }: { params: { id: string } }) {
   if (!page) {
     return (
       <div className="flex h-full flex-col">
-        <div className="flex h-11 shrink-0 items-center border-b px-3">
+        <div className="flex h-10 shrink-0 items-center px-3">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
             <PanelLeft className="h-4 w-4" />
           </Button>
@@ -140,8 +140,8 @@ export default function PageView({ params }: { params: { id: string } }) {
       className="flex h-full flex-col overflow-hidden"
       onClick={() => setIconPickerOpen(false)}
     >
-      {/* Top bar */}
-      <div className="flex h-11 shrink-0 items-center justify-between border-b px-3">
+      {/* Top bar — no border, floats over gradient */}
+      <div className="flex h-10 shrink-0 items-center justify-between px-3">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle}>
           <PanelLeft className="h-4 w-4" />
         </Button>
@@ -170,26 +170,29 @@ export default function PageView({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* Page body */}
+      {/* Scrollable body */}
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-[720px] px-8 pb-32 pt-14">
+        {/* Gradient cover */}
+        <div className="pointer-events-none h-44 w-full bg-gradient-to-b from-primary/[0.07] via-primary/[0.03] to-transparent" />
+
+        <div className="mx-auto max-w-[720px] -mt-28 px-10 pb-44">
 
           {/* Icon */}
-          <div className="relative mb-5" onClick={(e) => e.stopPropagation()}>
+          <div className="relative mb-6" onClick={(e) => e.stopPropagation()}>
             {canEdit ? (
               <>
                 {icon ? (
                   <button
                     onClick={() => setIconPickerOpen((o) => !o)}
-                    className="rounded-xl p-1 transition-colors hover:bg-accent/50"
+                    className="rounded-2xl p-1.5 transition-colors hover:bg-accent/40"
                     title="Icon ändern"
                   >
-                    <span className="text-[56px] leading-none">{icon}</span>
+                    <span className="text-[72px] leading-none">{icon}</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => setIconPickerOpen((o) => !o)}
-                    className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground/30 transition-colors hover:bg-accent/40 hover:text-muted-foreground/60"
+                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-muted-foreground/30 transition-colors hover:bg-accent/40 hover:text-muted-foreground/60"
                   >
                     <Smile className="h-3.5 w-3.5" />
                     Icon hinzufügen
@@ -228,14 +231,14 @@ export default function PageView({ params }: { params: { id: string } }) {
                 )}
               </>
             ) : icon ? (
-              <span className="text-[56px] leading-none">{icon}</span>
+              <span className="text-[72px] leading-none">{icon}</span>
             ) : null}
           </div>
 
           {/* Title */}
           <textarea
             ref={titleRef}
-            className="mb-3 w-full resize-none bg-transparent text-[2.6rem] font-bold leading-[1.15] tracking-tight outline-none placeholder:text-muted-foreground/20 disabled:cursor-default"
+            className="mb-3 w-full resize-none bg-transparent text-[3.1rem] font-extrabold leading-[1.1] tracking-[-0.02em] outline-none placeholder:text-muted-foreground/15 disabled:cursor-default"
             placeholder="Ohne Titel"
             value={title}
             disabled={!canEdit}
@@ -249,11 +252,11 @@ export default function PageView({ params }: { params: { id: string } }) {
             }}
           />
 
-          {/* Description / intro */}
+          {/* Description */}
           {(canEdit || content) && (
             <textarea
               ref={contentRef}
-              className="mb-10 w-full resize-none bg-transparent text-[15px] leading-relaxed text-muted-foreground/60 outline-none placeholder:text-muted-foreground/25 disabled:cursor-default"
+              className="mb-5 w-full resize-none bg-transparent text-[15px] leading-relaxed text-muted-foreground/50 outline-none placeholder:text-muted-foreground/20 disabled:cursor-default"
               rows={1}
               placeholder={canEdit ? "Beschreibung hinzufügen…" : ""}
               value={content}
@@ -265,6 +268,9 @@ export default function PageView({ params }: { params: { id: string } }) {
               }}
             />
           )}
+
+          {/* Separator */}
+          <div className="mb-10 h-px bg-border/30" />
 
           {/* Blocks */}
           <PageBlocks pageId={params.id} canEdit={canEdit} workspaceId={page.workspaceId} />

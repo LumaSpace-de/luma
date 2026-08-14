@@ -197,7 +197,7 @@ const BLOCK_CATEGORIES: { category: string; items: BlockTypeItem[] }[] = [
 // ── Individual block renderers ─────────────────────────────────────────────
 
 function DividerBlock() {
-  return <hr className="border-border/50" />
+  return <hr className="border-border/25" />
 }
 
 function HeadingBlock({
@@ -209,21 +209,21 @@ function HeadingBlock({
 }) {
   const level = (data.level as number) ?? 1
   const text  = (data.text as string) ?? ""
-  const sizeClass = level === 1 ? "text-2xl font-bold" : level === 2 ? "text-xl font-semibold" : "text-lg font-medium"
+  const sizeClass = level === 1 ? "text-2xl font-bold tracking-tight" : level === 2 ? "text-xl font-semibold" : "text-base font-semibold text-muted-foreground"
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="group/heading flex items-baseline gap-2">
+      <input disabled={!canEdit} value={text} onChange={e => onChange({ ...data, text: e.target.value })}
+        placeholder="Überschrift…"
+        className={cn("flex-1 bg-transparent outline-none placeholder:text-muted-foreground/25 disabled:cursor-default", sizeClass)} />
       {canEdit && (
         <select value={level} onChange={e => onChange({ ...data, level: Number(e.target.value) })}
-          className="shrink-0 rounded border border-border/40 bg-background px-1 py-0.5 text-xs text-muted-foreground">
+          className="shrink-0 rounded border border-border/30 bg-background px-1 py-0.5 text-[10px] text-muted-foreground/50 opacity-0 transition-opacity group-hover/heading:opacity-100">
           <option value={1}>H1</option>
           <option value={2}>H2</option>
           <option value={3}>H3</option>
         </select>
       )}
-      <input disabled={!canEdit} value={text} onChange={e => onChange({ ...data, text: e.target.value })}
-        placeholder="Überschrift…"
-        className={cn("flex-1 bg-transparent outline-none placeholder:text-muted-foreground/30 disabled:cursor-default", sizeClass)} />
     </div>
   )
 }
@@ -247,22 +247,22 @@ function CalloutBlock({
   const s = CALLOUT_STYLES[variant] ?? CALLOUT_STYLES.info
 
   return (
-    <div className={cn("flex items-start gap-3 rounded-xl border p-4", s.border, s.bg)}>
+    <div className={cn("flex items-start gap-3 rounded-r-lg border-l-[3px] px-4 py-3", s.border, s.bg)}>
       <span className="mt-0.5 shrink-0 text-base leading-none">{s.icon}</span>
-      <div className="flex flex-1 flex-col gap-2">
+      <div className="flex flex-1 flex-col gap-1.5">
+        <textarea disabled={!canEdit} value={text} rows={2}
+          onChange={e => onChange({ ...data, text: e.target.value })}
+          placeholder="Hinweistext…"
+          className="w-full resize-none bg-transparent text-sm leading-relaxed outline-none placeholder:text-muted-foreground/40 disabled:cursor-default" />
         {canEdit && (
           <select value={variant} onChange={e => onChange({ ...data, variant: e.target.value })}
-            className="w-fit rounded border border-border/40 bg-background px-1.5 py-0.5 text-xs text-muted-foreground">
+            className="w-fit rounded border border-border/30 bg-background/60 px-1.5 py-0.5 text-[10px] text-muted-foreground/60">
             <option value="info">Info</option>
             <option value="warning">Warnung</option>
             <option value="success">Erfolg</option>
             <option value="error">Fehler</option>
           </select>
         )}
-        <textarea disabled={!canEdit} value={text} rows={2}
-          onChange={e => onChange({ ...data, text: e.target.value })}
-          placeholder="Hinweistext…"
-          className="w-full resize-none bg-transparent text-sm leading-relaxed outline-none placeholder:text-muted-foreground/40 disabled:cursor-default" />
       </div>
     </div>
   )
@@ -277,11 +277,11 @@ function QuoteBlock({
 }) {
   const text = (data.text as string) ?? ""
   return (
-    <div className="border-l-4 border-primary/40 pl-4">
+    <div className="border-l-[3px] border-foreground/25 pl-5 py-1">
       <textarea disabled={!canEdit} value={text} rows={2}
         onChange={e => onChange({ ...data, text: e.target.value })}
         placeholder="Zitat…"
-        className="w-full resize-none bg-transparent text-base italic leading-relaxed text-foreground/80 outline-none placeholder:text-muted-foreground/40 disabled:cursor-default" />
+        className="w-full resize-none bg-transparent text-[1.05rem] italic leading-relaxed text-foreground/60 outline-none placeholder:text-muted-foreground/30 disabled:cursor-default" />
     </div>
   )
 }
@@ -296,23 +296,20 @@ function CodeBlock({
   const lang = (data.lang as string) ?? ""
   const code = (data.code as string) ?? ""
   return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-muted/40">
-      {canEdit && (
-        <div className="flex items-center border-b border-border/30 bg-muted/60 px-3 py-1.5">
+    <div className="overflow-hidden rounded-xl border border-border/20 bg-zinc-950 dark:bg-zinc-900">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2">
+        {canEdit ? (
           <input value={lang} onChange={e => onChange({ ...data, lang: e.target.value })}
-            placeholder="Sprache (z.B. typescript)"
-            className="bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/40" />
-        </div>
-      )}
-      {!canEdit && lang && (
-        <div className="border-b border-border/30 bg-muted/60 px-3 py-1.5">
-          <span className="text-xs text-muted-foreground">{lang}</span>
-        </div>
-      )}
+            placeholder="Sprache…"
+            className="bg-transparent text-[11px] font-medium text-zinc-400 outline-none placeholder:text-zinc-600" />
+        ) : (
+          <span className="text-[11px] font-medium text-zinc-400">{lang || "code"}</span>
+        )}
+      </div>
       <textarea disabled={!canEdit} value={code} rows={5}
         onChange={e => onChange({ ...data, code: e.target.value })}
         placeholder="Code eingeben…"
-        className="w-full resize-none bg-transparent p-4 font-mono text-sm leading-relaxed outline-none placeholder:text-muted-foreground/40 disabled:cursor-default"
+        className="w-full resize-none bg-transparent px-4 py-3 font-mono text-[13px] leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-700 disabled:cursor-default"
         spellCheck={false} />
     </div>
   )
@@ -1894,15 +1891,15 @@ function BlockWrapper({
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      className={cn("group relative transition-all", isDragOver && "border-t-2 border-primary pt-2")}
+      className={cn("group relative", isDragOver && "border-t border-primary/50 pt-3")}
     >
       {canEdit && (
-        <div className="absolute -left-7 top-0 flex h-full flex-col items-center justify-start pt-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button className="cursor-grab rounded p-0.5 text-muted-foreground/40 hover:bg-accent hover:text-muted-foreground active:cursor-grabbing" title="Verschieben">
-            <GripVertical className="h-4 w-4" />
+        <div className="absolute -left-7 top-1 flex flex-col items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <button className="cursor-grab rounded p-0.5 text-muted-foreground/30 hover:bg-accent/60 hover:text-muted-foreground active:cursor-grabbing" title="Verschieben">
+            <GripVertical className="h-3.5 w-3.5" />
           </button>
-          <button onClick={onDelete} className="rounded p-0.5 text-muted-foreground/40 hover:bg-accent hover:text-destructive" title="Block löschen">
-            <Trash2 className="h-3.5 w-3.5" />
+          <button onClick={onDelete} className="rounded p-0.5 text-muted-foreground/30 hover:bg-accent/60 hover:text-destructive" title="Löschen">
+            <Trash2 className="h-3 w-3" />
           </button>
         </div>
       )}
@@ -2026,7 +2023,7 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
   return (
     <div className="mt-2">
       {blocks.length > 0 && (
-        <div className="flex flex-col gap-3 pl-7 mb-4">
+        <div className="flex flex-col gap-5 pl-7 mb-6">
           {blocks.map((block, i) => (
             <BlockWrapper
               key={block.id}
@@ -2110,18 +2107,21 @@ export function PageBlocks({ pageId, canEdit, workspaceId }: PageBlocksProps) {
         </div>
       )}
 
-      {/* Centered + pill button */}
+      {/* Add block button */}
       {canEdit && (
-        <div ref={menuRef} className="relative flex justify-center">
+        <div ref={menuRef} className="relative">
           <button
             onClick={() => setMenuOpen(o => !o)}
-            className="flex items-center gap-2 rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background shadow-md transition-opacity hover:opacity-80"
+            className="group/add flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground/30 transition-colors hover:bg-accent/50 hover:text-muted-foreground"
           >
-            <Plus className="h-4 w-4" />
+            <span className="flex h-5 w-5 items-center justify-center rounded border border-dashed border-muted-foreground/20 transition-colors group-hover/add:border-muted-foreground/40">
+              <Plus className="h-3 w-3" />
+            </span>
+            Block hinzufügen
           </button>
 
           {menuOpen && (
-            <div className="absolute top-full left-1/2 z-50 mt-2 w-[340px] -translate-x-1/2 overflow-hidden rounded-xl border bg-popover shadow-xl sm:w-[420px]">
+            <div className="absolute top-full left-0 z-50 mt-1.5 w-[340px] overflow-hidden rounded-xl border bg-popover shadow-xl sm:w-[420px]">
               <div className="border-b border-border/40 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
                 Block einfügen
               </div>
