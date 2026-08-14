@@ -1,6 +1,6 @@
 "use client"
 
-import { Book, Building2, Calendar, CheckSquare, ChevronRight, FileText, LayoutGrid, Link2, Mail, PanelLeft, Plus, Send, Settings, Users, X } from "lucide-react"
+import { Book, Building2, Calendar, CheckSquare, ChevronRight, FileText, LayoutGrid, Link2, Mail, PanelLeft, Plus, Send, Settings, X } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -468,17 +468,6 @@ const DOCS: DocArticle[] = [
       "Die Inbox sammelt alle wichtigen Benachrichtigungen: Workspace-Einladungen, Ankündigungen und System-Nachrichten.",
       "Ankündigungen werden von Admins erstellt und erscheinen für alle Nutzer. Sie können Labels (z.B. Neu, Update, Wichtig) und Embeds mit Farbakzent enthalten.",
       "Ungelesene Nachrichten werden als Badge in der Sidebar angezeigt. Klicke auf eine Nachricht um sie als gelesen zu markieren.",
-    ],
-  },
-  {
-    id: "community",
-    icon: <Users className="h-4 w-4" />,
-    title: "Community & Freunde",
-    summary: "Channels nutzen, Freunde hinzufügen und sich vernetzen.",
-    content: [
-      "Aktiviere die Community-Funktion in den Workspace-Einstellungen. Erstelle Channels für verschiedene Themen — ähnlich wie bei Discord oder Slack.",
-      "Über die Freunde-Funktion kannst du andere LumaSpace-Nutzer als Freunde hinzufügen. Sende eine Anfrage per Benutzername.",
-      "In Community-Channels können alle Workspace-Mitglieder Nachrichten austauschen und sich organisieren.",
     ],
   },
 ]

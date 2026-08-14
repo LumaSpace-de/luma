@@ -1,6 +1,6 @@
 "use client"
 
-import { Camera, Globe, Loader2, Mail, Trash2, UserMinus, Users } from "lucide-react"
+import { Camera, Globe, Loader2, Mail, Trash2, UserMinus } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 
 type WorkspacePlan = "free" | "enterprise"
@@ -18,7 +17,6 @@ interface Workspace {
   name: string
   plan: WorkspacePlan
   imageUrl: string | null
-  communityEnabled?: boolean
   slug?: string | null
 }
 
@@ -100,9 +98,6 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
   // Which member's role dropdown is open
   const [roleMenuFor, setRoleMenuFor] = useState<string | null>(null)
 
-  const [communityEnabled, setCommunityEnabled] = useState(false)
-  const [communityLoading, setCommunityLoading] = useState(false)
-
   const [slug, setSlug] = useState("")
   const [slugLoading, setSlugLoading] = useState(false)
   const [slugError, setSlugError] = useState("")
@@ -114,7 +109,6 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
     if (!workspace || !open) return
     setName(workspace.name)
     setImageUrl(workspace.imageUrl)
-    setCommunityEnabled(!!workspace.communityEnabled)
     setSlugError("")
     setSlugSuccess(false)
     if (workspace.plan === "enterprise" && isOwner) {
@@ -217,23 +211,6 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
       onUpdated({ ...workspace, slug: data.slug ?? null })
     }
     setSlugLoading(false)
-  }
-
-  async function handleCommunityToggle(enabled: boolean) {
-    if (!workspace) return
-    setCommunityEnabled(enabled)
-    setCommunityLoading(true)
-    const res = await fetch(`/api/workspaces/${workspace.id}/community`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled }),
-    })
-    if (!res.ok) {
-      setCommunityEnabled(!enabled)
-    } else {
-      onUpdated({ ...workspace, communityEnabled: enabled })
-    }
-    setCommunityLoading(false)
   }
 
   async function handleAddMember(e: React.FormEvent) {
@@ -541,29 +518,6 @@ export function WorkspaceSettingsDialog({ workspace, isOwner, open, onOpenChange
                     </p>
                   )}
                 </form>
-              </section>
-            </>
-          )}
-
-          {/* ── Community ── */}
-          {isOwner && (
-            <>
-              <Separator />
-              <section>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <Users className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold">Community</h3>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        Schalte einen Diskussions-Feed frei, in dem Mitglieder Beiträge posten und kommentieren können.
-                      </p>
-                    </div>
-                  </div>
-                  <Switch checked={communityEnabled} disabled={communityLoading} onCheckedChange={handleCommunityToggle} />
-                </div>
               </section>
             </>
           )}

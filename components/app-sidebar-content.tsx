@@ -16,7 +16,6 @@ import {
   Compass,
   FileText,
   GitBranch,
-  Hash,
   Home,
   Lock,
   LogOut,
@@ -59,7 +58,6 @@ interface Workspace {
   plan: WorkspacePlan
   ownerId: string
   imageUrl: string | null
-  communityEnabled?: boolean
   userRole: WorkspaceRole
 }
 
@@ -71,11 +69,6 @@ interface Page {
 }
 
 type FavoritePage = { id: string; title: string; icon: string | null }
-
-interface CommunityChannel {
-  id: string
-  name: string
-}
 
 const EMOJI_OPTIONS = [
   "📄","📝","📌","⭐","🎯","📊","💡","🗂️","📂","🔔",
@@ -324,8 +317,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
   const [friendRequestCount, setFriendRequestCount] = useState(0)
   const [aiOpen, setAiOpen] = useState(false)
 
-  const [channels, setChannels] = useState<CommunityChannel[]>([])
-  const [communityExpanded, setCommunityExpanded] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
 
   const [templatesOpen, setTemplatesOpen] = useState(false)
@@ -400,15 +391,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setPages(data) })
       .catch(() => {})
-
-    if (activeWorkspace.communityEnabled) {
-      fetch(`/api/workspaces/${activeWorkspace.id}/community/channels`)
-        .then((r) => r.json())
-        .then((data) => { if (Array.isArray(data?.channels)) setChannels(data.channels) })
-        .catch(() => {})
-    } else {
-      setChannels([])
-    }
   }, [activeWorkspace])
 
   function selectWorkspace(ws: Workspace) {
@@ -778,55 +760,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
             />
           )}
 
-          {/* Community — merged into the same list as pages, no separate category */}
-          {activeWorkspace.communityEnabled && (
-            <div>
-              <div
-                className={cn(
-                  "group flex items-center gap-1 rounded-md py-1 pr-1 text-sm transition-colors",
-                  pathname === `/community/${activeWorkspace.id}`
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                )}
-                style={{ paddingLeft: "8px" }}
-              >
-                <button
-                  className="flex h-4 w-4 shrink-0 items-center justify-center"
-                  onClick={() => setCommunityExpanded((v) => !v)}
-                >
-                  {channels.length > 0 ? (
-                    communityExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />
-                  ) : (
-                    <span className="h-3 w-3" />
-                  )}
-                </button>
-                <Link
-                  href={`/community/${activeWorkspace.id}`}
-                  onClick={onClose}
-                  className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-sm"
-                >
-                  <Users className="h-3.5 w-3.5 shrink-0 opacity-40" />
-                  <span className="truncate">Community</span>
-                </Link>
-              </div>
-
-              {communityExpanded && channels.map((ch) => {
-                const href = `/community/${activeWorkspace.id}?c=${ch.id}`
-                return (
-                  <Link
-                    key={ch.id}
-                    href={href}
-                    onClick={onClose}
-                    className="flex items-center gap-1.5 rounded-md py-1 pr-1 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-                    style={{ paddingLeft: "20px" }}
-                  >
-                    <Hash className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{ch.name}</span>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
         </div>
       )}
 
@@ -837,7 +770,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         onOpenChange={setTemplatesOpen}
         workspaceId={templatesWorkspaceId ?? activeWorkspace?.id ?? null}
         parentId={templatesParentId}
-        allowCommunity={templatesWorkspaceId !== privateWorkspace?.id}
         onCreated={(page) => {
           const newPage: Page = { id: page.id, title: page.title, parentId: templatesParentId, icon: null }
           if (templatesWorkspaceId === privateWorkspace?.id) {
@@ -845,14 +777,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
           } else {
             setPages((prev) => [...prev, newPage])
           }
-        }}
-        onCommunityEnabled={(workspaceId) => {
-          setWorkspaces((prev) => prev.map((w) => (w.id === workspaceId ? { ...w, communityEnabled: true } : w)))
-          setActiveWorkspace((prev) => (prev && prev.id === workspaceId ? { ...prev, communityEnabled: true } : prev))
-          fetch(`/api/workspaces/${workspaceId}/community/channels`)
-            .then((r) => r.json())
-            .then((data) => { if (Array.isArray(data?.channels)) setChannels(data.channels) })
-            .catch(() => {})
         }}
       />
 
