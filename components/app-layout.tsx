@@ -63,12 +63,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Main */}
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Mobile top navigation tabs */}
+        <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+          {/* Floating top nav — rendered above content via absolute positioning */}
           {isMobile && <MobileTopNav />}
 
-          {/* Page content — extra bottom padding on mobile for the fixed bottom nav */}
-          <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", isMobile && "pb-[60px]")}>
+          {/* Page content:
+              - pt-[62px]: clears the floating top nav (44px pill + 12px gap + 6px buffer)
+              - pb-[90px]: clears the floating bottom nav (58px pill + 16px safe-area + buffer) */}
+          <div className={cn(
+            "flex min-h-0 flex-1 flex-col overflow-hidden",
+            isMobile && "pt-[62px] pb-[90px]"
+          )}>
             {children}
           </div>
         </main>
