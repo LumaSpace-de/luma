@@ -76,37 +76,33 @@ export function MobileBottomNav() {
   const pathname = usePathname()
 
   return (
-    /* Floating pill — hovers above bottom edge */
+    /* Floating pill — transparent glass, no solid background */
     <div
-      className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4"
-      style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 16px)" }}
+      className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 flex justify-center px-5"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 20px)" }}
     >
-      <div className="pointer-events-auto flex h-[58px] w-full max-w-xs items-stretch rounded-2xl border border-white/[0.08] bg-background/60 shadow-2xl shadow-black/30 backdrop-blur-xl">
+      <div className="pointer-events-auto flex h-[60px] w-full max-w-[300px] items-stretch rounded-[22px] border border-white/[0.07] bg-white/[0.06] shadow-2xl shadow-black/50 backdrop-blur-2xl dark:bg-black/25">
         {BOTTOM_NAV_ITEMS.map(({ icon: Icon, label, href }) => {
           const active = pathname === href || pathname.startsWith(href + "/")
           return (
             <Link
               key={href}
               href={href}
-              className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-[3px] rounded-2xl transition-all",
-                active
-                  ? "text-foreground"
-                  : "text-muted-foreground/40 hover:text-muted-foreground/70"
-              )}
+              className="flex flex-1 flex-col items-center justify-center gap-[3px] transition-all"
             >
-              <Icon
-                className={cn(
-                  "h-[19px] w-[19px] transition-all",
-                  active ? "scale-110 text-foreground" : "text-muted-foreground/40"
-                )}
-              />
-              <span
-                className={cn(
-                  "text-[9.5px] font-medium leading-none tracking-wide",
-                  active ? "text-foreground" : "text-muted-foreground/35"
-                )}
-              >
+              <div className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-xl transition-all duration-200",
+                active && "bg-white/[0.12]"
+              )}>
+                <Icon className={cn(
+                  "h-[18px] w-[18px] transition-all",
+                  active ? "text-foreground" : "text-foreground/30"
+                )} />
+              </div>
+              <span className={cn(
+                "text-[9px] font-medium leading-none tracking-wide",
+                active ? "text-foreground/80" : "text-foreground/25"
+              )}>
                 {label}
               </span>
             </Link>
