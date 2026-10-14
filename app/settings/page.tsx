@@ -12,6 +12,7 @@ import {
   ChevronRight,
   GitBranch,
   LinkIcon,
+  LogOut,
   MessageCircle,
   PanelLeft,
   Shield,
@@ -19,6 +20,8 @@ import {
   User,
   Wallet,
 } from "lucide-react"
+
+import { signOut } from "next-auth/react"
 
 import { useInlineSidebar } from "@/hooks/use-inline-sidebar"
 
@@ -735,6 +738,17 @@ export default function SettingsPage() {
                 </a>
               </p>
             </section>
+          </div>
+
+          {/* ── ABMELDEN ───────────────────────────────────────── */}
+          <div className="mt-10">
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="flex w-full items-center gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 px-5 py-4 text-left transition-colors hover:bg-destructive/10"
+            >
+              <LogOut className="h-4 w-4 text-destructive/70" />
+              <span className="text-sm font-medium text-destructive/80">Abmelden</span>
+            </button>
           </div>
 
         </div>

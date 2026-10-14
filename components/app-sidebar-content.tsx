@@ -1,6 +1,6 @@
 "use client"
 
-import { signOut, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -18,13 +18,11 @@ import {
   GitBranch,
   Home,
   Lock,
-  LogOut,
   Mail,
   MoreHorizontal,
   Pencil,
   Plus,
   Search,
-  Settings,
   Shield,
   Smile,
   Sparkles,
@@ -33,7 +31,6 @@ import {
   Users,
 } from "lucide-react"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -763,8 +760,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
         </div>
       )}
 
-      <Separator />
-
       <TemplatesDialog
         open={templatesOpen}
         onOpenChange={setTemplatesOpen}
@@ -779,44 +774,6 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
           }
         }}
       />
-
-
-      {/* User footer */}
-      <div className="p-4">
-        <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8 shrink-0">
-            {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={userName} />}
-            <AvatarFallback>{userInitials}</AvatarFallback>
-          </Avatar>
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-medium">{userName}</span>
-            <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
-          </div>
-          <div className="flex shrink-0 items-center gap-0.5">
-            {isAdmin && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Admin">
-                <Link href="/admin">
-                  <Shield className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
-            )}
-            <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Einstellungen">
-              <Link href="/settings">
-                <Settings className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => signOut({ callbackUrl: "/" })}
-              title="Abmelden"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
