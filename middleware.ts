@@ -30,7 +30,11 @@ export async function middleware(request: NextRequest) {
   if (!isProtected) return NextResponse.next()
 
   // Must be logged in
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET ?? "luma-space-secret-flux-network-2026",
+    cookieName: "next-auth.session-token",
+  })
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
