@@ -31,6 +31,7 @@ import {
   Users,
 } from "lucide-react"
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -759,6 +760,23 @@ export function AppSidebarContent({ onClose }: { onClose?: () => void } = {}) {
 
         </div>
       )}
+
+      {/* User profile — desktop only */}
+      <div className="hidden border-t border-border/40 p-3 md:block">
+        <Link
+          href="/settings"
+          className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent"
+        >
+          <Avatar className="h-7 w-7 shrink-0">
+            {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={userName} />}
+            <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-medium leading-tight">{userName}</span>
+            <span className="truncate text-xs text-muted-foreground leading-tight">{userEmail}</span>
+          </div>
+        </Link>
+      </div>
 
       <TemplatesDialog
         open={templatesOpen}
