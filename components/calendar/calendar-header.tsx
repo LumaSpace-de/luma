@@ -165,8 +165,8 @@ export function CalendarHeader({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Apple Calendar subscription */}
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onOpenSubscribe} title="Mit Apple Kalender verbinden">
+        {/* Apple Calendar subscription — desktop only */}
+        <Button variant="ghost" size="icon" className="hidden h-7 w-7 sm:flex" onClick={onOpenSubscribe} title="Mit Apple Kalender verbinden">
           <Smartphone className="h-4 w-4" />
         </Button>
 
@@ -235,6 +235,11 @@ export function CalendarHeader({
           )}
         </div>
 
+        <Button size="sm" onClick={onAdd} className="gap-1.5">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Neu</span>
+        </Button>
+
         {/* Mobile prev/next */}
         <div className="flex items-center gap-0.5 sm:hidden">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onPrev}>
@@ -247,10 +252,6 @@ export function CalendarHeader({
 
         <Button variant="outline" size="sm" onClick={onToday} className="hidden sm:flex">
           Heute
-        </Button>
-        <Button size="sm" onClick={onAdd} className="gap-1.5">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Neu</span>
         </Button>
       </div>
     </div>
