@@ -1,5 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
+import { LandingNav } from "@/components/landing-nav"
 import {
   ArrowRight,
   BarChart3,
@@ -39,33 +40,10 @@ export default function IndexPage() {
         <div className="absolute left-[-5%] top-[60%] h-[400px] w-[400px] rounded-full bg-blue-500/[0.04] blur-[100px]" />
       </div>
 
-      {/* ── Navbar ── */}
-      <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-white/[0.05] bg-[#080808]/80 px-6 py-4 backdrop-blur-xl">
-        <div className="flex items-center gap-2.5">
-          <Image src="/logo_icon.png" alt="LumaSpace" width={32} height={32} className="rounded-lg" />
-          <span className="text-base font-bold tracking-tight text-white">LumaSpace</span>
-        </div>
-        <div className="hidden items-center gap-6 text-sm text-white/50 sm:flex">
-          <a href="#features" className="transition-colors hover:text-white/80">Features</a>
-          <a href="#trading" className="transition-colors hover:text-white/80">Trading</a>
-          <a href="#pricing" className="transition-colors hover:text-white/80">Preise</a>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/login">
-            <Button variant="ghost" size="sm" className="text-white/50 hover:text-white">
-              Anmelden
-            </Button>
-          </Link>
-          <Link href="/signup">
-            <Button size="sm" className="bg-white text-black hover:bg-white/90">
-              Kostenlos starten
-            </Button>
-          </Link>
-        </div>
-      </nav>
+      <LandingNav />
 
       {/* ── Hero ── */}
-      <main className="relative z-10 flex flex-col items-center px-6 pb-20 pt-20 text-center">
+      <main className="relative z-10 flex flex-col items-center px-6 pb-20 pt-28 text-center">
         <div className="mb-6 flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-1.5">
           <Sparkles className="h-3 w-3 text-blue-400" />
           <span className="text-xs text-white/60">KI-gestützter Arbeitsbereich</span>
