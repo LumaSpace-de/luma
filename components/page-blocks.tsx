@@ -296,7 +296,7 @@ function CodeBlock({
   const lang = (data.lang as string) ?? ""
   const code = (data.code as string) ?? ""
   return (
-    <div className="overflow-hidden rounded-xl border border-border/20 bg-zinc-950 dark:bg-zinc-900">
+    <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0a]">
       <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2">
         {canEdit ? (
           <input value={lang} onChange={e => onChange({ ...data, lang: e.target.value })}
